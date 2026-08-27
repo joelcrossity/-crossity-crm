@@ -36,7 +36,11 @@ Los crea el seed, sólo para local. La contraseña está en `supabase/seed.sql`.
 |---|---|---|---|
 | `joel@crossity.ar` | Joel Lifschitz | dirección | los 37 proyectos |
 | `triana@crossity.ar` | Triana Lifschitz | administración | todo menos la negociación comercial |
-| `claudio@crossity.ar` | Claudio Gervasoni | desarrollo | sólo SUINO, y sólo su participación |
+| `german@crossity.ar` | Germán Gatti | project manager · vendedor | los proyectos, y su propio pipeline |
+
+**Claudio y Santiago no tienen cuenta a propósito.** Participan de los proyectos
+y cobran su parte, pero no entran al sistema: reciben los avisos por fuera.
+Es el caso de *persona sin usuario*, y en el seed se puede ver funcionando.
 
 Entrar con los tres es la forma más rápida de comprobar que los permisos
 hacen lo que dicen hacer.

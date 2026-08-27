@@ -167,6 +167,10 @@ end $$;
 -- ------------------------------------------------------------
 -- Usuarios locales para poder entrar y comprobar los permisos.
 -- Sólo para el entorno local: en la nube los crea Joel.
+--
+-- Claudio y Santiago NO tienen cuenta a propósito: participan de los
+-- proyectos y cobran su parte, pero no entran al sistema. Es el caso de
+-- persona sin usuario, y acá se ve funcionando de verdad.
 -- Contraseña de los tres: crossity-local
 -- ------------------------------------------------------------
 
@@ -180,7 +184,7 @@ begin
     select * from (values
       ('joel@crossity.ar',   '11111111-1111-1111-1111-000000000001'::uuid, '22222222-2222-2222-2222-000000000001'::uuid),
       ('triana@crossity.ar', '11111111-1111-1111-1111-000000000005'::uuid, '22222222-2222-2222-2222-000000000005'::uuid),
-      ('claudio@crossity.ar','11111111-1111-1111-1111-000000000002'::uuid, '22222222-2222-2222-2222-000000000002'::uuid)
+      ('german@crossity.ar', '11111111-1111-1111-1111-000000000004'::uuid, '22222222-2222-2222-2222-000000000004'::uuid)
     ) as t(mail, persona, uid)
   loop
     v_uid := v.uid;
