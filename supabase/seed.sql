@@ -14,9 +14,7 @@ insert into personas (id, nombre, email, roles) values
   ('11111111-1111-1111-1111-000000000003', 'Santiago Díaz',     null,                 '{desarrollo}'),
   ('11111111-1111-1111-1111-000000000004', 'Germán Gatti',      'german@crossity.ar', '{project_manager,vendedor}'),
   ('11111111-1111-1111-1111-000000000005', 'Triana Lifschitz',  null,                 '{administracion}'),
-  ('11111111-1111-1111-1111-000000000006', 'Tomás Laurie',      'tomas@crossity.ar',  '{}');
-
-comment on table personas is 'El rol de Tomás Laurie quedó pendiente de definir.';
+  ('11111111-1111-1111-1111-000000000006', 'Tomás Laurie',      'tomas@crossity.ar',  '{coordinacion}');
 
 -- ------------------------------------------------------------
 -- Clientes. Los alias salen de cómo aparece escrito cada uno
@@ -168,9 +166,10 @@ end $$;
 -- Usuarios locales para poder entrar y comprobar los permisos.
 -- Sólo para el entorno local: en la nube los crea Joel.
 --
--- Claudio y Santiago NO tienen cuenta a propósito: participan de los
--- proyectos y cobran su parte, pero no entran al sistema. Es el caso de
--- persona sin usuario, y acá se ve funcionando de verdad.
+-- En la v1 entran solamente Joel y Triana. Claudio, Santiago, Germán y
+-- Tomás participan de los proyectos y cobran su parte, pero no tienen
+-- cuenta: se enteran por notificación. Cuatro de seis personas viven el
+-- sistema sin abrirlo nunca, así que los avisos tienen que bastarse solos.
 -- Contraseña de los tres: crossity-local
 -- ------------------------------------------------------------
 
@@ -183,8 +182,7 @@ begin
     -- ids fijos: así no cambian en cada `supabase db reset`
     select * from (values
       ('joel@crossity.ar',   '11111111-1111-1111-1111-000000000001'::uuid, '22222222-2222-2222-2222-000000000001'::uuid),
-      ('triana@crossity.ar', '11111111-1111-1111-1111-000000000005'::uuid, '22222222-2222-2222-2222-000000000005'::uuid),
-      ('german@crossity.ar', '11111111-1111-1111-1111-000000000004'::uuid, '22222222-2222-2222-2222-000000000004'::uuid)
+      ('triana@crossity.ar', '11111111-1111-1111-1111-000000000005'::uuid, '22222222-2222-2222-2222-000000000005'::uuid)
     ) as t(mail, persona, uid)
   loop
     v_uid := v.uid;

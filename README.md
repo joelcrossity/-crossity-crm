@@ -34,16 +34,19 @@ Los crea el seed, sólo para local. La contraseña está en `supabase/seed.sql`.
 
 | Correo | Persona | Rol | Qué debería ver |
 |---|---|---|---|
-| `joel@crossity.ar` | Joel Lifschitz | dirección | los 37 proyectos |
+| `joel@crossity.ar` | Joel Lifschitz | dirección | todo |
 | `triana@crossity.ar` | Triana Lifschitz | administración | todo menos la negociación comercial |
-| `german@crossity.ar` | Germán Gatti | project manager · vendedor | los proyectos, y su propio pipeline |
 
-**Claudio y Santiago no tienen cuenta a propósito.** Participan de los proyectos
-y cobran su parte, pero no entran al sistema: reciben los avisos por fuera.
-Es el caso de *persona sin usuario*, y en el seed se puede ver funcionando.
+**En la v1 entran solamente esos dos.** Claudio, Santiago, Germán y Tomás
+participan de los proyectos y cobran su parte, pero no tienen cuenta: se
+enteran por notificación.
 
-Entrar con los tres es la forma más rápida de comprobar que los permisos
-hacen lo que dicen hacer.
+Cuatro de seis personas van a vivir el sistema sin abrirlo nunca. Por eso el
+aviso tiene que contener la información y no un enlace: un enlace es inútil
+para quien no puede entrar.
+
+Entrar con los dos es la forma más rápida de comprobar que los permisos hacen
+lo que dicen hacer.
 
 ### Si Kong devuelve 502 después de un `db reset`
 
