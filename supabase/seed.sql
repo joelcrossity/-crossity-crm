@@ -254,3 +254,41 @@ end $$;
 
 -- Stilo es el único mantenimiento vigente hoy. El caso del abono que
 -- arranca sin obra previa está soportado, pero no se inventa acá.
+
+-- ------------------------------------------------------------
+-- El grupo gastronómico: una cuenta, dos marcas, dos razones sociales.
+-- Es el caso que obligó a separar cuenta de razón social.
+-- ------------------------------------------------------------
+
+insert into organizaciones (nombre_canonico, alias)
+values ('Grupo gastronómico', '{"Sushi Paraná","Gurichan","Grupo Sushi Paraná"}');
+
+do $$
+declare
+  v_cuenta uuid;
+  v_rs1 uuid; v_rs2 uuid;
+begin
+  select id into v_cuenta from organizaciones where nombre_canonico = 'Grupo gastronómico';
+
+  insert into razones_sociales (organizacion_id, razon_social, es_principal)
+  values (v_cuenta, 'Razón social de Sushi Paraná', true) returning id into v_rs1;
+
+  insert into razones_sociales (organizacion_id, razon_social)
+  values (v_cuenta, 'Razón social de Gurichan') returning id into v_rs2;
+
+  insert into marcas (organizacion_id, nombre, razon_social_id, es_principal) values
+    (v_cuenta, 'Sushi Paraná', v_rs1, true),
+    (v_cuenta, 'Gurichan',     v_rs2, false);
+end $$;
+
+-- El resto de los clientes arranca con una razón social y una marca,
+-- que es el caso normal. Los CUIT se cargan cuando haga falta facturar.
+insert into razones_sociales (organizacion_id, razon_social, es_principal)
+select o.id, o.nombre_canonico, true
+  from organizaciones o
+ where o.nombre_canonico <> 'Grupo gastronómico';
+
+insert into marcas (organizacion_id, nombre, es_principal)
+select o.id, o.nombre_canonico, true
+  from organizaciones o
+ where o.nombre_canonico <> 'Grupo gastronómico';
