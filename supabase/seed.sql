@@ -216,3 +216,37 @@ begin
     insert into usuarios (id, persona_id) values (v_uid, v.persona);
   end loop;
 end $$;
+
+-- ------------------------------------------------------------
+-- Un mantenimiento real y uno que arranca solo, para que el caso
+-- exista desde el primer día y no sea una hipótesis.
+-- ------------------------------------------------------------
+
+do $$
+declare
+  v_stilo uuid;
+  v_mant  uuid;
+begin
+  -- Stilo figura en la planilla como "En produccioon · mantenimiento":
+  -- es un proyecto entregado que ya está en abono.
+  select p.id into v_stilo
+    from proyectos p join organizaciones o on o.id = p.organizacion_id
+   where o.nombre_canonico = 'Stilo Amoblamientos' and p.tipo = 'proyecto';
+
+  update proyectos
+     set color = 'rojo', subestado = null, motivo_rojo = 'entregado'
+   where id = v_stilo;
+
+  v_mant := pasar_a_mantenimiento(v_stilo, 180000, date '2026-07-01', false);
+
+  insert into participaciones (proyecto_id, persona_id, es_crossity, concepto, porcentaje, apertura)
+  values (v_mant, '11111111-1111-1111-1111-000000000002', false, 'desarrollo', 60, 'cerrada'),
+         (v_mant, null, true, 'gestion', 40, 'abierta');
+end $$;
+
+-- Un abono que nunca fue proyecto nuestro: se tomó un sistema ajeno.
+insert into proyectos (organizacion_id, nombre, tipo, color, subestado,
+                       esquema_cobro, monto_mensual, vigencia_desde, renovacion_automatica)
+select o.id, 'Mantenimiento del sitio', 'mantenimiento', 'verde', 'en_curso',
+       'mensual', 95000, date '2026-04-01', true
+  from organizaciones o where o.nombre_canonico = 'Rodados Integrales';
