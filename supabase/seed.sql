@@ -92,8 +92,8 @@ select o.id, v.nombre, v.color::color_estado, v.subestado::subestado_verde,
     ('GEXPLO', 'Rendimiento deportivo rugby', 'gris', null, 'dormido', null, false, 'a_convenir', null),
     ('Vision Motors', 'Simulador de juegos', 'gris', null, 'dormido', null, false, 'a_convenir', null),
     ('Activamente Lab', 'Sin definir', 'gris', null, 'dormido', null, false, 'a_convenir', null),
-    ('CFI / Gobierno de Entre Ríos', 'GDE', 'rojo', null, null, 'entregado', false, 'a_convenir', null),
-    ('CFI / Gobierno de Entre Ríos', 'Entredata', 'rojo', null, null, 'entregado', false, 'a_convenir', null),
+    ('CFI / Gobierno de Entre Ríos', 'GDE', 'naranja', null, null, null, false, 'a_convenir', null),
+    ('CFI / Gobierno de Entre Ríos', 'Entredata', 'naranja', null, null, null, false, 'a_convenir', null),
     ('Mundo Muebles', 'Agente IA, tracking y TV on Touch', 'rojo', null, null, 'descartado', false, 'a_convenir', null)
   ) as v (cliente, nombre, color, subestado, motivo_gris, motivo_rojo, propio, esquema, etapa)
   join organizaciones o on o.nombre_canonico = v.cliente;
@@ -141,10 +141,12 @@ begin
     (v_proy, 3, '3ª entrega', 'Reporte de trazabilidad + manuales',                             22.73, 2500000, false, date '2026-09-12'),
     (v_proy, 4, '4ª entrega', 'Acta de Recepción Conforme',                                     13.64, 1500000, false, date '2026-09-25');
 
-  -- El impuesto tal como figura en la planilla (6 % del neto).
-  -- La etiqueta dice 0,6 % — la diferencia está señalada en el documento.
-  insert into impuestos (proyecto_id, hito_id, jurisdiccion, concepto, alicuota, monto)
-  select v_proy, h.id, 'nacional', 'Impuesto al cheque (según planilla)', 6, round(h.monto_neto * 0.06, 2)
+  -- 0,6 %: impuesto a los débitos y créditos. La planilla venía
+  -- descontando 6 %, diez veces de más, y esa diferencia salía del
+  -- bolsillo de todos los participantes.
+  insert into impuestos (proyecto_id, hito_id, jurisdiccion, concepto, alicuota, monto, moneda)
+  select v_proy, h.id, 'nacional', 'Impuesto a los débitos y créditos', 0.6,
+         round(h.monto_neto * 0.006, 2), 'ARS'
     from hitos h where h.proyecto_id = v_proy;
 
   -- Recalcular con los impuestos ya cargados.
@@ -167,10 +169,10 @@ end $$;
 -- Usuarios locales para poder entrar y comprobar los permisos.
 -- Sólo para el entorno local: en la nube los crea Joel.
 --
--- En la v1 entran solamente Joel y Triana. Claudio, Santiago, Germán y
--- Tomás participan de los proyectos y cobran su parte, pero no tienen
--- cuenta: se enteran por notificación. Cuatro de seis personas viven el
--- sistema sin abrirlo nunca, así que los avisos tienen que bastarse solos.
+-- Entran Joel, Triana y Germán. Claudio, Santiago y Tomás participan de
+-- los proyectos y cobran su parte, pero no tienen cuenta: se enteran por
+-- notificación. La mitad del equipo vive el sistema sin abrirlo nunca, así
+-- que los avisos tienen que bastarse solos.
 -- Contraseña de los tres: crossity-local
 -- ------------------------------------------------------------
 
@@ -183,7 +185,8 @@ begin
     -- ids fijos: así no cambian en cada `supabase db reset`
     select * from (values
       ('joel@crossity.ar',   '11111111-1111-1111-1111-000000000001'::uuid, '22222222-2222-2222-2222-000000000001'::uuid),
-      ('triana@crossity.ar', '11111111-1111-1111-1111-000000000005'::uuid, '22222222-2222-2222-2222-000000000005'::uuid)
+      ('triana@crossity.ar', '11111111-1111-1111-1111-000000000005'::uuid, '22222222-2222-2222-2222-000000000005'::uuid),
+      ('german@crossity.ar', '11111111-1111-1111-1111-000000000004'::uuid, '22222222-2222-2222-2222-000000000004'::uuid)
     ) as t(mail, persona, uid)
   loop
     v_uid := v.uid;
@@ -235,7 +238,7 @@ begin
    where o.nombre_canonico = 'Stilo Amoblamientos' and p.tipo = 'proyecto';
 
   update proyectos
-     set color = 'rojo', subestado = null, motivo_rojo = 'entregado'
+     set color = 'naranja', subestado = null, motivo_rojo = null
    where id = v_stilo;
 
   v_mant := pasar_a_mantenimiento(v_stilo, 180000, date '2026-07-01', false);
@@ -245,9 +248,5 @@ begin
          (v_mant, null, true, 'gestion', 40, 'abierta');
 end $$;
 
--- Un abono que nunca fue proyecto nuestro: se tomó un sistema ajeno.
-insert into proyectos (organizacion_id, nombre, tipo, color, subestado,
-                       esquema_cobro, monto_mensual, vigencia_desde, renovacion_automatica)
-select o.id, 'Mantenimiento del sitio', 'mantenimiento', 'verde', 'en_curso',
-       'mensual', 95000, date '2026-04-01', true
-  from organizaciones o where o.nombre_canonico = 'Rodados Integrales';
+-- Stilo es el único mantenimiento vigente hoy. El caso del abono que
+-- arranca sin obra previa está soportado, pero no se inventa acá.
