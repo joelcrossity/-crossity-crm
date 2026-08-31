@@ -124,11 +124,13 @@ begin
          fecha_inicio = date '2026-06-09'
    where id = v_proy;
 
-  insert into asignaciones (proyecto_id, persona_id, rol, desde) values
-    (v_proy, v_claudio, 'desarrollo',      date '2026-06-09'),
-    (v_proy, v_german,  'project_manager', date '2026-06-09');
+  -- En SUINO, Claudio intervino en el desarrollo y también en la propuesta:
+  -- ve el total. Germán lo gestiona y ve la propuesta y los entregables,
+  -- pero no el arreglo interno.
+  insert into asignaciones (proyecto_id, persona_id, rol, desde, apertura) values
+    (v_proy, v_claudio, 'desarrollo',      date '2026-06-09', 'abierta'),
+    (v_proy, v_german,  'project_manager', date '2026-06-09', 'comercial');
 
-  -- 70 / 30, con Claudio como socio abierto: ve el total y el cálculo.
   insert into participaciones (proyecto_id, persona_id, es_crossity, concepto, porcentaje, apertura) values
     (v_proy, v_claudio, false, 'desarrollo', 70, 'abierta'),
     (v_proy, null,      true,  'gestion',    30, 'abierta');
@@ -243,6 +245,8 @@ begin
 
   v_mant := pasar_a_mantenimiento(v_stilo, 180000, date '2026-07-01', false);
 
+  -- El mismo Claudio, en otro proyecto, a ciegas: ahí sólo desarrolla.
+  -- Misma persona, mismo rol, apertura distinta. Ése era el punto.
   insert into participaciones (proyecto_id, persona_id, es_crossity, concepto, porcentaje, apertura)
   values (v_mant, '11111111-1111-1111-1111-000000000002', false, 'desarrollo', 60, 'cerrada'),
          (v_mant, null, true, 'gestion', 40, 'abierta');
