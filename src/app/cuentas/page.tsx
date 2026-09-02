@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import Shell from '@/components/Shell'
 import { createClient } from '@/lib/supabase/server'
 
@@ -50,13 +51,15 @@ export default async function Cuentas() {
               {cuentas.map((c) => (
                 <tr key={c.id} className="border-b border-linea last:border-0 hover:bg-fondo">
                   <td className="px-4 py-3">
+                    <Link href={`/cuentas/${c.codigo}`} className="block hover:text-azul-hondo">
                     <span className="text-sm font-bold tracking-tight">{c.cuenta}</span>
-                    <span className="block font-mono text-[11px] text-gris-50">
+                    <span className="cifra block text-2xs text-gris-50">
                       {c.codigo}
                       {c.razones_sociales > 1 && ` · ${c.razones_sociales} razones sociales`}
                     </span>
+                    </Link>
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-gris">{c.marcas ?? '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gris">{c.marcas ?? '—'}</td>
                   <Num n={c.en_vivo} destacar />
                   <Num n={c.en_pipeline} />
                   <Num n={c.abonos} />

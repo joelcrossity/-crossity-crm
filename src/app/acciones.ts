@@ -34,6 +34,7 @@ async function guardar(
   revalidatePath('/tablero')
   revalidatePath('/pipeline')
   revalidatePath('/hoy')
+  revalidatePath('/admin')
   return { ok: true }
 }
 
@@ -73,6 +74,18 @@ export async function cambiarPrioridad(
 ): Promise<Resultado> {
   const n = parseInt(prioridad, 10)
   return guardar(proyectoId, { prioridad: Number.isFinite(n) && n > 0 ? n : null })
+}
+
+export async function cambiarMonto(
+  proyectoId: string,
+  monto: string,
+  moneda: string
+): Promise<Resultado> {
+  const n = parseFloat(monto.replace(/\./g, '').replace(',', '.'))
+  return guardar(proyectoId, {
+    monto_neto: Number.isFinite(n) && n > 0 ? n : null,
+    moneda,
+  })
 }
 
 export async function cambiarSeguimiento(

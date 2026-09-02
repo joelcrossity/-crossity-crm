@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Shell, { Titulo } from '@/components/Shell'
+import { Marco, Barras, Columnas, Embudo, Cifra } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
-import { fechaCorta } from '@/lib/estados'
+import { plata } from '@/lib/estados'
 
 type Fila = {
   id: string
@@ -9,15 +10,244 @@ type Fila = {
   nombre: string
   cliente: string
   color: string
-  subestado: string | null
   fecha_comprometida: string | null
   responsable: string | null
   dias_sin_novedades: number
   dias_de_atraso: number | null
 }
 
-/* Cada bloque responde una pregunta concreta y ofrece qué hacer.
-   Si un bloque está vacío es una buena noticia, y se dice. */
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+const ETAPAS: [string, string][] = [
+  ['interes', 'Interés'],
+  ['primera_charla', 'Primera charla'],
+  ['relevamiento', 'Relevamiento'],
+  ['cotizacion', 'Cotización'],
+  ['negociacion', 'Negociación'],
+]
+
+export default async function Hoy() {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: cuenta } = await supabase
+    .from('usuarios')
+    .select('personas(nombre, roles)')
+    .eq('id', user?.id ?? '')
+    .maybeSingle()
+
+  const yo = cuenta?.personas as unknown as { nombre: string; roles: string[] } | undefined
+  const roles = yo?.roles ?? []
+  const esDireccion = roles.includes('direccion')
+  const esAdmin = roles.includes('administracion')
+  const esComercial = roles.includes('vendedor') || roles.includes('project_manager')
+
+  const [{ data: proyectos }, { data: pipeline }, { data: hitos }, { data: cuentas }] =
+    await Promise.all([
+      supabase.from('v_tablero').select('*'),
+      supabase.from('v_pipeline').select('etapa, monto_neto, moneda, sin_agendar, seguimiento_vencido'),
+      supabase.from('hitos').select('monto_neto, moneda, facturado_at, cobrado_at'),
+      supabase.from('v_cuenta').select('*'),
+    ])
+
+  const filas = (proyectos ?? []) as Fila[]
+  const vivos = filas.filter((f) => f.color === 'verde')
+  const frenados = vivos
+    .filter((f) => f.dias_sin_novedades > 7)
+    .sort((a, b) => b.dias_sin_novedades - a.dias_sin_novedades)
+  const atrasados = vivos
+    .filter((f) => (f.dias_de_atraso ?? -1) > 0)
+    .sort((a, b) => (b.dias_de_atraso ?? 0) - (a.dias_de_atraso ?? 0))
+  const incompletos = vivos.filter((f) => !f.fecha_comprometida || !f.responsable)
+
+  // Facturado y cobrado por mes, últimos seis, en pesos.
+  const hoy = new Date()
+  const ventana = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - (5 - i), 1)
+    return { clave: `${d.getFullYear()}-${d.getMonth()}`, mes: MESES[d.getMonth()] }
+  })
+  const acumulado = new Map(ventana.map((v) => [v.clave, { facturado: 0, cobrado: 0 }]))
+
+  let porCobrar = 0
+  for (const h of (hitos ?? []) as Record<string, unknown>[]) {
+    if (h.moneda !== 'ARS') continue
+    const monto = (h.monto_neto as number) ?? 0
+    for (const [campo, fecha] of [
+      ['facturado', h.facturado_at],
+      ['cobrado', h.cobrado_at],
+    ] as const) {
+      if (!fecha) continue
+      const d = new Date(fecha as string)
+      const c = acumulado.get(`${d.getFullYear()}-${d.getMonth()}`)
+      if (c) c[campo] += monto
+    }
+    if (h.facturado_at && !h.cobrado_at) porCobrar += monto
+  }
+  const meses = ventana.map((v) => ({ mes: v.mes, ...acumulado.get(v.clave)! }))
+  const hayMovimiento = meses.some((m) => m.facturado > 0 || m.cobrado > 0)
+
+  // Embudo
+  const ops = (pipeline ?? []) as Record<string, unknown>[]
+  const embudo = ETAPAS.map(([valor, texto]) => {
+    const de = ops.filter((o) => o.etapa === valor)
+    return {
+      etapa: texto,
+      cantidad: de.length,
+      valor: de.reduce((s, o) => s + (o.moneda === 'ARS' ? ((o.monto_neto as number) ?? 0) : 0), 0),
+      moneda: 'ARS',
+    }
+  })
+  const sinAgendar = ops.filter((o) => o.sin_agendar).length
+
+  // Peso de cada cliente
+  const porCuenta = ((cuentas ?? []) as Record<string, unknown>[])
+    .map((c) => ({
+      nombre: c.cuenta as string,
+      valor: (c.en_vivo as number) + (c.abonos as number),
+      nota: `${c.proyectos_totales} en total`,
+    }))
+    .filter((c) => c.valor > 0)
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 8)
+
+  const nombre = yo?.nombre.split(' ')[0] ?? ''
+
+  return (
+    <Shell activo="/hoy">
+      <Titulo
+        seccion={`Hola, ${nombre}`}
+        bajada={
+          esDireccion
+            ? 'La plata primero, y abajo lo que pide una decisión tuya.'
+            : esAdmin
+              ? 'Cobranza y carga. Abajo, lo que falta completar.'
+              : 'Tus proyectos y tu pipeline.'
+        }
+      >
+        {esDireccion ? 'Cómo viene la empresa' : esAdmin ? 'Qué hay para cobrar' : 'Qué necesita atención'}
+      </Titulo>
+
+      <div className="flex flex-col gap-9">
+        {(esDireccion || esAdmin) && (
+          <section className="grid gap-6 sm:grid-cols-4">
+            <Cifra valor={String(vivos.length)} titulo="en vivo" nota="se trabajan ahora" tono="verde" />
+            <Cifra
+              valor={plata(porCobrar)}
+              titulo="por cobrar"
+              nota="facturado y sin entrar"
+              tono={porCobrar > 0 ? 'rojo' : 'tinta'}
+            />
+            <Cifra
+              valor={String(ops.length)}
+              titulo="en pipeline"
+              nota={sinAgendar > 0 ? `${sinAgendar} sin seguimiento agendado` : 'todas con seguimiento'}
+              tono={sinAgendar > 0 ? 'amarillo' : 'tinta'}
+            />
+            <Cifra
+              valor={String(frenados.length)}
+              titulo="frenados"
+              nota="más de 7 días sin novedades"
+              tono={frenados.length > 0 ? 'rojo' : 'verde'}
+            />
+          </section>
+        )}
+
+        {(esDireccion || esAdmin) && (
+          <section className="grid gap-4 lg:grid-cols-2">
+            <Marco
+              titulo="Cuánto entra por mes"
+              detalle="Últimos seis meses, en pesos"
+              hayDatos={hayMovimiento}
+              vacio="Todavía no hay entregas facturadas. Se llena solo a medida que se marquen en cada proyecto."
+            >
+              <Columnas meses={meses} />
+            </Marco>
+
+            <Marco
+              titulo="Cómo viene el embudo"
+              detalle={`${ops.length} oportunidades abiertas`}
+              hayDatos={ops.length > 0}
+              vacio="No hay oportunidades en el pipeline."
+              pie={
+                sinAgendar > 0 ? (
+                  <p className="text-2xs text-amarillo">
+                    {sinAgendar} sin próximo seguimiento agendado: están abandonadas aunque figuren
+                    activas.
+                  </p>
+                ) : null
+              }
+            >
+              <Embudo etapas={embudo} />
+            </Marco>
+          </section>
+        )}
+
+        {esDireccion && (
+          <Marco
+            titulo="Peso de cada cliente"
+            detalle="Proyectos vivos y abonos por cuenta"
+            hayDatos={porCuenta.length > 0}
+            vacio="Todavía no hay clientes con proyectos activos."
+          >
+            <Barras datos={porCuenta} serie={2} sufijo="activos" />
+          </Marco>
+        )}
+
+        {(esDireccion || esComercial) && (
+          <>
+            <Bloque
+              pregunta="Se están cayendo"
+              porque="Más de una semana sin que nadie cargue una novedad. No significa que estén parados: significa que nadie sabe."
+              filas={frenados}
+              vacio="Todos los proyectos en vivo tuvieron novedades esta semana."
+              urgente
+              columna={(f) => (
+                <span className="cifra shrink-0 text-sm font-bold text-rojo">
+                  {f.dias_sin_novedades} días
+                </span>
+              )}
+            />
+            <Bloque
+              pregunta="Pasaron la fecha"
+              porque="La entrega comprometida venció y el proyecto sigue en vivo."
+              filas={atrasados}
+              vacio="Ninguno pasó su fecha de entrega."
+              urgente
+              columna={(f) => (
+                <span className="cifra shrink-0 text-sm font-bold text-rojo">
+                  {f.dias_de_atraso} días tarde
+                </span>
+              )}
+            />
+          </>
+        )}
+
+        {incompletos.length > 0 && (
+          <section className="flex flex-col gap-2.5 border-t border-linea pt-7">
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <h2 className="text-md font-bold tracking-tight">Falta cargarles algo</h2>
+              <span className="cifra rounded-full bg-amarillo-aire px-1.5 py-0.5 text-2xs font-medium text-amarillo">
+                {incompletos.length}
+              </span>
+            </div>
+            <p className="max-w-[65ch] text-sm text-gris">
+              Sin fecha o sin responsable, nadie puede priorizar solo y todo vuelve a vos. Se
+              completan de corrido en administración.
+            </p>
+            <Link
+              href="/admin"
+              className="w-fit rounded-md bg-azul-hondo px-3.5 py-1.5 text-sm font-medium text-white
+                         transition-colors duration-150 hover:bg-azul"
+            >
+              Completar los {incompletos.length}
+            </Link>
+          </section>
+        )}
+      </div>
+    </Shell>
+  )
+}
+
 function Bloque({
   pregunta,
   porque,
@@ -48,7 +278,7 @@ function Bloque({
         >
           {filas.length}
         </span>
-        <p className="w-full text-sm text-gris">{porque}</p>
+        <p className="w-full max-w-[65ch] text-sm text-gris">{porque}</p>
       </div>
 
       {filas.length === 0 ? (
@@ -78,123 +308,5 @@ function Bloque({
         </ul>
       )}
     </section>
-  )
-}
-
-export default async function Hoy() {
-  const supabase = await createClient()
-
-  const [{ data: proyectos }, { data: sinCobrar }, { data: repartos }, { data: sinAbono }] =
-    await Promise.all([
-      supabase.from('v_tablero').select('*'),
-      supabase.from('v_trabajando_sin_cobrar').select('codigo, nombre, cliente'),
-      supabase.from('v_reparto_incompleto').select('codigo, nombre, cliente, suma_porcentajes'),
-      supabase.from('v_sin_mantenimiento').select('codigo, nombre, cliente'),
-    ])
-
-  const filas = (proyectos ?? []) as Fila[]
-  const vivos = filas.filter((f) => f.color === 'verde')
-
-  const frenados = vivos
-    .filter((f) => f.dias_sin_novedades > 7)
-    .sort((a, b) => b.dias_sin_novedades - a.dias_sin_novedades)
-
-  const atrasados = vivos
-    .filter((f) => (f.dias_de_atraso ?? -1) > 0)
-    .sort((a, b) => (b.dias_de_atraso ?? 0) - (a.dias_de_atraso ?? 0))
-
-  const sinFecha = vivos.filter((f) => !f.fecha_comprometida)
-  const sinResponsable = vivos.filter((f) => !f.responsable)
-
-  return (
-    <Shell activo="/hoy">
-      <Titulo
-        seccion="Hoy"
-        bajada={`${vivos.length} en vivo de ${filas.length} proyectos. Abajo, sólo lo que pide una decisión tuya.`}
-      >
-        Qué necesita atención
-      </Titulo>
-
-      <div className="flex flex-col gap-8">
-        <Bloque
-          pregunta="Se están cayendo"
-          porque="Más de una semana sin que nadie cargue una novedad. No significa que estén parados: significa que nadie sabe."
-          filas={frenados}
-          vacio="Todos los proyectos en vivo tuvieron novedades esta semana."
-          urgente
-          columna={(f) => (
-            <span className="cifra shrink-0 text-sm font-bold text-rojo">
-              {f.dias_sin_novedades} días
-            </span>
-          )}
-        />
-
-        <Bloque
-          pregunta="Pasaron la fecha"
-          porque="La entrega comprometida ya venció y el proyecto sigue en vivo."
-          filas={atrasados}
-          vacio="Ninguno pasó su fecha de entrega."
-          urgente
-          columna={(f) => (
-            <span className="cifra shrink-0 text-sm font-bold text-rojo">
-              {f.dias_de_atraso} días tarde
-            </span>
-          )}
-        />
-
-        <Bloque
-          pregunta="No tienen fecha"
-          porque="Sin fecha comprometida nadie puede priorizar solo, y todo vuelve a vos."
-          filas={sinFecha}
-          vacio="Todos los proyectos en vivo tienen fecha."
-          columna={() => <span className="shrink-0 text-sm text-gris-50">poner fecha</span>}
-        />
-
-        <Bloque
-          pregunta="No tienen responsable"
-          porque="Sin un nombre al lado, la pregunta sobre ese proyecto termina en vos."
-          filas={sinResponsable}
-          vacio="Todos los proyectos en vivo tienen responsable."
-          columna={() => <span className="shrink-0 text-sm text-gris-50">asignar</span>}
-        />
-
-        {(sinCobrar?.length || repartos?.length || sinAbono?.length) ? (
-          <section className="flex flex-col gap-3 border-t border-linea pt-7">
-            <h2 className="text-md font-bold tracking-tight">De la plata</h2>
-            <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-3">
-              <Cifra
-                n={sinCobrar?.length ?? 0}
-                titulo="trabajando sin cobrar"
-                nota="en vivo sin el anticipo cobrado"
-              />
-              <Cifra
-                n={repartos?.length ?? 0}
-                titulo="reparto sin cerrar"
-                nota="las participaciones no suman 100 %"
-              />
-              <Cifra
-                n={sinAbono?.length ?? 0}
-                titulo="entregados sin abono"
-                nota="terminaron y nadie abrió el mantenimiento"
-              />
-            </dl>
-          </section>
-        ) : null}
-      </div>
-    </Shell>
-  )
-}
-
-function Cifra({ n, titulo, nota }: { n: number; titulo: string; nota: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="flex items-baseline gap-2">
-        <span className={`cifra text-xl font-bold ${n === 0 ? 'text-gris-50' : 'text-tinta'}`}>
-          {n}
-        </span>
-        <span className="text-sm font-medium text-tinta">{titulo}</span>
-      </dt>
-      <dd className="text-2xs text-gris-50">{nota}</dd>
-    </div>
   )
 }

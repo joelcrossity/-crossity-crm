@@ -6,6 +6,7 @@ const NAVEGACION = [
   { href: '/tablero',     nombre: 'Proyectos',   detalle: 'todo lo que está en curso' },
   { href: '/pipeline',    nombre: 'Pipeline',    detalle: 'lo enviado y por seguir' },
   { href: '/cuentas',     nombre: 'Clientes',    detalle: 'las cuentas y sus marcas' },
+  { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },
   { href: '/mi-posicion', nombre: 'Mi posición', detalle: 'lo que me toca cobrar' },
 ]
 
