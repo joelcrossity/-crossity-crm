@@ -1,24 +1,93 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   Anclado en el violeta de Crossity (#390094). Todo lo demás se
+   construye alrededor: neutros con una pizca de ese mismo tono, para
+   que el gris no se lea como un gris de plantilla.
+   ------------------------------------------------------------------ */
+
 @theme {
-  --color-tinta: #1C1C1B;
-  --color-tinta-2: #585857;
-  --color-tinta-3: #8A8A95;
-  --color-violeta: #390094;
-  --color-violeta-suave: #F1ECFB;
-  --color-linea: #E4E5EB;
-  --color-fondo: #FAFAFC;
-  --color-verde: #12936A;
-  --color-amarillo: #A66300;
-  --color-gris-estado: #8A8A95;
-  --color-naranja: #C2410C;
-  --color-rojo: #B3261E;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* superficies */
+  --color-lienzo:   oklch(0.982 0.004 288);  /* fondo de la app */
+  --color-panel:    oklch(0.962 0.006 288);  /* barra lateral y encabezados */
+  --color-superficie: oklch(1 0 0);          /* tablas, formularios */
+
+  /* líneas */
+  --color-linea:    oklch(0.912 0.006 288);
+  --color-linea-fuerte: oklch(0.845 0.010 288);
+
+  /* tinta */
+  --color-tinta:    oklch(0.235 0.012 288);
+  --color-tinta-2:  oklch(0.455 0.014 288);
+  --color-tinta-3:  oklch(0.598 0.012 288);
+
+  /* acento: acciones primarias, selección y foco. Nada decorativo. */
+  --color-violeta:  oklch(0.395 0.205 288);
+  --color-violeta-fuerte: oklch(0.330 0.225 288);
+  --color-violeta-suave:  oklch(0.957 0.022 288);
+
+  /* el semáforo, que es vocabulario de la empresa */
+  --color-verde:    oklch(0.520 0.125 158);
+  --color-amarillo: oklch(0.560 0.125 72);
+  --color-naranja:  oklch(0.560 0.150 48);
+  --color-rojo:     oklch(0.520 0.190 25);
+
+  --color-verde-suave:    oklch(0.960 0.030 158);
+  --color-amarillo-suave: oklch(0.965 0.040 82);
+  --color-naranja-suave:  oklch(0.962 0.040 55);
+  --color-rojo-suave:     oklch(0.960 0.030 25);
+
+  /* escala fija: es una herramienta, no una landing */
+  --text-2xs: 0.6875rem;
+  --text-xs:  0.75rem;
+  --text-sm:  0.8125rem;
+  --text-base: 0.875rem;
+  --text-md:  1rem;
+  --text-lg:  1.125rem;
+  --text-xl:  1.375rem;
+  --text-2xl: 1.75rem;
+
+  --font-sans: var(--fuente-ui), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* z-index con nombre: nunca 9999 */
+  --z-desplegable: 30;
+  --z-fijo: 40;
+  --z-fondo-modal: 50;
+  --z-modal: 60;
+  --z-aviso: 70;
+
+  --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-html, body {
-  background: var(--color-fondo);
+html {
+  background: var(--color-lienzo);
   color: var(--color-tinta);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+/* El foco se ve siempre, y se ve igual en todos lados. */
+:focus-visible {
+  outline: 2px solid var(--color-violeta);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Los números en columna se leen alineados o no se leen. */
+.cifra {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
