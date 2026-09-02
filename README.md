@@ -3,30 +3,34 @@
 Clientes, proyectos, participaciones y liquidaciones de la agencia.
 El alcance y el porqué de cada decisión están en el documento de arquitectura.
 
-## Correr en local
+## Dónde vive
 
-Hace falta **Docker Desktop andando** y la CLI de Supabase.
+La base está en Supabase, proyecto **Crm-Crossity**. No hace falta Docker.
 
 ```bash
 npm install
-supabase start
-supabase db reset      # aplica migraciones y carga el seed
-```
-
-Después, las variables de entorno. `supabase start` las imprime;
-para copiarlas a `.env.local`:
-
-```bash
-supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' \
-  | sed 's/^API_URL=/NEXT_PUBLIC_SUPABASE_URL=/; s/^ANON_KEY=/NEXT_PUBLIC_SUPABASE_ANON_KEY=/' \
-  > .env.local
-```
-
-Y a andar:
-
-```bash
+cp .env.local.example .env.local
 npm run dev
 ```
+
+Las dos variables son públicas: la anon key viaja al navegador por diseño.
+Quien manda es RLS, no el hecho de tener la key.
+
+## Dar de alta a alguien
+
+En Supabase → Authentication → Users → Add user, con **Auto Confirm**.
+Si ya existe una persona con ese correo en el padrón, el vínculo con su rol
+se arma solo. Quien se dé de alta con un correo que no está en el padrón
+entra sin permisos: el alta la decide el padrón, no quien se registra.
+
+## Cambios en la base
+
+```bash
+supabase db push        # aplica las migraciones nuevas al proyecto
+```
+
+Nunca se toca el esquema desde el panel: si no está en una migración, no
+existe.
 
 ### Usuarios de prueba
 
@@ -47,14 +51,6 @@ para quien no puede entrar.
 
 Entrar con los dos es la forma más rápida de comprobar que los permisos hacen
 lo que dicen hacer.
-
-### Si Kong devuelve 502 después de un `db reset`
-
-Se queda con la referencia vieja al contenedor de auth:
-
-```bash
-docker restart supabase_kong_crossity-crm
-```
 
 ## Estructura
 
@@ -82,13 +78,17 @@ src/proxy.ts               redirección por sesión (en Next 16 reemplaza a midd
 - **Los gastos guardan neto, alícuota e IVA por separado.** Si el IVA está
   discriminado es crédito fiscal y se descuenta el neto; si no, el total.
 
-## Pasar a la nube
+## Validar SQL sin tocar la nube
 
-Las migraciones son las mismas. Con el proyecto creado en Supabase:
+Un Postgres efímero con Postgres.app alcanza para probar migraciones:
 
 ```bash
-supabase link --project-ref <ref>
-supabase db push
+export PATH="/Applications/Postgres.app/Contents/Versions/latest/bin:$PATH"
+initdb -D /tmp/pgtest -U postgres --auth=trust
+pg_ctl -D /tmp/pgtest -o "-p 55432 -k /tmp" -l /tmp/pgtest/log start
 ```
 
-Y cambiar las dos variables de `.env.local` por las del proyecto remoto.
+Antes de las migraciones hay que crear los sustitutos de Supabase: la
+extensión pgcrypto, el esquema `auth`, los roles `anon` y `authenticated`,
+la tabla `auth.users` y una función `auth.uid()` que lea
+`request.jwt.claims`.

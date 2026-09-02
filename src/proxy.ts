@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { configSupabase } from '@/lib/supabase/config'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // En Next 16 middleware.ts pasó a llamarse proxy.ts y la función, proxy.
@@ -6,8 +7,8 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    configSupabase().url,
+    configSupabase().key,
     {
       cookies: {
         getAll() {
