@@ -33,38 +33,38 @@ export default function Login() {
     <main className="min-h-dvh grid place-items-center px-6">
       <form onSubmit={entrar} className="w-full max-w-sm flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <span className="font-mono text-[11px] tracking-[0.18em] uppercase text-tinta-3">
+          <span className="text-2xs font-bold tracking-[0.2em] uppercase text-azul-hondo">
             Crossity
           </span>
-          <h1 className="text-3xl font-semibold tracking-tight text-tinta">
+          <h1 className="text-2xl font-bold tracking-tight text-tinta">
             Sistema operativo
           </h1>
         </div>
 
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-tinta-2">Correo</span>
+            <span className="text-sm font-medium text-gris">Correo</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="rounded-md border border-linea bg-white px-3 py-2 text-[15px]
-                         outline-none focus-visible:ring-2 focus-visible:ring-violeta"
+              className="rounded-md border border-linea bg-superficie px-3 py-2 text-[15px]
+                         outline-none focus-visible:ring-2 focus-visible:ring-azul-hondo"
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-tinta-2">Contraseña</span>
+            <span className="text-sm font-medium text-gris">Contraseña</span>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="rounded-md border border-linea bg-white px-3 py-2 text-[15px]
-                         outline-none focus-visible:ring-2 focus-visible:ring-violeta"
+              className="rounded-md border border-linea bg-superficie px-3 py-2 text-[15px]
+                         outline-none focus-visible:ring-2 focus-visible:ring-azul-hondo"
             />
           </label>
         </div>
@@ -78,8 +78,8 @@ export default function Login() {
         <button
           type="submit"
           disabled={entrando}
-          className="rounded-md bg-violeta px-4 py-2.5 text-[15px] font-medium text-white
-                     disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-violeta
+          className="rounded-md bg-azul-hondo px-4 py-2.5 text-[15px] font-medium text-white
+                     disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-azul-hondo
                      focus-visible:ring-offset-2"
         >
           {entrando ? 'Entrando…' : 'Entrar'}

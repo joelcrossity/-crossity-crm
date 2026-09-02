@@ -1,10 +1,10 @@
 // El vocabulario del semáforo es de Crossity, no del sistema.
 export const COLORES = {
-  verde:    { etiqueta: 'En vivo',     ayuda: 'Se está trabajando ahora',   punto: 'bg-verde',       texto: 'text-verde' },
-  amarillo: { etiqueta: 'A seguir',    ayuda: 'La pelota está del otro lado', punto: 'bg-amarillo',  texto: 'text-amarillo' },
-  gris:     { etiqueta: 'Standby',     ayuda: 'Ni muerto ni vivo',          punto: 'bg-gris-estado', texto: 'text-tinta-3' },
+  verde:    { etiqueta: 'En vivo',     ayuda: 'Se está trabajando ahora',   punto: 'bg-verde', texto: 'text-verde' },
+  amarillo: { etiqueta: 'A seguir',    ayuda: 'La pelota está del otro lado', punto: 'bg-amarillo', texto: 'text-amarillo' },
+  gris:     { etiqueta: 'Standby',     ayuda: 'Ni muerto ni vivo',          punto: 'bg-gris-50', texto: 'text-gris-50' },
   naranja:  { etiqueta: 'Terminado',   ayuda: 'No hay nada más que hacer',  punto: 'bg-naranja',     texto: 'text-naranja' },
-  rojo:     { etiqueta: 'Perdido',     ayuda: 'Salió mal o se descartó',    punto: 'bg-rojo',        texto: 'text-rojo' },
+  rojo:     { etiqueta: 'Perdido',     ayuda: 'Salió mal o se descartó',    punto: 'bg-rojo', texto: 'text-rojo' },
 } as const
 
 export type Color = keyof typeof COLORES

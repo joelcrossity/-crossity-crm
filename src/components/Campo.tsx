@@ -11,10 +11,10 @@ import type { Resultado } from '@/app/acciones'
 const base =
   'w-full rounded-md border bg-superficie px-2 py-1.5 text-sm text-tinta ' +
   'transition-colors duration-150 disabled:opacity-50 ' +
-  'hover:border-linea-fuerte focus:border-violeta'
+  'hover:border-linea-fuerte focus:border-azul'
 
 function Estado({ guardando, error, ok }: { guardando: boolean; error: string | null; ok: boolean }) {
-  if (guardando) return <span className="text-2xs text-tinta-3">guardando…</span>
+  if (guardando) return <span className="text-2xs text-gris-50">guardando…</span>
   if (error) return <span className="text-2xs text-rojo">{error}</span>
   if (ok) return <span className="text-2xs text-verde">guardado</span>
   return null
@@ -62,7 +62,7 @@ export function Select({
   return (
     <label className="flex flex-col gap-1">
       <span className="flex items-baseline gap-2">
-        <span className="text-2xs font-medium uppercase tracking-wider text-tinta-3">{etiqueta}</span>
+        <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{etiqueta}</span>
         <Estado guardando={pendiente} error={error} ok={ok} />
       </span>
       <select
@@ -100,7 +100,7 @@ export function Fecha({
   return (
     <label className="flex flex-col gap-1">
       <span className="flex items-baseline gap-2">
-        <span className="text-2xs font-medium uppercase tracking-wider text-tinta-3">{etiqueta}</span>
+        <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{etiqueta}</span>
         <Estado guardando={pendiente} error={error} ok={ok} />
       </span>
       <input
@@ -132,7 +132,7 @@ export function Numero({
   return (
     <label className="flex flex-col gap-1">
       <span className="flex items-baseline gap-2">
-        <span className="text-2xs font-medium uppercase tracking-wider text-tinta-3">{etiqueta}</span>
+        <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{etiqueta}</span>
         <Estado guardando={pendiente} error={error} ok={ok} />
       </span>
       <input
@@ -145,7 +145,7 @@ export function Numero({
         onBlur={() => local !== (valor?.toString() ?? '') && correr(() => alCambiar(local))}
         className={`${base} cifra ${error ? 'border-rojo' : 'border-linea'}`}
       />
-      {ayuda && <span className="text-2xs text-tinta-3">{ayuda}</span>}
+      {ayuda && <span className="text-2xs text-gris-50">{ayuda}</span>}
     </label>
   )
 }
@@ -167,7 +167,7 @@ export function Texto({
   return (
     <label className="flex flex-col gap-1">
       <span className="flex items-baseline gap-2">
-        <span className="text-2xs font-medium uppercase tracking-wider text-tinta-3">{etiqueta}</span>
+        <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{etiqueta}</span>
         <Estado guardando={pendiente} error={error} ok={ok} />
       </span>
       <input
@@ -177,7 +177,7 @@ export function Texto({
         disabled={pendiente}
         onChange={(e) => setLocal(e.target.value)}
         onBlur={() => local !== (valor ?? '') && correr(() => alCambiar(local))}
-        className={`${base} ${error ? 'border-rojo' : 'border-linea'} placeholder:text-tinta-3`}
+        className={`${base} ${error ? 'border-rojo' : 'border-linea'} placeholder:text-gris-50`}
       />
     </label>
   )
@@ -208,11 +208,11 @@ export function Casilla({
           setLocal(e.target.checked)
           correr(() => alCambiar(e.target.checked))
         }}
-        className="size-3.5 cursor-pointer accent-violeta"
+        className="size-3.5 cursor-pointer accent-azul-hondo"
       />
       <span
         className={`text-xs transition-colors duration-150 ${
-          error ? 'text-rojo' : local ? 'text-tinta' : 'text-tinta-3 group-hover:text-tinta-2'
+          error ? 'text-rojo' : local ? 'text-tinta' : 'text-gris-50 group-hover:text-gris'
         }`}
       >
         {etiqueta}

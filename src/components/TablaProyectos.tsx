@@ -19,7 +19,7 @@ export type Fila = {
 const PUNTO: Record<string, string> = {
   verde: 'bg-verde',
   amarillo: 'bg-amarillo',
-  gris: 'bg-tinta-3',
+  gris: 'bg-gris-50',
   naranja: 'bg-naranja',
   rojo: 'bg-rojo',
 }
@@ -40,9 +40,9 @@ export function Grupo({ color, filas }: { color: string; filas: Fila[] }) {
     <section className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className={`size-2 shrink-0 rounded-full ${PUNTO[color]}`} aria-hidden />
-        <h2 className="text-md font-semibold tracking-tight">{t.texto}</h2>
-        <span className="cifra text-2xs text-tinta-3">{filas.length}</span>
-        <span className="text-2xs text-tinta-3">· {t.ayuda}</span>
+        <h2 className="text-md font-bold tracking-tight">{t.texto}</h2>
+        <span className="cifra text-2xs text-gris-50">{filas.length}</span>
+        <span className="text-2xs text-gris-50">· {t.ayuda}</span>
       </div>
 
       <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
@@ -57,37 +57,37 @@ export function Grupo({ color, filas }: { color: string; filas: Fila[] }) {
               <span className="min-w-0">
                 <span className="flex items-baseline gap-2">
                   {f.prioridad && (
-                    <span className="cifra shrink-0 text-2xs font-semibold text-violeta">
+                    <span className="cifra shrink-0 text-2xs font-bold text-azul-hondo">
                       P{f.prioridad}
                     </span>
                   )}
                   <span className="truncate text-base font-medium text-tinta">{f.nombre}</span>
                   {f.es_producto_propio && (
-                    <span className="shrink-0 rounded px-1 py-px text-2xs text-violeta ring-1 ring-violeta/30">
+                    <span className="shrink-0 rounded px-1 py-px text-2xs text-azul-hondo ring-1 ring-azul/40">
                       propio
                     </span>
                   )}
                 </span>
-                <span className="cifra block truncate text-2xs text-tinta-3">
+                <span className="cifra block truncate text-2xs text-gris-50">
                   {f.codigo} · {f.cliente}
                 </span>
               </span>
 
-              <span className="hidden truncate text-sm text-tinta-2 sm:block">
-                {f.responsable ?? <span className="text-tinta-3">sin responsable</span>}
+              <span className="hidden truncate text-sm text-gris sm:block">
+                {f.responsable ?? <span className="text-gris-50">sin responsable</span>}
               </span>
 
-              <span className="cifra hidden text-sm text-tinta-2 sm:block">
+              <span className="cifra hidden text-sm text-gris sm:block">
                 {fechaCorta(f.fecha_comprometida) ?? <span className="text-rojo">sin fecha</span>}
               </span>
 
               <span className="flex shrink-0 flex-col items-end">
-                <span className="text-2xs text-tinta-2">
+                <span className="text-2xs text-gris">
                   {SUBESTADO[f.subestado ?? f.motivo_gris ?? ''] ?? ''}
                 </span>
                 <span
                   className={`cifra text-2xs ${
-                    f.dias_sin_novedades > 7 ? 'font-semibold text-rojo' : 'text-tinta-3'
+                    f.dias_sin_novedades > 7 ? 'font-bold text-rojo' : 'text-gris-50'
                   }`}
                 >
                   {f.dias_sin_novedades}d sin novedades

@@ -1,43 +1,55 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
-   Anclado en el violeta de Crossity (#390094). Todo lo demás se
-   construye alrededor: neutros con una pizca de ese mismo tono, para
-   que el gris no se lea como un gris de plantilla.
+   Manual de marca Crossity.
+
+   Azul #4880E6 protagonista, violeta #390094 de acento, gris #585857
+   estructural, y el blanco como protagonista silencioso: el espacio
+   negativo es marca, no relleno.
+
+   Una salvedad de contraste, dicha en voz alta: blanco sobre el azul
+   exacto da 3.9:1, por debajo del mínimo legible para texto chico. Los
+   rellenos con texto encima usan un tono más hondo del MISMO azul.
+   El azul institucional queda intacto donde se ve como color.
    ------------------------------------------------------------------ */
 
 @theme {
-  /* superficies */
-  --color-lienzo:   oklch(0.982 0.004 288);  /* fondo de la app */
-  --color-panel:    oklch(0.962 0.006 288);  /* barra lateral y encabezados */
-  --color-superficie: oklch(1 0 0);          /* tablas, formularios */
+  /* marca */
+  --color-azul:        oklch(0.639 0.152 262);   /* #4880E6 exacto */
+  --color-azul-hondo:  oklch(0.520 0.165 262);   /* rellenos y enlaces */
+  --color-azul-50:     oklch(0.815 0.078 262);   /* tinte 50 % del manual */
+  --color-azul-25:     oklch(0.905 0.040 262);   /* tinte 25 % */
+  --color-azul-aire:   oklch(0.968 0.014 262);   /* selección, fondos suaves */
 
-  /* líneas */
-  --color-linea:    oklch(0.912 0.006 288);
-  --color-linea-fuerte: oklch(0.845 0.010 288);
+  --color-violeta:     oklch(0.330 0.225 288);   /* #390094 exacto, acento */
+  --color-violeta-50:  oklch(0.640 0.135 288);
+  --color-violeta-aire: oklch(0.962 0.020 288);
 
-  /* tinta */
-  --color-tinta:    oklch(0.235 0.012 288);
-  --color-tinta-2:  oklch(0.455 0.014 288);
-  --color-tinta-3:  oklch(0.598 0.012 288);
+  /* neutros: el gris del manual manda en el texto */
+  --color-gris:        oklch(0.480 0.002 106);   /* #585857 */
+  --color-gris-50:     oklch(0.700 0.002 106);
+  --color-gris-25:     oklch(0.845 0.002 106);
 
-  /* acento: acciones primarias, selección y foco. Nada decorativo. */
-  --color-violeta:  oklch(0.395 0.205 288);
-  --color-violeta-fuerte: oklch(0.330 0.225 288);
-  --color-violeta-suave:  oklch(0.957 0.022 288);
+  --color-tinta:       oklch(0.232 0.003 106);   /* títulos */
+  --color-linea:       oklch(0.915 0.002 106);
+  --color-linea-fuerte: oklch(0.855 0.002 106);
 
-  /* el semáforo, que es vocabulario de la empresa */
+  /* superficies: el blanco es protagonista */
+  --color-lienzo:      oklch(0.988 0.001 262);
+  --color-panel:       oklch(0.975 0.003 262);
+  --color-superficie:  oklch(1 0 0);
+
+  /* semáforo: vocabulario de la empresa, no compite con el azul */
   --color-verde:    oklch(0.520 0.125 158);
   --color-amarillo: oklch(0.560 0.125 72);
   --color-naranja:  oklch(0.560 0.150 48);
   --color-rojo:     oklch(0.520 0.190 25);
 
-  --color-verde-suave:    oklch(0.960 0.030 158);
-  --color-amarillo-suave: oklch(0.965 0.040 82);
-  --color-naranja-suave:  oklch(0.962 0.040 55);
-  --color-rojo-suave:     oklch(0.960 0.030 25);
+  --color-verde-aire:    oklch(0.962 0.028 158);
+  --color-amarillo-aire: oklch(0.966 0.038 82);
+  --color-rojo-aire:     oklch(0.962 0.028 25);
 
-  /* escala fija: es una herramienta, no una landing */
+  /* escala fija: es una herramienta, no una portada */
   --text-2xs: 0.6875rem;
   --text-xs:  0.75rem;
   --text-sm:  0.8125rem;
@@ -47,34 +59,35 @@
   --text-xl:  1.375rem;
   --text-2xl: 1.75rem;
 
-  --font-sans: var(--fuente-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--fuente-metropolis), "Open Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* z-index con nombre: nunca 9999 */
   --z-desplegable: 30;
   --z-fijo: 40;
   --z-fondo-modal: 50;
   --z-modal: 60;
   --z-aviso: 70;
-
-  --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html {
   background: var(--color-lienzo);
-  color: var(--color-tinta);
+  color: var(--color-gris);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 body {
   font-size: var(--text-base);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-/* El foco se ve siempre, y se ve igual en todos lados. */
+h1, h2, h3, h4 {
+  color: var(--color-tinta);
+  letter-spacing: -0.015em;
+}
+
 :focus-visible {
-  outline: 2px solid var(--color-violeta);
+  outline: 2px solid var(--color-azul-hondo);
   outline-offset: 2px;
   border-radius: 3px;
 }

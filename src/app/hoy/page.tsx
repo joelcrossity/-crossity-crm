@@ -36,23 +36,23 @@ function Bloque({
   return (
     <section className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="text-md font-semibold tracking-tight">{pregunta}</h2>
+        <h2 className="text-md font-bold tracking-tight">{pregunta}</h2>
         <span
           className={`cifra rounded-full px-1.5 py-0.5 text-2xs font-medium ${
             filas.length === 0
-              ? 'bg-verde-suave text-verde'
+              ? 'bg-verde-aire text-verde'
               : urgente
-                ? 'bg-rojo-suave text-rojo'
-                : 'bg-amarillo-suave text-amarillo'
+                ? 'bg-rojo-aire text-rojo'
+                : 'bg-amarillo-aire text-amarillo'
           }`}
         >
           {filas.length}
         </span>
-        <p className="w-full text-sm text-tinta-2">{porque}</p>
+        <p className="w-full text-sm text-gris">{porque}</p>
       </div>
 
       {filas.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-tinta-2">
+        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
           {vacio}
         </p>
       ) : (
@@ -66,7 +66,7 @@ function Bloque({
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-base font-medium text-tinta">{f.nombre}</span>
-                  <span className="cifra block truncate text-2xs text-tinta-3">
+                  <span className="cifra block truncate text-2xs text-gris-50">
                     {f.codigo} · {f.cliente}
                     {f.responsable ? ` · ${f.responsable}` : ' · sin responsable'}
                   </span>
@@ -123,7 +123,7 @@ export default async function Hoy() {
           vacio="Todos los proyectos en vivo tuvieron novedades esta semana."
           urgente
           columna={(f) => (
-            <span className="cifra shrink-0 text-sm font-semibold text-rojo">
+            <span className="cifra shrink-0 text-sm font-bold text-rojo">
               {f.dias_sin_novedades} días
             </span>
           )}
@@ -136,7 +136,7 @@ export default async function Hoy() {
           vacio="Ninguno pasó su fecha de entrega."
           urgente
           columna={(f) => (
-            <span className="cifra shrink-0 text-sm font-semibold text-rojo">
+            <span className="cifra shrink-0 text-sm font-bold text-rojo">
               {f.dias_de_atraso} días tarde
             </span>
           )}
@@ -147,7 +147,7 @@ export default async function Hoy() {
           porque="Sin fecha comprometida nadie puede priorizar solo, y todo vuelve a vos."
           filas={sinFecha}
           vacio="Todos los proyectos en vivo tienen fecha."
-          columna={() => <span className="shrink-0 text-sm text-tinta-3">poner fecha</span>}
+          columna={() => <span className="shrink-0 text-sm text-gris-50">poner fecha</span>}
         />
 
         <Bloque
@@ -155,12 +155,12 @@ export default async function Hoy() {
           porque="Sin un nombre al lado, la pregunta sobre ese proyecto termina en vos."
           filas={sinResponsable}
           vacio="Todos los proyectos en vivo tienen responsable."
-          columna={() => <span className="shrink-0 text-sm text-tinta-3">asignar</span>}
+          columna={() => <span className="shrink-0 text-sm text-gris-50">asignar</span>}
         />
 
         {(sinCobrar?.length || repartos?.length || sinAbono?.length) ? (
           <section className="flex flex-col gap-3 border-t border-linea pt-7">
-            <h2 className="text-md font-semibold tracking-tight">De la plata</h2>
+            <h2 className="text-md font-bold tracking-tight">De la plata</h2>
             <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-3">
               <Cifra
                 n={sinCobrar?.length ?? 0}
@@ -189,12 +189,12 @@ function Cifra({ n, titulo, nota }: { n: number; titulo: string; nota: string })
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="flex items-baseline gap-2">
-        <span className={`cifra text-xl font-semibold ${n === 0 ? 'text-tinta-3' : 'text-tinta'}`}>
+        <span className={`cifra text-xl font-bold ${n === 0 ? 'text-gris-50' : 'text-tinta'}`}>
           {n}
         </span>
         <span className="text-sm font-medium text-tinta">{titulo}</span>
       </dt>
-      <dd className="text-2xs text-tinta-3">{nota}</dd>
+      <dd className="text-2xs text-gris-50">{nota}</dd>
     </div>
   )
 }

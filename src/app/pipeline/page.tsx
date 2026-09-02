@@ -37,16 +37,16 @@ export default async function Pipeline() {
     <Shell activo="/pipeline">
       <div className="flex flex-col gap-9">
         <header className="flex flex-col gap-4 border-b border-linea pb-6">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-tinta-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-gris-50">
             Pipeline
           </span>
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {ops.length} oportunidades abiertas
           </h1>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-[13px] text-tinta-2">
+          <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-[13px] text-gris">
             {enPesos > 0 && <span>{plata(enPesos, 'ARS')} cotizados</span>}
             {total > 0 && <span>{plata(total, 'USD')} cotizados</span>}
-            <span className="text-tinta-3">
+            <span className="text-gris-50">
               {ops.filter((o) => o.sin_agendar).length} sin seguimiento agendado
             </span>
           </div>
@@ -60,8 +60,8 @@ export default async function Pipeline() {
             return (
               <section key={etapa.valor} className="flex flex-col gap-3">
                 <div className="flex items-baseline gap-3">
-                  <h2 className="text-base font-semibold tracking-tight">{etapa.etiqueta}</h2>
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-tinta-3">
+                  <h2 className="text-base font-bold tracking-tight">{etapa.etiqueta}</h2>
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-gris-50">
                     {deEtapa.length}
                   </span>
                 </div>
@@ -72,13 +72,13 @@ export default async function Pipeline() {
                       key={o.id}
                       href={`/proyecto/${o.codigo}`}
                       className="flex flex-col gap-2.5 rounded-lg border border-linea bg-white p-4
-                                 transition-colors hover:border-violeta"
+                                 transition-colors hover:border-azul"
                     >
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold leading-snug tracking-tight">
+                        <span className="text-sm font-bold leading-snug tracking-tight">
                           {o.nombre}
                         </span>
-                        <span className="font-mono text-[11px] text-tinta-3">{o.cliente}</span>
+                        <span className="font-mono text-[11px] text-gris-50">{o.cliente}</span>
                       </div>
 
                       {o.monto_neto !== null ? (
@@ -90,7 +90,7 @@ export default async function Pipeline() {
                       ) : null}
 
                       {o.proxima_accion && (
-                        <p className="text-[13px] leading-snug text-tinta-2">{o.proxima_accion}</p>
+                        <p className="text-[13px] leading-snug text-gris">{o.proxima_accion}</p>
                       )}
 
                       <div className="flex flex-wrap gap-1.5">
@@ -109,16 +109,16 @@ export default async function Pipeline() {
         {(recontactar?.length ?? 0) > 0 && (
           <section className="flex flex-col gap-3 border-t border-linea pt-8">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold tracking-tight">Para recontactar</h2>
-              <p className="text-[13px] text-tinta-2">
+              <h2 className="text-base font-bold tracking-tight">Para recontactar</h2>
+              <p className="text-[13px] text-gris">
                 No se perdieron: se apagaron sin que nadie decidiera nada.
               </p>
             </div>
             <ul className="flex flex-col gap-1.5">
               {recontactar!.map((r: { codigo: string; nombre: string; cliente: string }) => (
-                <li key={r.codigo} className="text-sm text-tinta-2">
+                <li key={r.codigo} className="text-sm text-gris">
                   <span className="font-medium text-tinta">{r.nombre}</span>
-                  <span className="font-mono text-[11px] text-tinta-3"> · {r.cliente}</span>
+                  <span className="font-mono text-[11px] text-gris-50"> · {r.cliente}</span>
                 </li>
               ))}
             </ul>

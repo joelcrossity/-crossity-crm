@@ -56,12 +56,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
   return (
     <Shell activo="/tablero">
       <header className="mb-7 flex flex-col gap-2 border-b border-linea pb-5">
-        <span className="cifra flex flex-wrap items-center gap-2 text-2xs text-tinta-3">
+        <span className="cifra flex flex-wrap items-center gap-2 text-2xs text-gris-50">
           <span>{p.codigo}</span>
           <span aria-hidden>·</span>
           <span>{cliente.nombre_canonico}</span>
           {esAbono && (
-            <span className="rounded px-1.5 py-px text-violeta ring-1 ring-violeta/30">
+            <span className="rounded px-1.5 py-px text-azul-hondo ring-1 ring-azul/40">
               mantenimiento
             </span>
           )}
@@ -71,8 +71,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             </span>
           )}
         </span>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">{p.nombre}</h1>
-        {p.motivo_condicion && <p className="max-w-[65ch] text-sm text-tinta-2">{p.motivo_condicion}</p>}
+        <h1 className="text-2xl font-bold tracking-tight text-balance">{p.nombre}</h1>
+        {p.motivo_condicion && <p className="max-w-[65ch] text-sm text-gris">{p.motivo_condicion}</p>}
       </header>
 
       <div className="flex flex-col gap-9">
@@ -135,8 +135,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 
         <section className="flex flex-col gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-md font-semibold tracking-tight">Contar qué pasó</h2>
-            <p className="text-sm text-tinta-2">
+            <h2 className="text-md font-bold tracking-tight">Contar qué pasó</h2>
+            <p className="text-sm text-gris">
               Lo que escribas acá es lo que le evita a alguien tener que preguntarte.
             </p>
           </div>
@@ -145,7 +145,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 
         {(hitos?.length ?? 0) > 0 && (
           <section className="flex flex-col gap-3">
-            <h2 className="text-md font-semibold tracking-tight">
+            <h2 className="text-md font-bold tracking-tight">
               {esAbono ? 'Cuotas' : 'Entregas'}
             </h2>
             <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
@@ -153,25 +153,25 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                 <li key={h.id as string} className="flex flex-wrap gap-x-6 gap-y-2 px-3.5 py-3">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
-                      <span className="cifra text-2xs text-tinta-3">{h.orden as number}</span>
+                      <span className="cifra text-2xs text-gris-50">{h.orden as number}</span>
                       <span className="text-base font-medium">{h.titulo as string}</span>
                       {h.es_anticipo ? (
-                        <span className="rounded px-1 py-px text-2xs text-violeta ring-1 ring-violeta/30">
+                        <span className="rounded px-1 py-px text-2xs text-azul-hondo ring-1 ring-azul/40">
                           anticipo
                         </span>
                       ) : null}
                     </span>
                     {h.entregable ? (
-                      <span className="mt-0.5 block text-sm leading-snug text-tinta-2">
+                      <span className="mt-0.5 block text-sm leading-snug text-gris">
                         {h.entregable as string}
                       </span>
                     ) : null}
                   </span>
 
-                  <span className="cifra shrink-0 text-sm text-tinta-2">
+                  <span className="cifra shrink-0 text-sm text-gris">
                     {plata(h.monto_neto as number, h.moneda as string)}
                     {h.fecha_comprometida ? (
-                      <span className="block text-2xs text-tinta-3">
+                      <span className="block text-2xs text-gris-50">
                         {fechaCorta(h.fecha_comprometida as string)}
                       </span>
                     ) : null}
@@ -206,16 +206,16 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                 </li>
               ))}
             </ul>
-            <p className="text-2xs text-tinta-3">
+            <p className="text-2xs text-gris-50">
               Cobrar el anticipo pasa el proyecto a en curso y le avisa al equipo.
             </p>
           </section>
         )}
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-md font-semibold tracking-tight">Qué viene pasando</h2>
+          <h2 className="text-md font-bold tracking-tight">Qué viene pasando</h2>
           {(linea?.length ?? 0) === 0 ? (
-            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-tinta-2">
+            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
               Todavía no hay novedades. La primera que cargues arranca la historia del proyecto.
             </p>
           ) : (
@@ -226,7 +226,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                   i: number
                 ) => (
                   <li key={i} className="flex gap-4 border-b border-linea py-2.5 last:border-0">
-                    <span className="cifra w-16 shrink-0 pt-0.5 text-2xs text-tinta-3">
+                    <span className="cifra w-16 shrink-0 pt-0.5 text-2xs text-gris-50">
                       {new Date(a.ocurrido_at).toLocaleDateString('es-AR', {
                         day: '2-digit',
                         month: 'short',
@@ -234,7 +234,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     </span>
                     <span className="min-w-0">
                       <span className="block text-base leading-snug">{a.texto}</span>
-                      <span className="block text-2xs text-tinta-3">
+                      <span className="block text-2xs text-gris-50">
                         {ETIQUETA_TIPO[a.tipo] ?? a.tipo}
                         {(a.personas as { nombre: string } | null)?.nombre &&
                           ` · ${(a.personas as { nombre: string }).nombre}`}
@@ -254,7 +254,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <dt className="text-2xs font-medium uppercase tracking-wider text-tinta-3">{titulo}</dt>
+      <dt className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</dt>
       <dd className="text-sm font-medium">{children}</dd>
     </div>
   )

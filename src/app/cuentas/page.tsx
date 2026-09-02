@@ -24,11 +24,11 @@ export default async function Cuentas() {
     <Shell activo="/cuentas">
       <div className="flex flex-col gap-8">
         <header className="flex flex-col gap-3 border-b border-linea pb-6">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-tinta-3">
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-gris-50">
             Cuentas
           </span>
-          <h1 className="text-3xl font-semibold tracking-tight">{cuentas.length} clientes</h1>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-tinta-2">
+          <h1 className="text-3xl font-bold tracking-tight">{cuentas.length} clientes</h1>
+          <p className="max-w-2xl text-[13px] leading-relaxed text-gris">
             La cuenta es la relación, no la razón social. Un cliente puede facturar por varias
             empresas y tener varias marcas: la economía cierra acá, no proyecto por proyecto.
             {conVarias.length > 0 && ` Hoy ${conVarias.length} factura por más de una.`}
@@ -40,7 +40,7 @@ export default async function Cuentas() {
             <thead>
               <tr className="border-b border-linea">
                 {['Cuenta', 'Marcas', 'En vivo', 'Pipeline', 'Abonos', 'Bonificados', 'Total'].map((h) => (
-                  <th key={h} className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-tinta-3">
+                  <th key={h} className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-gris-50">
                     {h}
                   </th>
                 ))}
@@ -50,13 +50,13 @@ export default async function Cuentas() {
               {cuentas.map((c) => (
                 <tr key={c.id} className="border-b border-linea last:border-0 hover:bg-fondo">
                   <td className="px-4 py-3">
-                    <span className="text-sm font-semibold tracking-tight">{c.cuenta}</span>
-                    <span className="block font-mono text-[11px] text-tinta-3">
+                    <span className="text-sm font-bold tracking-tight">{c.cuenta}</span>
+                    <span className="block font-mono text-[11px] text-gris-50">
                       {c.codigo}
                       {c.razones_sociales > 1 && ` · ${c.razones_sociales} razones sociales`}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-[13px] text-tinta-2">{c.marcas ?? '—'}</td>
+                  <td className="px-4 py-3 text-[13px] text-gris">{c.marcas ?? '—'}</td>
                   <Num n={c.en_vivo} destacar />
                   <Num n={c.en_pipeline} />
                   <Num n={c.abonos} />
@@ -75,7 +75,7 @@ export default async function Cuentas() {
 function Num({ n, destacar }: { n: number; destacar?: boolean }) {
   return (
     <td className="px-4 py-3 font-mono text-[13px] tabular-nums">
-      <span className={n === 0 ? 'text-tinta-3' : destacar ? 'font-semibold text-verde' : 'text-tinta-2'}>
+      <span className={n === 0 ? 'text-gris-50' : destacar ? 'font-bold text-verde' : 'text-gris'}>
         {n}
       </span>
     </td>

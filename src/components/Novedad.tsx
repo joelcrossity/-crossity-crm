@@ -47,7 +47,7 @@ export default function Novedad({ proyectoId }: { proyectoId: string }) {
         disabled={pendiente}
         className="w-full resize-y rounded-md border border-linea bg-superficie px-3 py-2.5
                    text-base leading-relaxed text-tinta transition-colors duration-150
-                   placeholder:text-tinta-3 hover:border-linea-fuerte focus:border-violeta
+                   placeholder:text-gris-50 hover:border-linea-fuerte focus:border-azul
                    disabled:opacity-50"
       />
 
@@ -61,8 +61,8 @@ export default function Novedad({ proyectoId }: { proyectoId: string }) {
               title={t.ayuda}
               className={`rounded-md px-2.5 py-1 text-xs transition-colors duration-150 ${
                 tipo === t.valor
-                  ? 'bg-violeta text-white'
-                  : 'text-tinta-2 hover:bg-panel hover:text-tinta'
+                  ? 'bg-azul-hondo text-white'
+                  : 'text-gris hover:bg-panel hover:text-tinta'
               }`}
             >
               {t.texto}
@@ -75,8 +75,8 @@ export default function Novedad({ proyectoId }: { proyectoId: string }) {
           <button
             type="submit"
             disabled={pendiente || !texto.trim()}
-            className="rounded-md bg-violeta px-3.5 py-1.5 text-sm font-medium text-white
-                       transition-colors duration-150 hover:bg-violeta-fuerte
+            className="rounded-md bg-azul-hondo px-3.5 py-1.5 text-sm font-medium text-white
+                       transition-colors duration-150 hover:bg-azul
                        disabled:cursor-not-allowed disabled:opacity-40"
           >
             {pendiente ? 'Guardando…' : 'Agregar novedad'}
@@ -84,7 +84,7 @@ export default function Novedad({ proyectoId }: { proyectoId: string }) {
         </div>
       </div>
 
-      <p className="text-2xs text-tinta-3">
+      <p className="text-2xs text-gris-50">
         Queda como {elegido.texto.toLowerCase()}: {elegido.ayuda}. Reinicia el contador de días sin
         novedades.
       </p>

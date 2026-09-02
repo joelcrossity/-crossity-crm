@@ -6,7 +6,7 @@ import { cambiarEstado } from '@/app/acciones'
 const COLORES = [
   { valor: 'verde',    texto: 'En vivo',   punto: 'bg-verde' },
   { valor: 'amarillo', texto: 'A seguir',  punto: 'bg-amarillo' },
-  { valor: 'gris',     texto: 'Standby',   punto: 'bg-tinta-3' },
+  { valor: 'gris',     texto: 'Standby',   punto: 'bg-gris-50' },
   { valor: 'naranja',  texto: 'Terminado', punto: 'bg-naranja' },
   { valor: 'rojo',     texto: 'Perdido',   punto: 'bg-rojo' },
 ]
@@ -65,8 +65,8 @@ export default function Estado({
   return (
     <div className="flex flex-col gap-2">
       <span className="flex items-baseline gap-2">
-        <span className="text-2xs font-medium uppercase tracking-wider text-tinta-3">Estado</span>
-        {pendiente && <span className="text-2xs text-tinta-3">guardando…</span>}
+        <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">Estado</span>
+        {pendiente && <span className="text-2xs text-gris-50">guardando…</span>}
         {error && <span className="text-2xs text-rojo">{error}</span>}
       </span>
 
@@ -89,7 +89,7 @@ export default function Estado({
                           transition-colors duration-150 disabled:opacity-50 ${
                             elegido
                               ? 'bg-tinta text-white'
-                              : 'text-tinta-2 hover:bg-panel hover:text-tinta'
+                              : 'text-gris hover:bg-panel hover:text-tinta'
                           }`}
             >
               <span className={`size-1.5 rounded-full ${c.punto}`} aria-hidden />
@@ -110,8 +110,8 @@ export default function Estado({
               className={`rounded-md px-2 py-0.5 text-xs transition-colors duration-150
                           disabled:opacity-50 ${
                             sub === o.valor
-                              ? 'bg-violeta-suave font-medium text-violeta-fuerte'
-                              : 'text-tinta-3 hover:text-tinta'
+                              ? 'bg-azul-aire font-medium text-azul-hondo'
+                              : 'text-gris-50 hover:text-tinta'
                           }`}
             >
               {o.texto}
