@@ -1,6 +1,8 @@
 import Shell, { Titulo } from '@/components/Shell'
 import Asistente from '@/components/Asistente'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
+import TableroEstados from '@/components/TableroEstados'
+import Vistas from '@/components/Vistas'
 import { createClient } from '@/lib/supabase/server'
 
 const ORDEN = ['verde', 'amarillo', 'gris', 'naranja', 'rojo']
@@ -37,10 +39,6 @@ export default async function Tablero() {
         {vivos} en vivo, {filas.length} en total
       </Titulo>
 
-      <div className="mb-7 -mt-2">
-        <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />
-      </div>
-
       {filas.length === 0 ? (
         <div className="rounded-lg border border-linea bg-superficie px-4 py-8 text-center">
           <p className="text-base font-medium">Todavía no ves ningún proyecto</p>
@@ -49,11 +47,20 @@ export default async function Tablero() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
-          {ORDEN.map((color) => (
-            <Grupo key={color} color={color} filas={filas.filter((f) => f.color === color)} />
-          ))}
-        </div>
+        <Vistas
+          clave="crossity.proyectos"
+          acciones={
+            <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />
+          }
+          tablero={<TableroEstados filas={filas} />}
+          lista={
+            <div className="flex flex-col gap-8">
+              {ORDEN.map((color) => (
+                <Grupo key={color} color={color} filas={filas.filter((f) => f.color === color)} />
+              ))}
+            </div>
+          }
+        />
       )}
     </Shell>
   )

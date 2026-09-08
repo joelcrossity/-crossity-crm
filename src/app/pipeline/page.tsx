@@ -3,6 +3,8 @@ import Asistente from '@/components/Asistente'
 import Charla from '@/components/Charla'
 import { createClient } from '@/lib/supabase/server'
 import Tablero, { type Op as Tarjeta } from '@/components/Tablero'
+import ListaPipeline from '@/components/ListaPipeline'
+import Vistas from '@/components/Vistas'
 import { plata } from '@/lib/estados'
 
 type Op = {
@@ -70,6 +72,7 @@ export default async function Pipeline() {
     referente: porReferente.get(o.id) ?? null,
   }))
 
+  const seguimientos = new Map(ops.map((o) => [o.id, o.proximo_seguimiento]))
   const vencidos = ops.filter((o) => o.seguimiento_vencido).length
   const sinAgendar = ops.filter((o) => o.sin_agendar).length
 
@@ -99,12 +102,17 @@ export default async function Pipeline() {
           />
         </section>
 
-        <div className="flex flex-wrap items-start gap-2">
-          <Charla clientes={clientes} />
-          <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
-        </div>
-
-        <Tablero ops={tarjetas} />
+        <Vistas
+          clave="crossity.pipeline"
+          acciones={
+            <span className="flex flex-wrap items-start gap-2">
+              <Charla clientes={clientes} />
+              <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
+            </span>
+          }
+          tablero={<Tablero ops={tarjetas} />}
+          lista={<ListaPipeline ops={tarjetas} seguimientos={seguimientos} />}
+        />
 
         {(recontactar?.length ?? 0) > 0 && (
           <section className="flex flex-col gap-3 border-t border-linea pt-8">
