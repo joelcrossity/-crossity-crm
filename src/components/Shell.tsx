@@ -57,15 +57,12 @@ export default async function Shell({
         className="flex shrink-0 flex-col gap-6 border-b border-linea bg-panel px-4 py-4
                    lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:border-r lg:border-b-0 lg:py-6"
       >
-        <div className="flex items-center justify-between gap-2 pl-2">
-          <Link
-            href="/hoy"
-            className="text-2xs font-bold uppercase tracking-[0.2em] text-azul-hondo"
-          >
-            Crossity
-          </Link>
-          <Campanita avisos={avisos} />
-        </div>
+        <Link
+          href="/hoy"
+          className="px-2 text-2xs font-bold uppercase tracking-[0.2em] text-azul-hondo"
+        >
+          Crossity
+        </Link>
 
         <nav className="flex flex-1 flex-wrap gap-1 lg:flex-col lg:flex-nowrap lg:gap-0.5">
           {NAVEGACION.map((item) => {
@@ -92,28 +89,40 @@ export default async function Shell({
             )
           })}
         </nav>
-
-        {yo && (
-          <div className="flex items-center gap-2.5 border-t border-linea px-2 pt-4">
-            <span
-              className="grid size-7 shrink-0 place-items-center rounded-full bg-azul-hondo
-                         text-2xs font-bold text-white"
-              aria-hidden
-            >
-              {iniciales}
-            </span>
-            <span className="min-w-0 leading-tight">
-              <span className="block truncate text-sm font-medium">{yo.nombre}</span>
-              <span className="block truncate text-2xs text-gris-50">
-                {yo.roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
-              </span>
-            </span>
-          </div>
-        )}
       </aside>
 
-      <main className="min-w-0 flex-1 px-5 py-7 lg:px-10 lg:py-9">
-        <div className="mx-auto max-w-5xl">{children}</div>
+      <main className="flex min-w-0 flex-1 flex-col">
+        {/* Los avisos van donde se los busca: arriba y a la derecha. En
+            la barra lateral el desplegable quedaba apretado contra el
+            borde y encima había que ir a buscarlo a un lugar raro. */}
+        <div
+          className="sticky top-0 z-(--z-fijo) flex items-center justify-end gap-3
+                     border-b border-linea bg-lienzo px-5 py-2 lg:px-10"
+        >
+          <Campanita avisos={avisos} />
+
+          {yo && (
+            <span className="flex items-center gap-2 border-l border-linea pl-3">
+              <span className="min-w-0 text-right leading-tight">
+                <span className="block truncate text-sm font-medium text-tinta">{yo.nombre}</span>
+                <span className="block truncate text-2xs text-gris-50">
+                  {yo.roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
+                </span>
+              </span>
+              <span
+                className="grid size-7 shrink-0 place-items-center rounded-full bg-azul-hondo
+                           text-2xs font-bold text-white"
+                aria-hidden
+              >
+                {iniciales}
+              </span>
+            </span>
+          )}
+        </div>
+
+        <div className="px-5 py-7 lg:px-10 lg:py-9">
+          <div className="mx-auto max-w-5xl">{children}</div>
+        </div>
       </main>
     </div>
   )
