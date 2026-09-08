@@ -16,6 +16,7 @@ import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
+import BorrarProyecto from '@/components/BorrarProyecto'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -569,6 +570,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             </ol>
           )}
         </section>
+
+        <div className="border-t border-linea pt-6">
+          <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />
+        </div>
       </div>
     </Shell>
   )

@@ -815,3 +815,52 @@ export async function borrarCheque(id: string): Promise<Resultado> {
   revalidatePath('/agenda')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Borrar un proyecto.
+
+   Solo lo que nunca movió plata. Una carga de prueba, una charla mal
+   anotada, un duplicado: eso se borra. Un proyecto con un cobro
+   registrado o con una parte ya liquidada es historia, y la historia no
+   se borra —se cierra con su motivo, que es distinto y deja rastro.
+   ------------------------------------------------------------------ */
+
+export async function borrarProyecto(proyectoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+
+  const { data: hitos } = await supabase.from('hitos').select('id').eq('proyecto_id', proyectoId)
+  const ids = (hitos ?? []).map((h) => h.id as string)
+
+  if (ids.length > 0) {
+    const { count: cobros } = await supabase
+      .from('cobros').select('id', { count: 'exact', head: true }).in('hito_id', ids)
+    if ((cobros ?? 0) > 0)
+      return {
+        ok: false,
+        error: 'Tiene cobros registrados. Cerralo con su motivo en vez de borrarlo.',
+      }
+
+    const { count: pagadas } = await supabase
+      .from('porciones').select('id', { count: 'exact', head: true })
+      .in('hito_id', ids).in('estado', ['a_liquidar', 'liquidado'])
+    if ((pagadas ?? 0) > 0)
+      return {
+        ok: false,
+        error: 'Ya hay partes liquidadas o listas para liquidar. Eso es historia y no se borra.',
+      }
+  }
+
+  const { count: hijos } = await supabase
+    .from('proyectos').select('id', { count: 'exact', head: true }).eq('origen_id', proyectoId)
+  if ((hijos ?? 0) > 0)
+    return { ok: false, error: 'Tiene un mantenimiento que sale de él. Borrá primero el abono.' }
+
+  const { error, count } = await supabase
+    .from('proyectos').delete({ count: 'exact' }).eq('id', proyectoId).select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para borrar este proyecto.' }
+
+  revalidatePath('/', 'layout')
+  return { ok: true, ir: '/tablero' }
+}
