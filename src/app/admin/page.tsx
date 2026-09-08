@@ -7,6 +7,7 @@ import Pestanas from '@/components/Pestanas'
 import Cashflow, { type Mes } from '@/components/Cashflow'
 import Posiciones, { type Posicion } from '@/components/Posiciones'
 import { Saldos, type Saldo } from '@/components/CuentaCorriente'
+import Antiguedad, { type Tramo } from '@/components/Antiguedad'
 import {
   PorFacturar,
   FacturasARecibir,
@@ -35,6 +36,7 @@ export default async function Admin(props: {
     { data: cashflow },
     { data: posiciones },
     { data: saldos },
+    { data: antiguedad },
     { data: recurrentes },
     { data: costos },
   ] = await Promise.all([
@@ -56,6 +58,7 @@ export default async function Admin(props: {
       supabase.from('v_cashflow').select('*'),
       supabase.from('v_posicion_proyecto').select('*'),
       supabase.from('v_cuenta_corriente').select('*'),
+      supabase.from('v_antiguedad').select('*'),
       supabase.from('v_recurrente').select('*'),
       supabase.from('costos_fijos').select('id, concepto, proveedor, monto, moneda, cada, hasta').order('concepto'),
     ])
@@ -117,7 +120,12 @@ export default async function Admin(props: {
           {
             clave: 'cobranza',
             texto: 'Cobranza',
-            contenido: <Saldos saldos={(saldos ?? []) as Saldo[]} />,
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <Saldos saldos={(saldos ?? []) as Saldo[]} />
+                <Antiguedad filas={(antiguedad ?? []) as Tramo[]} />
+              </div>
+            ),
           },
           {
             clave: 'caja',
