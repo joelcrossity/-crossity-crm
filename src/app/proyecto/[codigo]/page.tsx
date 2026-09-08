@@ -226,19 +226,27 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               </p>
             )}
 
-            {!proximo && !esAbono && elAbono && (
-              <p className="border-t border-linea pt-3 text-sm text-gris">
-                Ya tiene su mantenimiento:{' '}
-                <Link href={`/proyecto/${elAbono.codigo}`} className="font-bold text-azul-hondo hover:underline">
-                  {elAbono.nombre}
-                </Link>
-                , {plata(elAbono.monto_mensual, elAbono.moneda)} por mes.
-              </p>
-            )}
+
           </section>
         )}
 
-        {!proximo && !esAbono && !elAbono && total > 0 && (
+        {elAbono && (
+          <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
+            Ya tiene su mantenimiento:{' '}
+            <Link
+              href={`/proyecto/${elAbono.codigo}`}
+              className="font-bold text-azul-hondo hover:underline"
+            >
+              {elAbono.nombre}
+            </Link>
+            , {plata(elAbono.monto_mensual, elAbono.moneda)} por mes.
+          </p>
+        )}
+
+        {/* El formulario aparece cuando el trabajo terminó: o está en naranja,
+            o no le queda ninguna entrega pendiente. Un proyecto sin hitos
+            cargados también cuenta si ya se dio por terminado. */}
+        {!esAbono && !elAbono && (p.color === 'naranja' || (total > 0 && !proximo)) && (
           <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
         )}
 
