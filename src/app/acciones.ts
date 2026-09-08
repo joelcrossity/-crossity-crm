@@ -156,3 +156,52 @@ export async function marcarHito(
   revalidatePath('/tablero')
   return { ok: true }
 }
+
+/* Registrar un cobro, no sólo tildar que entró.
+   El tilde movía `hitos.cobrado_at` y no dejaba rastro: no se podía
+   responder cuándo entró la plata ni por qué medio. Insertar en `cobros`
+   dispara el hito por trigger y además deja el historial. */
+export async function registrarCobro(
+  hitoId: string,
+  monto: string,
+  fecha: string,
+  medio: string,
+  moneda: string
+): Promise<Resultado> {
+  const n = parseFloat(monto.replace(/\./g, '').replace(',', '.'))
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'Poné el monto que entró.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios').select('persona_id').eq('id', user?.id ?? '').maybeSingle()
+
+  const { error } = await supabase.from('cobros').insert({
+    hito_id: hitoId,
+    monto: n,
+    moneda,
+    fecha: fecha || new Date().toISOString().slice(0, 10),
+    medio: medio.trim() || null,
+    registrado_por: yo?.persona_id ?? null,
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/admin')
+  revalidatePath('/hoy')
+  return { ok: true }
+}
+
+export async function borrarCobro(cobroId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('cobros').delete({ count: 'exact' }).eq('id', cobroId).select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para borrar este cobro.' }
+
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/admin')
+  return { ok: true }
+}

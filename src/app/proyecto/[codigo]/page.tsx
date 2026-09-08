@@ -5,6 +5,7 @@ import Estado from '@/components/Estado'
 import { Fecha, Numero, Select, Casilla } from '@/components/Campo'
 import { createClient } from '@/lib/supabase/server'
 import { cambiarFecha, cambiarPrioridad, cambiarResponsable, marcarHito } from '@/app/acciones'
+import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import { plata, fechaCorta } from '@/lib/estados'
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -31,8 +32,15 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 
   if (!p) notFound()
 
-  const [{ data: hitos }, { data: equipo }, { data: linea }, { data: miParte }, { data: personas }] =
-    await Promise.all([
+  const [
+    { data: hitos },
+    { data: equipo },
+    { data: linea },
+    { data: miParte },
+    { data: personas },
+    { data: cobros },
+    { data: porciones },
+  ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
         .from('asignaciones')
@@ -47,7 +55,44 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         .limit(50),
       supabase.from('participaciones').select('concepto, porcentaje').eq('proyecto_id', p.id),
       supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
+      supabase
+        .from('cobros')
+        .select('id, fecha, monto, moneda, medio, hitos!inner(orden, titulo, proyecto_id)')
+        .eq('hitos.proyecto_id', p.id)
+        .order('fecha', { ascending: false }),
+      supabase
+        .from('porciones')
+        .select(
+          'estado, monto, moneda, hitos!inner(proyecto_id), participaciones(concepto, es_crossity, personas(nombre))'
+        )
+        .eq('hitos.proyecto_id', p.id),
     ])
+
+  type H = Record<string, string | number | boolean | null>
+  const hs = (hitos ?? []) as H[]
+  const total = hs.reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
+  const entregado = hs.filter((h) => h.entregado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
+  const facturado = hs.filter((h) => h.facturado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
+  const cobrado = hs.filter((h) => h.cobrado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
+  const proximo = hs.find((h) => !h.entregado_at)
+
+  // Qué falta rendir. RLS ya decide qué porciones ve cada uno.
+  type Po = {
+    estado: string
+    monto: number
+    moneda: string
+    participaciones: { concepto: string; es_crossity: boolean; personas: { nombre: string } | null } | null
+  }
+  const pos = (porciones ?? []) as unknown as Po[]
+  const rendicion = new Map<string, { comprometido: number; devengado: number; a_liquidar: number; liquidado: number; moneda: string }>()
+  for (const x of pos) {
+    const quien = x.participaciones?.es_crossity
+      ? 'Crossity · gestión'
+      : (x.participaciones?.personas?.nombre ?? 'sin asignar')
+    const fila = rendicion.get(quien) ?? { comprometido: 0, devengado: 0, a_liquidar: 0, liquidado: 0, moneda: x.moneda }
+    fila[x.estado as 'comprometido' | 'devengado' | 'a_liquidar' | 'liquidado'] += Number(x.monto)
+    rendicion.set(quien, fila)
+  }
 
   const cliente = p.organizaciones as unknown as { codigo: string; nombre_canonico: string }
   const esAbono = p.tipo === 'mantenimiento'
@@ -117,7 +162,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               {esAbono ? plata(p.monto_mensual, p.moneda) : plata(p.monto_neto, p.moneda)}
             </Dato>
             {(miParte?.length ?? 0) > 0 && (
-              <Dato titulo="Tu participación">
+              <Dato titulo={miParte!.length > 1 ? 'Reparto' : 'Tu participación'}>
                 {miParte!
                   .map((m: { concepto: string; porcentaje: number }) => `${m.porcentaje} % ${m.concepto}`)
                   .join(' · ')}
@@ -131,6 +176,117 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               </Dato>
             )}
           </dl>
+        </section>
+
+        {total > 0 && (
+          <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-md font-bold tracking-tight">En qué está</h2>
+              <p className="text-sm text-gris">
+                El avance se mide por plata entregada, no por cantidad de entregas: una que vale la
+                mitad del proyecto no pesa igual que una que vale el trece por ciento.
+              </p>
+            </div>
+
+            <Avance
+              entregado={entregado}
+              facturado={facturado}
+              cobrado={cobrado}
+              total={total}
+              moneda={p.moneda}
+            />
+
+            {proximo && (
+              <p className="border-t border-linea pt-3 text-sm text-gris">
+                Lo que sigue: <span className="font-bold text-tinta">{proximo.titulo as string}</span>
+                {proximo.entregable ? ` — ${proximo.entregable as string}` : ''}
+                {proximo.fecha_comprometida
+                  ? `, comprometida para el ${fechaCorta(proximo.fecha_comprometida as string)}`
+                  : ''}
+                .
+              </p>
+            )}
+
+            {!proximo && !esAbono && (
+              <p className="border-t border-linea pt-3 text-sm text-gris">
+                Todas las entregas están hechas. Lo que sigue es{' '}
+                <span className="font-bold text-tinta">abrir el mantenimiento</span>: entregar no es
+                terminar, es cuando empieza a facturarse todos los meses.
+              </p>
+            )}
+          </section>
+        )}
+
+        {rendicion.size > 0 && (
+          <section className="flex flex-col gap-3">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-md font-bold tracking-tight">Qué falta rendir</h2>
+              <p className="text-sm text-gris">
+                A liquidar es lo que el cliente ya pagó y todavía no se transfirió. Devengado se
+                ganó pero no entró.
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-linea bg-superficie">
+              <table className="w-full min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-linea bg-panel">
+                    {['Participante', 'Comprometido', 'Devengado', 'A liquidar', 'Liquidado'].map((h) => (
+                      <th key={h} className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wider text-gris-50">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...rendicion.entries()].map(([quien, f]) => (
+                    <tr key={quien} className="border-b border-linea last:border-0">
+                      <td className="px-3 py-2 text-sm font-medium text-tinta">{quien}</td>
+                      <td className="cifra px-3 py-2 text-sm text-gris">{plata(f.comprometido, f.moneda)}</td>
+                      <td className="cifra px-3 py-2 text-sm text-amarillo">{plata(f.devengado, f.moneda)}</td>
+                      <td className="cifra px-3 py-2 text-sm font-bold text-azul-hondo">{plata(f.a_liquidar, f.moneda)}</td>
+                      <td className="cifra px-3 py-2 text-sm text-verde">{plata(f.liquidado, f.moneda)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-md font-bold tracking-tight">Pagos que entraron</h2>
+            <p className="text-sm text-gris">
+              Desde que arrancó el proyecto, con su fecha y su medio.
+            </p>
+          </div>
+          {(cobros?.length ?? 0) === 0 ? (
+            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+              Todavía no se registró ningún pago. Se cargan desde cada entrega, más abajo.
+            </p>
+          ) : (
+            <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+              {cobros!.map((c: Record<string, unknown>) => (
+                <li key={c.id as string} className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 px-3.5 py-2.5">
+                  <span className="min-w-0">
+                    <span className="block text-base font-medium text-tinta">
+                      {(c.hitos as { titulo: string }).titulo}
+                    </span>
+                    <span className="cifra block text-2xs text-gris-50">
+                      {fechaCorta(c.fecha as string)}
+                      {c.medio ? ` · ${c.medio as string}` : ''}
+                    </span>
+                  </span>
+                  <span className="flex items-baseline gap-3">
+                    <span className="cifra text-sm font-bold text-verde">
+                      {plata(c.monto as number, c.moneda as string)}
+                    </span>
+                    <BorrarCobro cobroId={c.id as string} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="flex flex-col gap-3">
@@ -194,14 +350,15 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                         return marcarHito(h.id as string, 'facturado_at', v)
                       }}
                     />
-                    <Casilla
-                      etiqueta="cobrado"
-                      marcado={!!h.cobrado_at}
-                      alCambiar={async (v) => {
-                        'use server'
-                        return marcarHito(h.id as string, 'cobrado_at', v)
-                      }}
-                    />
+                    {h.cobrado_at ? (
+                      <span className="text-xs text-verde">cobrado</span>
+                    ) : (
+                      <RegistrarCobro
+                        hitoId={h.id as string}
+                        sugerido={(h.monto_neto as number) ?? 0}
+                        moneda={(h.moneda as string) ?? 'ARS'}
+                      />
+                    )}
                   </span>
                 </li>
               ))}
