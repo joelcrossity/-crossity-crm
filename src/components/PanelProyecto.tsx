@@ -25,6 +25,14 @@ const NOMBRE: Record<string, string> = {
   rojo: 'Perdido',
 }
 
+export type Entrega = {
+  titulo: string
+  monto: number
+  entregado: boolean
+  facturado: boolean
+  cobrado: boolean
+}
+
 export type Rendicion = Map<
   string,
   { comprometido: number; devengado: number; a_liquidar: number; liquidado: number; moneda: string }
@@ -43,6 +51,7 @@ export default function PanelProyecto({
   rendicion,
   esAbono,
   montoMensual,
+  entregas,
 }: {
   color: string
   detalle: string | null
@@ -56,6 +65,7 @@ export default function PanelProyecto({
   rendicion: Rendicion
   esAbono: boolean
   montoMensual: number | null
+  entregas: Entrega[]
 }) {
   const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
   const falta = total - cobrado
@@ -127,6 +137,49 @@ export default function PanelProyecto({
         </Casillero>
       </div>
 
+      {entregas.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-linea pt-3.5">
+          <span className="flex flex-wrap items-baseline gap-x-3">
+            <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
+              Las entregas
+            </span>
+            <span className="cifra text-2xs text-gris-50">
+              {entregas.filter((e) => e.cobrado).length} de {entregas.length} cobradas
+            </span>
+          </span>
+
+          {/* Cada entrega ocupa lo que pesa en plata, no lo mismo que las
+              demás: una de la mitad del proyecto tiene que verse la mitad
+              de la barra. Entregado, facturado y cobrado son tres hechos
+              distintos y se apilan, porque acá casi nunca coinciden. */}
+          <ul className="flex gap-0.5" aria-label="Estado de cada entrega">
+            {entregas.map((e, i) => (
+              <li
+                key={i}
+                title={`${e.titulo} — ${
+                  e.cobrado ? 'cobrada' : e.facturado ? 'facturada' : e.entregado ? 'entregada' : 'pendiente'
+                }`}
+                style={{ flexGrow: Math.max(e.monto, 1) }}
+                className="flex min-w-0 flex-col gap-1"
+              >
+                <span
+                  className={`h-1.5 rounded-sm ${
+                    e.cobrado ? 'bg-verde' : e.facturado ? 'bg-azul' : e.entregado ? 'bg-azul-50' : 'bg-panel'
+                  }`}
+                />
+                <span className="truncate text-[10px] leading-tight text-gris-50">{e.titulo}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p className="flex flex-wrap gap-x-4 text-2xs text-gris-50">
+            <Punto clase="bg-azul-50">entregada</Punto>
+            <Punto clase="bg-azul">facturada</Punto>
+            <Punto clase="bg-verde">cobrada</Punto>
+          </p>
+        </div>
+      )}
+
       {conSaldo.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-linea pt-3.5">
           <span className="flex flex-wrap items-baseline gap-x-3">
@@ -182,4 +235,13 @@ function Casillero({ titulo, children }: { titulo: string; children: React.React
 
 function Pie({ children }: { children: React.ReactNode }) {
   return <span className="text-2xs leading-snug text-gris-50">{children}</span>
+}
+
+function Punto({ clase, children }: { clase: string; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`size-2 shrink-0 rounded-sm ${clase}`} aria-hidden />
+      {children}
+    </span>
+  )
 }

@@ -93,27 +93,60 @@ export default function Recorrido({
         </p>
       </div>
 
-      {/* La escalera. Cada paso es un click: mover una oportunidad tiene
-          que costar menos que contarlo por WhatsApp. */}
-      <ol className="flex flex-wrap gap-1.5">
+      {/* La escalera. Se ve de dónde viene y cuánto falta, no solo dónde
+          está: cinco botones sueltos no cuentan un recorrido. */}
+      <ol className="flex flex-wrap items-start gap-y-2">
         {ETAPAS.map((e, i) => {
           const hecha = i < actual
           const aca = i === actual
           return (
-            <li key={e.valor}>
+            <li key={e.valor} className="flex min-w-0 flex-1 basis-24 items-start">
               <button
                 type="button"
                 disabled={pendiente || aca}
                 onClick={() => correr(() => cambiarEtapa(proyectoId, e.valor))}
-                className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors duration-150 ${
-                  aca
-                    ? 'border-azul-hondo bg-azul-hondo font-medium text-white'
-                    : hecha
-                      ? 'border-linea bg-superficie text-gris hover:border-azul'
-                      : 'border-dashed border-linea-fuerte text-gris-50 hover:border-azul hover:text-azul-hondo'
-                }`}
+                aria-current={aca ? 'step' : undefined}
+                className="group flex min-w-0 flex-1 flex-col items-center gap-1.5 disabled:cursor-default"
               >
-                {e.etiqueta}
+                <span className="flex w-full items-center" aria-hidden>
+                  <span
+                    className={`h-px flex-1 ${
+                      i === 0 ? 'bg-transparent' : hecha || aca ? 'bg-azul-hondo' : 'bg-linea-fuerte'
+                    }`}
+                  />
+                  <span
+                    className={`grid size-5 shrink-0 place-items-center rounded-full border
+                                text-[10px] font-bold transition-colors duration-200 ${
+                                  aca
+                                    ? 'border-azul-hondo bg-azul-hondo text-white'
+                                    : hecha
+                                      ? 'border-azul-hondo bg-superficie text-azul-hondo'
+                                      : 'border-linea-fuerte bg-superficie text-gris-50 group-hover:border-azul'
+                                }`}
+                  >
+                    {hecha ? '✓' : i + 1}
+                  </span>
+                  <span
+                    className={`h-px flex-1 ${
+                      i === ETAPAS.length - 1
+                        ? 'bg-transparent'
+                        : hecha
+                          ? 'bg-azul-hondo'
+                          : 'bg-linea-fuerte'
+                    }`}
+                  />
+                </span>
+                <span
+                  className={`px-1 text-center text-2xs leading-tight ${
+                    aca
+                      ? 'font-bold text-azul-hondo'
+                      : hecha
+                        ? 'text-gris'
+                        : 'text-gris-50 group-hover:text-azul-hondo'
+                  }`}
+                >
+                  {e.etiqueta}
+                </span>
               </button>
             </li>
           )

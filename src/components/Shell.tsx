@@ -143,3 +143,42 @@ export function Titulo({
     </header>
   )
 }
+
+
+/* ------------------------------------------------------------------
+   Migas de pan.
+
+   No es adorno: en una ficha se entra desde tres lados distintos —el
+   tablero, la campanita, el cliente— y sin esto no hay forma de saber
+   de dónde viniste ni de volver sin perder el hilo.
+   ------------------------------------------------------------------ */
+
+export function Rastro({
+  pasos,
+}: {
+  pasos: { texto: string; href?: string }[]
+}) {
+  return (
+    <nav aria-label="Dónde estás" className="mb-3 flex flex-wrap items-center gap-1.5 text-2xs">
+      {pasos.map((p, i) => (
+        <span key={p.texto} className="flex items-center gap-1.5">
+          {i > 0 && (
+            <span className="text-linea-fuerte" aria-hidden>
+              /
+            </span>
+          )}
+          {p.href ? (
+            <Link
+              href={p.href}
+              className="text-gris-50 transition-colors duration-150 hover:text-azul-hondo"
+            >
+              {p.texto}
+            </Link>
+          ) : (
+            <span className="text-gris">{p.texto}</span>
+          )}
+        </span>
+      ))}
+    </nav>
+  )
+}

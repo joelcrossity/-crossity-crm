@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import Shell from '@/components/Shell'
+import Shell, { Rastro } from '@/components/Shell'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
@@ -88,6 +88,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
 
   return (
     <Shell activo="/cuentas">
+      <Rastro pasos={[{ texto: 'Clientes', href: '/cuentas' }, { texto: org.nombre_canonico }]} />
       <header className="mb-7 flex flex-col gap-3 border-b border-linea pb-5">
         <span className="cifra text-2xs text-gris-50">{org.codigo}</span>
         <h1 className="text-2xl font-bold tracking-tight text-balance">{org.nombre_canonico}</h1>

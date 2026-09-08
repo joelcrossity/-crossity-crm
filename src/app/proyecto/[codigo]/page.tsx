@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import Shell from '@/components/Shell'
+import Shell, { Rastro } from '@/components/Shell'
 import Novedad from '@/components/Novedad'
 import Estado from '@/components/Estado'
 import { Fecha, Numero, Select, Texto } from '@/components/Campo'
@@ -137,6 +137,15 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 
   return (
     <Shell activo="/tablero">
+      <Rastro
+        pasos={[
+          esOportunidad
+            ? { texto: 'Pipeline', href: '/pipeline' }
+            : { texto: 'Proyectos', href: '/tablero' },
+          { texto: cliente.nombre_canonico, href: `/cuentas/${cliente.codigo}` },
+          { texto: p.codigo },
+        ]}
+      />
       <header className="mb-7 flex flex-col gap-2 border-b border-linea pb-5">
         <span className="cifra flex flex-wrap items-center gap-2 text-2xs text-gris-50">
           <span>{p.codigo}</span>
@@ -189,6 +198,13 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
           rendicion={rendicion}
           esAbono={esAbono}
           montoMensual={p.monto_mensual}
+          entregas={((hitos ?? []) as Record<string, unknown>[]).map((h) => ({
+            titulo: h.titulo as string,
+            monto: (h.monto_neto as number) ?? 0,
+            entregado: !!h.entregado_at,
+            facturado: !!h.facturado_at,
+            cobrado: !!h.cobrado_at,
+          }))}
         />
 
         <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
