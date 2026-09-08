@@ -57,7 +57,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
       supabase
         .from('cobros')
-        .select('id, fecha, monto, moneda, medio, hitos!inner(orden, titulo, proyecto_id)')
+        .select('id, fecha, monto, moneda, medio, hitos!inner(id, orden, titulo, proyecto_id)')
         .eq('hitos.proyecto_id', p.id)
         .order('fecha', { ascending: false }),
       supabase
@@ -93,6 +93,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     fila[x.estado as 'comprometido' | 'devengado' | 'a_liquidar' | 'liquidado'] += Number(x.monto)
     rendicion.set(quien, fila)
   }
+
+  const conCobro = new Set(
+    ((cobros ?? []) as Record<string, unknown>[]).map((c) => (c.hitos as { id?: string })?.id)
+  )
 
   const cliente = p.organizaciones as unknown as { codigo: string; nombre_canonico: string }
   const esAbono = p.tipo === 'mantenimiento'
@@ -350,13 +354,14 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                         return marcarHito(h.id as string, 'facturado_at', v)
                       }}
                     />
-                    {h.cobrado_at ? (
+                    {conCobro.has(h.id as string) ? (
                       <span className="text-xs text-verde">cobrado</span>
                     ) : (
                       <RegistrarCobro
                         hitoId={h.id as string}
                         sugerido={(h.monto_neto as number) ?? 0}
                         moneda={(h.moneda as string) ?? 'ARS'}
+                        yaCobrado={!!h.cobrado_at}
                       />
                     )}
                   </span>

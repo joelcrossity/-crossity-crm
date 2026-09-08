@@ -11,10 +11,14 @@ export function RegistrarCobro({
   hitoId,
   sugerido,
   moneda,
+  yaCobrado,
 }: {
   hitoId: string
   sugerido: number
   moneda: string
+  /* La entrega figura cobrada pero nadie registró el pago: pasa con lo
+     migrado de las planillas, donde había un tilde y ninguna fecha. */
+  yaCobrado?: boolean
 }) {
   const [abierto, setAbierto] = useState(false)
   const [monto, setMonto] = useState(sugerido.toString())
@@ -28,10 +32,17 @@ export function RegistrarCobro({
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="rounded-md border border-linea px-2.5 py-1 text-xs text-gris
-                   transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
+        className={`rounded-md border px-2.5 py-1 text-xs transition-colors duration-150
+                    hover:border-azul hover:text-azul-hondo ${
+                      yaCobrado ? 'border-amarillo text-amarillo' : 'border-linea text-gris'
+                    }`}
+        title={
+          yaCobrado
+            ? 'Figura cobrada pero no hay pago registrado: falta la fecha y el medio'
+            : undefined
+        }
       >
-        Registrar cobro
+        {yaCobrado ? 'Falta el registro del pago' : 'Registrar cobro'}
       </button>
     )
   }
