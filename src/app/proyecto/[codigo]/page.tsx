@@ -6,6 +6,7 @@ import Estado from '@/components/Estado'
 import { Fecha, Numero, Select, Texto } from '@/components/Campo'
 import { createClient } from '@/lib/supabase/server'
 import {
+  cambiarServicio,
   cambiarFecha,
   cambiarMonto,
   cambiarPrioridad,
@@ -42,6 +43,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       alicuota_iva, nota_iva,
       es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id, carpeta_url,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
+      servicio_id,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
     `)
     .eq('codigo', codigo)
@@ -64,6 +66,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: cuentasTodas },
     { data: documentos },
     { data: cambio },
+    { data: servicios },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -107,6 +110,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         .eq('proyecto_id', p.id)
         .order('created_at', { ascending: false }),
       supabase.from('v_cotizaciones').select('codigo, valor, dias_de_atraso'),
+      supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -246,6 +250,19 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               alCambiar={async (v) => {
                 'use server'
                 return cambiarFecha(p.id, v)
+              }}
+            />
+            <Select
+              etiqueta="Qué es"
+              valor={p.servicio_id}
+              vacio="sin clasificar"
+              opciones={((servicios ?? []) as { id: string; nombre: string }[]).map((x) => ({
+                valor: x.id,
+                texto: x.nombre,
+              }))}
+              alCambiar={async (v) => {
+                'use server'
+                return cambiarServicio(p.id, v)
               }}
             />
             <Select

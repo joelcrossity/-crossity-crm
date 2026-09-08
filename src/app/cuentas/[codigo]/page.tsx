@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Calendario, { type Evento } from '@/components/Calendario'
+import Ofrecer, { type Sugerencia, type Nota } from '@/components/Ofrecer'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
@@ -44,6 +45,9 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: marcas },
     { data: contactos },
     { data: agenda },
+    { data: sugerencias },
+    { data: notas },
+    { data: servicios },
     { data: hoyRow },
     { data: documentos },
   ] = await Promise.all([
@@ -61,6 +65,13 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
       supabase.from('marcas').select('id, nombre, es_principal').eq('organizacion_id', org.id),
       supabase.from('contactos').select('id, nombre, rol, email, telefono').eq('organizacion_id', org.id),
       supabase.from('v_agenda').select('*').eq('organizacion_id', org.id).order('fecha'),
+      supabase.from('v_para_ofrecer').select('*').eq('organizacion_id', org.id),
+      supabase
+        .from('notas_de_venta')
+        .select('id, texto, cuando, estado, servicio_id, servicios(nombre)')
+        .eq('organizacion_id', org.id)
+        .order('created_at', { ascending: false }),
+      supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
       supabase.rpc('hoy_es'),
       supabase
         .from('v_documentos')
@@ -275,6 +286,15 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
             />
           </div>
         </section>
+      </div>
+
+      <div className="mt-9">
+        <Ofrecer
+          organizacionId={org.id}
+          sugerencias={(sugerencias ?? []) as Sugerencia[]}
+          notas={(notas ?? []) as unknown as Nota[]}
+          servicios={(servicios ?? []) as { id: string; nombre: string }[]}
+        />
       </div>
 
       <div className="mt-9 flex flex-col gap-3">

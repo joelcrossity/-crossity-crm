@@ -24,13 +24,13 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
   {
     grupo: 'Trabajo',
     items: [
-      { href: '/tablero',  nombre: 'Proyectos', detalle: 'todo lo que está en curso' },
       { href: '/pipeline', nombre: 'Pipeline',  detalle: 'lo enviado y por seguir' },
+      { href: '/tablero',  nombre: 'Proyectos', detalle: 'todo lo que está en curso' },
       { href: '/cuentas',  nombre: 'Clientes',  detalle: 'las cuentas y sus marcas' },
     ],
   },
   {
-    grupo: 'Plata',
+    grupo: 'Financiero',
     items: [
       { href: '/agenda',      nombre: 'Agenda',         detalle: 'todo lo que tiene fecha' },
       { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },

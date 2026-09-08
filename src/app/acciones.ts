@@ -1121,3 +1121,87 @@ export async function quitarPermiso(
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Qué más ofrecerle.
+
+   Ofrecer no abre una lista aparte: abre una oportunidad en el pipeline
+   del mismo cliente. Si fuera otra lista sería una cosa más para mirar,
+   y las cosas para mirar se dejan de mirar.
+   ------------------------------------------------------------------ */
+
+export async function ofrecerServicio(
+  organizacionId: string,
+  servicioId: string,
+  nombreServicio: string,
+  notaId?: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert({
+      organizacion_id: organizacionId,
+      servicio_id: servicioId,
+      nombre: nombreServicio,
+      color: 'amarillo',
+      etapa: 'interes',
+      esquema_cobro: 'a_convenir',
+      origen: 'cliente_existente',
+      proxima_accion: `Proponerle ${nombreServicio.toLowerCase()}`,
+    })
+    .select('id, codigo')
+    .single()
+
+  if (error || !data) return { ok: false, error: traducir(error?.message ?? 'No se pudo abrir') }
+
+  // La nota queda atada a la oportunidad que salió de ella.
+  if (notaId) {
+    await supabase
+      .from('notas_de_venta')
+      .update({ estado: 'ofrecida', proyecto_id: data.id })
+      .eq('id', notaId)
+  }
+
+  revalidatePath('/', 'layout')
+  return { ok: true, ir: `/proyecto/${data.codigo}` }
+}
+
+export async function anotarParaOfrecer(
+  organizacionId: string,
+  servicioId: string,
+  texto: string,
+  cuando: string,
+): Promise<Resultado> {
+  if (!texto.trim()) return { ok: false, error: 'Escribí qué le podemos ofrecer.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios').select('persona_id').eq('id', user?.id ?? '').maybeSingle()
+
+  const { error } = await supabase.from('notas_de_venta').insert({
+    organizacion_id: organizacionId,
+    servicio_id: servicioId || null,
+    texto: texto.trim(),
+    cuando: cuando || null,
+    anotada_por: yo?.persona_id ?? null,
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function descartarNota(notaId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('notas_de_venta').update({ estado: 'no_va' }).eq('id', notaId)
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function cambiarServicio(proyectoId: string, servicioId: string): Promise<Resultado> {
+  return guardar(proyectoId, { servicio_id: servicioId || null })
+}
