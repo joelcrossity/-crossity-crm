@@ -62,6 +62,8 @@ export default async function Pipeline() {
           </div>
         </header>
 
+        <NuevoProyecto clientes={clientes} arrancaComo="oportunidad" />
+
         <div className="flex flex-col gap-8">
           {ETAPAS.map((etapa) => {
             const deEtapa = ops.filter((o) => o.etapa === etapa.valor)
