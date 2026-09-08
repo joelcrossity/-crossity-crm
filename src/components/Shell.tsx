@@ -27,6 +27,7 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
     items: [
       { href: '/pipeline', nombre: 'Pipeline',  detalle: 'lo enviado y por seguir' },
       { href: '/tablero',  nombre: 'Proyectos', detalle: 'todo lo que está en curso' },
+      { href: '/mantenimientos', nombre: 'Mantenimiento', detalle: 'los abonos que ya están andando' },
       { href: '/cuentas',  nombre: 'Clientes',  detalle: 'las cuentas y sus marcas' },
     ],
   },

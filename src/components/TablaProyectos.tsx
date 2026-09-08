@@ -27,7 +27,7 @@ const PUNTO: Record<string, string> = {
 const TITULO: Record<string, { texto: string; ayuda: string }> = {
   verde:    { texto: 'En vivo',   ayuda: 'se está trabajando ahora' },
   amarillo: { texto: 'A seguir',  ayuda: 'la pelota está del otro lado' },
-  gris:     { texto: 'Standby',   ayuda: 'ni muerto ni vivo' },
+  gris:     { texto: 'Frenado',   ayuda: 'ganado y sin avanzar' },
   naranja:  { texto: 'Terminado', ayuda: 'no hay nada más que hacer' },
   rojo:     { texto: 'Perdido',   ayuda: 'salió mal o se descartó' },
 }

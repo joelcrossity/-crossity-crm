@@ -5,7 +5,7 @@ import { Selector, useVista } from '@/components/Vistas'
 import TableroEstados from '@/components/TableroEstados'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
 
-const ORDEN = ['verde', 'amarillo', 'gris', 'naranja', 'rojo']
+const ORDEN = ['verde', 'gris', 'naranja', 'rojo']
 
 const RECORTES: Recorte<Fila>[] = [
   {
@@ -13,8 +13,7 @@ const RECORTES: Recorte<Fila>[] = [
     vacio: 'Todos los estados',
     opciones: [
       { valor: 'verde', texto: 'En vivo' },
-      { valor: 'amarillo', texto: 'A seguir' },
-      { valor: 'gris', texto: 'Standby' },
+      { valor: 'gris', texto: 'Frenado' },
       { valor: 'naranja', texto: 'Terminado' },
       { valor: 'rojo', texto: 'Perdido' },
     ],

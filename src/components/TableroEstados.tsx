@@ -35,17 +35,18 @@ const COLUMNAS: {
     punto: 'bg-verde',
     porDefecto: 'en_curso',
   },
-  { color: 'amarillo', texto: 'A seguir', ayuda: 'la pelota está del otro lado', punto: 'bg-amarillo' },
   {
+    /* Ya no es "standby": lo que nunca arrancó vive en Pipeline. Acá
+       solo queda un proyecto ganado que se frenó, y el motivo dice si
+       es culpa nuestra, del cliente, o de la plata que no entró. */
     color: 'gris',
-    texto: 'Standby',
-    ayuda: 'ni muerto ni vivo',
+    texto: 'Frenado',
+    ayuda: 'ganado y sin avanzar',
     punto: 'bg-gris-50',
     motivos: [
-      { valor: 'pausado_cliente', texto: 'Lo pausó el cliente' },
       { valor: 'esperando_anticipo', texto: 'Esperando el anticipo' },
+      { valor: 'pausado_cliente', texto: 'Lo pausó el cliente' },
       { valor: 'dormido', texto: 'Se durmió' },
-      { valor: 'no_se_dio', texto: 'No se dio' },
     ],
   },
   { color: 'naranja', texto: 'Terminado', ayuda: 'no hay más que hacer', punto: 'bg-naranja' },

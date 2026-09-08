@@ -39,6 +39,13 @@ export const ICONOS: Record<string, React.ReactNode> = {
       <rect x="10" y="2.5" width="4" height="7" rx="1" />
     </svg>
   ),
+  // Mantenimiento: el ciclo que se repite
+  '/mantenimientos': (
+    <svg {...base}>
+      <path d="M13.6 7.3a5.6 5.6 0 0 0-9.9-2.6M2.4 8.7a5.6 5.6 0 0 0 9.9 2.6" />
+      <path d="M13.9 3.6v3.6h-3.6M2.1 12.4V8.8h3.6" />
+    </svg>
+  ),
   // Clientes: dos personas, la relación
   '/cuentas': (
     <svg {...base}>
