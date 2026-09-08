@@ -1,10 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export type Resultado = { ok: true } | { ok: false; error: string }
+/* `ir` es adónde navegar después. El redirect del servidor se pierde
+   cuando la acción se llama desde una transición, así que la navegación
+   la hace el cliente con lo que devolvemos acá. */
+export type Resultado = { ok: true; ir?: string } | { ok: false; error: string }
 
 // RLS decide si el cambio entra. Acá sólo traducimos el fallo a algo legible.
 function traducir(mensaje: string): string {
@@ -342,7 +344,7 @@ export async function crearCliente(datos: FormData): Promise<Resultado> {
 
   revalidatePath('/cuentas', 'layout')
   revalidatePath('/hoy')
-  redirect(`/cuentas/${r.codigo}`)
+  return { ok: true, ir: `/cuentas/${r.codigo}` }
 }
 
 export async function crearProyecto(datos: FormData): Promise<Resultado> {
@@ -384,5 +386,104 @@ export async function crearProyecto(datos: FormData): Promise<Resultado> {
   revalidatePath('/pipeline')
   revalidatePath('/hoy')
   revalidatePath('/cuentas', 'layout')
-  redirect(`/proyecto/${data.codigo}`)
+  return { ok: true, ir: `/proyecto/${data.codigo}` }
+}
+
+/* ------------------------------------------------------------------
+   Alta completa, la del asistente: cliente, proyecto y sus entregas
+   en una sola operación.
+
+   Cada hito lleva su fecha, qué entrega y cuánto se cobra. Los tres
+   datos juntos, porque separados no sirven: una fecha sin entregable no
+   dice qué se comprometió, y un monto sin fecha no dice cuándo entra.
+   ------------------------------------------------------------------ */
+
+export type HitoNuevo = {
+  titulo: string
+  entregable: string
+  monto: string
+  fecha: string
+}
+
+export type ProyectoNuevo = {
+  clienteId: string
+  clienteNuevo: string
+  nombre: string
+  monto: string
+  moneda: string
+  programa: string
+  responsableId: string
+  responsableTecnicoId: string
+  arranca: 'proyecto' | 'oportunidad'
+  hitos: HitoNuevo[]
+}
+
+export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado> {
+  if (!d.nombre.trim()) return { ok: false, error: 'Poné el nombre del proyecto.' }
+
+  let organizacion_id = d.clienteId
+  if (organizacion_id === 'nuevo') {
+    if (!d.clienteNuevo.trim()) return { ok: false, error: 'Poné el nombre del cliente nuevo.' }
+    const r = await altaDeCuenta(d.clienteNuevo.trim(), [])
+    if ('error' in r) {
+      if (r.error.includes('duplicate')) return { ok: false, error: 'Ya existe un cliente con ese nombre.' }
+      return { ok: false, error: traducir(r.error) }
+    }
+    organizacion_id = r.id
+  }
+  if (!organizacion_id) return { ok: false, error: 'Elegí el cliente.' }
+
+  const numero = (v: string) => {
+    const n = parseFloat(v.replace(/\./g, '').replace(',', '.'))
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+
+  const hitos = d.hitos.filter((h) => h.titulo.trim() || numero(h.monto) || h.fecha)
+  const total = numero(d.monto) ?? hitos.reduce((a, h) => a + (numero(h.monto) ?? 0), 0)
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert({
+      organizacion_id,
+      nombre: d.nombre.trim(),
+      moneda: d.moneda,
+      monto_neto: total || null,
+      programa: d.programa.trim() || null,
+      responsable_id: d.responsableId || null,
+      responsable_tecnico_id: d.responsableTecnicoId || null,
+      esquema_cobro: hitos.length > 0 ? 'por_hitos' : 'a_convenir',
+      // Con entregas cargadas, el proyecto nace esperando el anticipo.
+      // Sin entregas, arranca donde diga el asistente.
+      ...(d.arranca === 'oportunidad'
+        ? { color: 'amarillo', etapa: 'interes' }
+        : { color: 'verde', subestado: 'en_curso' }),
+      fecha_comprometida: hitos.length > 0 ? (hitos[hitos.length - 1].fecha || null) : null,
+    })
+    .select('id, codigo')
+    .single()
+
+  if (error || !data) return { ok: false, error: traducir(error?.message ?? 'No se pudo crear') }
+
+  if (hitos.length > 0) {
+    const { error: eh } = await supabase.from('hitos').insert(
+      hitos.map((h, i) => ({
+        proyecto_id: data.id,
+        orden: i + 1,
+        titulo: h.titulo.trim() || `Entrega ${i + 1}`,
+        entregable: h.entregable.trim() || null,
+        monto_neto: numero(h.monto) ?? 0,
+        porcentaje: total > 0 ? Math.round(((numero(h.monto) ?? 0) / total) * 10000) / 100 : null,
+        fecha_comprometida: h.fecha || null,
+        es_anticipo: i === 0,
+      }))
+    )
+    if (eh) return { ok: false, error: `El proyecto se creó pero fallaron las entregas: ${traducir(eh.message)}` }
+  }
+
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/hoy')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true, ir: `/proyecto/${data.codigo}` }
 }

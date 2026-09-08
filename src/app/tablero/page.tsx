@@ -1,5 +1,5 @@
 import Shell, { Titulo } from '@/components/Shell'
-import { NuevoProyecto } from '@/components/Alta'
+import Asistente from '@/components/Asistente'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
 import { createClient } from '@/lib/supabase/server'
 
@@ -11,6 +11,8 @@ export default async function Tablero() {
     .from('v_cuenta')
     .select('id, cuenta, proyectos_totales, en_vivo')
     .order('cuenta')
+  const { data: personas } = await supabase
+    .from('personas').select('id, nombre').eq('activa', true).order('nombre')
   const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
     id: c.id as string,
     nombre: c.cuenta as string,
@@ -36,7 +38,7 @@ export default async function Tablero() {
       </Titulo>
 
       <div className="mb-7 -mt-2">
-        <NuevoProyecto clientes={clientes} arrancaComo="proyecto" />
+        <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />
       </div>
 
       {filas.length === 0 ? (

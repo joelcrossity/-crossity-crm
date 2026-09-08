@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Shell from '@/components/Shell'
-import { NuevoProyecto } from '@/components/Alta'
+import Asistente from '@/components/Asistente'
 import { createClient } from '@/lib/supabase/server'
 import { ETAPAS, plata } from '@/lib/estados'
 
@@ -29,6 +29,8 @@ export default async function Pipeline() {
     .from('v_cuenta')
     .select('id, cuenta, proyectos_totales, en_vivo')
     .order('cuenta')
+  const { data: personas } = await supabase
+    .from('personas').select('id, nombre').eq('activa', true).order('nombre')
   const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
     id: c.id as string,
     nombre: c.cuenta as string,
@@ -63,7 +65,7 @@ export default async function Pipeline() {
           </div>
         </header>
 
-        <NuevoProyecto clientes={clientes} arrancaComo="oportunidad" />
+        <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
 
         <div className="flex flex-col gap-8">
           {ETAPAS.map((etapa) => {
