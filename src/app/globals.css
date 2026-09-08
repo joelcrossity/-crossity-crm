@@ -39,16 +39,6 @@
   --color-panel:       oklch(0.975 0.003 262);
   --color-superficie:  oklch(1 0 0);
 
-  /* Serie categórica para gráficos, en orden fijo y nunca ciclado.
-     Validada con el script de dataviz: pasa banda de luminosidad, piso
-     de croma, separación para daltonismo (peor par ΔE 16.8 deutan) y
-     contraste contra la superficie. El violeta va aclarado —tinte del
-     manual— porque el #390094 exacto queda fuera de la banda. */
-  --color-serie-1: oklch(0.639 0.152 262);   /* #4880E6 azul de marca */
-  --color-serie-2: oklch(0.575 0.105 178);   /* #0E8F7E verde azulado */
-  --color-serie-3: oklch(0.505 0.200 300);   /* #7440C9 violeta aclarado */
-  --color-serie-4: oklch(0.605 0.145 65);    /* #C77700 ámbar */
-
   /* semáforo: vocabulario de la empresa, no compite con el azul */
   --color-verde:    oklch(0.520 0.125 158);
   --color-amarillo: oklch(0.560 0.125 72);
@@ -77,6 +67,22 @@
   --z-fondo-modal: 50;
   --z-modal: 60;
   --z-aviso: 70;
+}
+
+/* Serie categórica para gráficos, en orden fijo y nunca ciclado.
+   Va fuera de @theme a propósito: los gráficos arman el nombre de la
+   variable en tiempo de ejecución, así que Tailwind no ve el uso y las
+   descarta del CSS. Acá siempre se emiten.
+
+   Validada con el script de dataviz: pasa banda de luminosidad, piso de
+   croma, separación para daltonismo (peor par ΔE 16.8 en deuteranopía) y
+   contraste contra la superficie. El violeta va aclarado a un tinte del
+   manual porque el #390094 exacto queda fuera de la banda. */
+:root {
+  --color-serie-1: #4880E6;  /* azul de marca */
+  --color-serie-2: #0E8F7E;  /* verde azulado */
+  --color-serie-3: #7440C9;  /* violeta aclarado */
+  --color-serie-4: #C77700;  /* ámbar */
 }
 
 html {
