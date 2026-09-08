@@ -31,6 +31,7 @@ const CLASES: Record<string, { texto: string; color: string }> = {
   frenado:     { texto: 'Frenado',     color: 'text-amarillo' },
   anticipo:    { texto: 'Anticipo',    color: 'text-rojo' },
   comision:    { texto: 'Comisión',    color: 'text-violeta-50' },
+  abono:       { texto: 'Abono',       color: 'text-verde' },
 }
 
 function cuando(iso: string | null) {
