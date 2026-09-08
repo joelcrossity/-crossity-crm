@@ -1068,3 +1068,56 @@ export async function anotarCotizacion(moneda: string, valor: string): Promise<R
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Equipo y permisos.
+
+   Los permisos SUMAN, nunca restan: se otorgan sobre lo que el rol ya
+   permite. Así una concesión puntual no puede abrir un agujero por
+   debajo de las reglas generales.
+   ------------------------------------------------------------------ */
+
+export async function cambiarRoles(personaId: string, roles: string[]): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('cambiar_roles', {
+    p_persona: personaId,
+    p_roles: roles,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function otorgarPermiso(
+  personaId: string,
+  proyectoId: string,
+  accion: string,
+  motivo: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('otorgar_permiso', {
+    p_persona: personaId,
+    p_proyecto: proyectoId,
+    p_accion: accion,
+    p_motivo: motivo.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function quitarPermiso(
+  personaId: string,
+  proyectoId: string,
+  accion: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('quitar_permiso', {
+    p_persona: personaId,
+    p_proyecto: proyectoId,
+    p_accion: accion,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

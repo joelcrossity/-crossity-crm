@@ -36,6 +36,12 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
       { href: '/mi-posicion', nombre: 'Mi posición',    detalle: 'lo que me toca cobrar' },
     ],
   },
+  {
+    grupo: 'Adentro',
+    items: [
+      { href: '/equipo', nombre: 'Equipo', detalle: 'quién es quién y qué ve cada uno' },
+    ],
+  },
 ]
 
 const TODAS = NAVEGACION.flatMap((g) => g.items)
