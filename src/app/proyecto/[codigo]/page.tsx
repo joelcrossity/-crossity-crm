@@ -18,6 +18,7 @@ import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
 import AsignarCliente from '@/components/AsignarCliente'
+import Documentos, { type Documento } from '@/components/Documentos'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -37,7 +38,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     .select(`
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
-      es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id,
+      es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id, carpeta_url,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
     `)
@@ -59,6 +60,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: pulso },
     { data: enPipeline },
     { data: cuentasTodas },
+    { data: documentos },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -96,6 +98,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('v_pulso').select('dias_sin_novedades').eq('id', p.id).maybeSingle(),
       supabase.from('v_pipeline').select('seguimiento_vencido').eq('id', p.id).maybeSingle(),
       supabase.from('v_cuenta').select('id, cuenta').order('cuenta'),
+      supabase
+        .from('v_documentos')
+        .select('id, titulo, url, clase, version, enviado_at, enviado_por')
+        .eq('proyecto_id', p.id)
+        .order('created_at', { ascending: false }),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -587,6 +594,14 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             </ol>
           )}
         </section>
+
+        <Documentos
+          documentos={(documentos ?? []) as Documento[]}
+          proyectoId={p.id}
+          carpeta={p.carpeta_url}
+          duenoTabla="proyectos"
+          duenoId={p.id}
+        />
 
         <div className="border-t border-linea pt-6">
           <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />

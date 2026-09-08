@@ -898,3 +898,110 @@ export async function asignarCliente(
 
   return guardar(proyectoId, { organizacion_id })
 }
+
+/* ------------------------------------------------------------------
+   Documentos.
+
+   Se guarda el link, no una copia. Los archivos viven en Drive y se
+   siguen editando ahí; una copia acá se desactualiza el primer día y
+   después nadie sabe cuál es la buena. Lo que el sistema aporta es lo
+   que Drive no sabe: qué se mandó, cuándo y en qué versión.
+   ------------------------------------------------------------------ */
+
+function urlValida(u: string) {
+  try {
+    const x = new URL(u)
+    return x.protocol === 'https:' || x.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+export async function sumarDocumento(datos: FormData): Promise<Resultado> {
+  const titulo = String(datos.get('titulo') ?? '').trim()
+  const url = String(datos.get('url') ?? '').trim()
+
+  if (!titulo) return { ok: false, error: 'Poné un nombre al documento.' }
+  if (!urlValida(url)) return { ok: false, error: 'El link no se entiende. Tiene que empezar con https://' }
+
+  const enviado = String(datos.get('enviado_at') ?? '')
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios').select('persona_id').eq('id', user?.id ?? '').maybeSingle()
+
+  const { error } = await supabase.from('documentos').insert({
+    proyecto_id: String(datos.get('proyecto_id') ?? '') || null,
+    organizacion_id: String(datos.get('organizacion_id') ?? '') || null,
+    titulo,
+    url,
+    clase: String(datos.get('clase') ?? 'otro'),
+    version: String(datos.get('version') ?? '').trim() || null,
+    enviado_at: enviado ? new Date(enviado + 'T12:00:00').toISOString() : null,
+    enviado_por: enviado ? (yo?.persona_id ?? null) : null,
+    subido_por: yo?.persona_id ?? null,
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function marcarEnviado(documentoId: string, fecha: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios').select('persona_id').eq('id', user?.id ?? '').maybeSingle()
+
+  const { error, count } = await supabase
+    .from('documentos')
+    .update(
+      {
+        enviado_at: fecha ? new Date(fecha + 'T12:00:00').toISOString() : null,
+        enviado_por: fecha ? (yo?.persona_id ?? null) : null,
+      },
+      { count: 'exact' },
+    )
+    .eq('id', documentoId)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para tocar este documento.' }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function borrarDocumento(documentoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('documentos').delete().eq('id', documentoId)
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function cambiarCarpeta(
+  tabla: 'proyectos' | 'organizaciones',
+  id: string,
+  url: string,
+): Promise<Resultado> {
+  const limpio = url.trim()
+  if (limpio && !urlValida(limpio))
+    return { ok: false, error: 'El link no se entiende. Tiene que empezar con https://' }
+
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from(tabla)
+    .update({ carpeta_url: limpio || null }, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para cambiar esto.' }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}

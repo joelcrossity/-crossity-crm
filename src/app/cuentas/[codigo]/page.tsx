@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
+import Documentos, { type Documento } from '@/components/Documentos'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
@@ -30,14 +31,19 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
 
   const { data: org } = await supabase
     .from('organizaciones')
-    .select('id, codigo, nombre_canonico, alias, unidad, cuit, notas')
+    .select('id, codigo, nombre_canonico, alias, unidad, cuit, notas, carpeta_url')
     .eq('codigo', codigo)
     .maybeSingle()
 
   if (!org) notFound()
 
-  const [{ data: proyectos }, { data: razones }, { data: marcas }, { data: contactos }] =
-    await Promise.all([
+  const [
+    { data: proyectos },
+    { data: razones },
+    { data: marcas },
+    { data: contactos },
+    { data: documentos },
+  ] = await Promise.all([
       supabase
         .from('proyectos')
         .select(
@@ -51,6 +57,11 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         .eq('organizacion_id', org.id),
       supabase.from('marcas').select('id, nombre, es_principal').eq('organizacion_id', org.id),
       supabase.from('contactos').select('id, nombre, rol, email, telefono').eq('organizacion_id', org.id),
+    supabase
+        .from('v_documentos')
+        .select('id, titulo, url, clase, version, enviado_at, enviado_por')
+        .eq('organizacion_id', org.id)
+        .order('created_at', { ascending: false }),
     ])
 
   type P = {
@@ -260,6 +271,17 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
           </div>
         </section>
       </div>
+
+      <div className="mt-9">
+        <Documentos
+          documentos={(documentos ?? []) as Documento[]}
+          organizacionId={org.id}
+          carpeta={org.carpeta_url}
+          duenoTabla="organizaciones"
+          duenoId={org.id}
+        />
+      </div>
+
     </Shell>
   )
 }
