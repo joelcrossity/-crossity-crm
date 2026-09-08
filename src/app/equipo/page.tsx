@@ -1,6 +1,7 @@
 import Shell, { Titulo } from '@/components/Shell'
 import Permisos, { type Miembro, type Permiso } from '@/components/Permisos'
 import Etapas, { type Etapa, type Estado } from '@/components/Etapas'
+import { type Permiso as PermisoGeneral } from '@/components/Persona'
 import Pestanas from '@/components/Pestanas'
 import { createClient } from '@/lib/supabase/server'
 
@@ -25,8 +26,9 @@ export default async function Equipo() {
     { data: proyectos },
     { data: etapas },
     { data: estados },
+    { data: generales },
   ] = await Promise.all([
-    supabase.from('v_equipo').select('*').eq('activa', true).order('nombre'),
+    supabase.from('v_equipo').select('*').order('activa', { ascending: false }).order('nombre'),
     supabase.from('permisos_proyecto').select('id, persona_id, proyecto_id, accion, motivo'),
     supabase
       .from('proyectos')
@@ -35,6 +37,7 @@ export default async function Equipo() {
       .order('nombre'),
     supabase.from('v_etapas').select('*'),
     supabase.from('estados_proyecto').select('*'),
+    supabase.from('v_permisos').select('*').order('orden'),
   ])
 
   const gente = (equipo ?? []) as Miembro[]
@@ -73,6 +76,9 @@ export default async function Equipo() {
                 <Permisos
                   equipo={gente}
                   permisos={(permisos ?? []) as Permiso[]}
+                  generales={
+                    (generales ?? []) as unknown as (PermisoGeneral & { persona_id: string })[]
+                  }
                   proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
                   puedeConfigurar={puedeConfigurar}
                   esDireccion={esDireccion}

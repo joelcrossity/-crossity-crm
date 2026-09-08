@@ -1396,3 +1396,78 @@ export async function crearAbono(datos: FormData): Promise<Resultado> {
   revalidatePath('/', 'layout')
   return { ok: true, ir: `/proyecto/${data.codigo}` }
 }
+
+/* ------------------------------------------------------------------
+   Personas y sus permisos generales.
+
+   El rol trae permisos por defecto; el ajuste por persona los corre en
+   cualquiera de las dos direcciones y queda marcado como ajuste. Ver
+   quién está fuera de lo que su rol dice es lo que evita que con el
+   tiempo los permisos sean un misterio que nadie se anima a tocar.
+   ------------------------------------------------------------------ */
+
+export async function guardarPersona(
+  personaId: string,
+  nombre: string,
+  email: string,
+  telefono: string,
+  activa: boolean,
+  esExterna: boolean,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guardar_persona', {
+    p_persona: personaId,
+    p_nombre: nombre,
+    p_email: email,
+    p_telefono: telefono,
+    p_activa: activa,
+    p_es_externa: esExterna,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function crearPersona(datos: FormData): Promise<Resultado> {
+  const nombre = String(datos.get('nombre') ?? '').trim()
+  if (!nombre) return { ok: false, error: 'Poné el nombre.' }
+
+  const roles = datos.getAll('roles').map(String)
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('crear_persona', {
+    p_nombre: nombre,
+    p_email: String(datos.get('email') ?? '').trim() || null,
+    p_roles: roles,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function ajustarPermiso(
+  personaId: string,
+  accion: string,
+  otorgado: boolean,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ajustar_permiso', {
+    p_persona: personaId,
+    p_accion: accion,
+    p_otorgado: otorgado,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function soltarPermiso(personaId: string, accion: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('soltar_permiso', {
+    p_persona: personaId,
+    p_accion: accion,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

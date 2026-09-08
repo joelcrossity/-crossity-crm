@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { cambiarRoles, otorgarPermiso, quitarPermiso } from '@/app/acciones'
+import { crearPersona, otorgarPermiso, quitarPermiso } from '@/app/acciones'
+import Persona, { type Permiso as PermisoGeneral } from '@/components/Persona'
 
 /* ------------------------------------------------------------------
    Quién puede qué.
@@ -29,6 +30,7 @@ export type Miembro = {
   en_equipos: number
   participa_en: number
   permisos_dados: number
+  telefono: string | null
 }
 
 export type Permiso = {
@@ -69,16 +71,20 @@ const rotulo = 'text-2xs font-medium uppercase tracking-wider text-gris-50'
 export default function Permisos({
   equipo,
   permisos,
+  generales,
   proyectos,
   puedeConfigurar,
   esDireccion,
 }: {
   equipo: Miembro[]
   permisos: Permiso[]
+  generales: (PermisoGeneral & { persona_id: string })[]
   proyectos: { id: string; nombre: string; codigo: string }[]
   puedeConfigurar: boolean
   esDireccion: boolean
 }) {
+  const [editando, setEditando] = useState<string | null>(null)
+  const [alta, setAlta] = useState(false)
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -103,7 +109,63 @@ export default function Permisos({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="max-w-[70ch] text-sm text-gris">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-[70ch] text-sm text-gris">
+          Cada rol trae permisos por defecto y los switches los ajustan por persona. Además se
+          pueden dar permisos en un proyecto puntual, sin tocar lo general.
+        </p>
+        {puedeConfigurar && !alta && (
+          <button
+            type="button"
+            onClick={() => setAlta(true)}
+            className="shrink-0 rounded-md bg-azul-hondo px-3 py-1.5 text-sm font-medium text-white
+                       transition-colors duration-150 hover:bg-azul"
+          >
+            Nueva persona
+          </button>
+        )}
+      </div>
+
+      {alta && (
+        <form
+          action={(fd) =>
+            correr(() => crearPersona(fd), () => setAlta(false))
+          }
+          className="surge flex flex-wrap items-end gap-2 rounded-lg border border-azul bg-azul-aire p-3"
+        >
+          <input name="nombre" required placeholder="Nombre y apellido" className={`${campo} w-56`} autoFocus />
+          <input name="email" type="email" placeholder="Correo" className={`${campo} w-56`} />
+          <span className="flex flex-wrap items-center gap-1.5">
+            {ROLES.map(([v, t]) => (
+              <label key={v} className="flex items-center gap-1 text-2xs text-gris">
+                <input name="roles" value={v} type="checkbox" className="size-3 accent-[var(--color-azul-hondo)]" />
+                {t}
+              </label>
+            ))}
+          </span>
+          <button
+            type="submit"
+            disabled={pendiente}
+            className="rounded-md bg-azul-hondo px-3 py-1.5 text-sm font-medium text-white
+                       transition-colors duration-150 hover:bg-azul disabled:opacity-50"
+          >
+            Crear
+          </button>
+          <button
+            type="button"
+            onClick={() => setAlta(false)}
+            className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
+          >
+            Cancelar
+          </button>
+          <p className="w-full text-2xs text-gris-50">
+            Crear la persona no crea su cuenta: eso se hace en Supabase con el mismo correo y se
+            enlaza sola. Participar y cobrar no exige entrar al sistema.
+          </p>
+        </form>
+      )}
+
+      <p className="hidden max-w-[70ch] text-sm text-gris">
         Hay tres capas: el <span className="font-medium text-tinta">rol</span> dice lo que puede
         hacer en general, la <span className="font-medium text-tinta">apertura</span> cuánto ve de
         la plata de cada proyecto, y el <span className="font-medium text-tinta">permiso</span> es
@@ -119,7 +181,6 @@ export default function Permisos({
       <ul className="escalona flex flex-col gap-2">
         {equipo.map((m) => {
           const suyos = permisos.filter((p) => p.persona_id === m.id)
-          const editando = abierta === m.id
 
           return (
             <li
@@ -142,51 +203,67 @@ export default function Permisos({
                 </span>
 
                 {puedeConfigurar && (
-                  <button
-                    type="button"
-                    onClick={() => setAbierta(editando ? null : m.id)}
-                    className="shrink-0 rounded-md border border-linea px-2.5 py-1 text-2xs text-gris
-                               transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
-                  >
-                    {editando ? 'Listo' : 'Dar un permiso'}
-                  </button>
+                  <span className="flex shrink-0 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditando(editando === m.id ? null : m.id)}
+                      className="rounded-md border border-linea px-2.5 py-1 text-2xs text-gris
+                                 transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
+                    >
+                      {editando === m.id ? 'Listo' : 'Editar'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAbierta(abierta === m.id ? null : m.id)}
+                      className="rounded-md border border-linea px-2.5 py-1 text-2xs text-gris
+                                 transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
+                    >
+                      Permiso en un proyecto
+                    </button>
+                  </span>
                 )}
               </div>
 
-              {/* Roles */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className={rotulo}>Roles</span>
-                {ROLES.map(([valor, texto]) => {
-                  const puesto = m.roles.includes(valor)
-                  return (
-                    <button
-                      key={valor}
-                      type="button"
-                      disabled={!esDireccion || pendiente}
-                      aria-pressed={puesto}
-                      onClick={() =>
-                        correr(() =>
-                          cambiarRoles(
-                            m.id,
-                            puesto ? m.roles.filter((r) => r !== valor) : [...m.roles, valor],
-                          ),
-                        )
-                      }
-                      className={`rounded-full border px-2 py-0.5 text-2xs transition-colors duration-150
-                                  disabled:cursor-default disabled:opacity-70 ${
-                                    puesto
-                                      ? 'border-azul-hondo bg-azul-aire font-medium text-azul-hondo'
-                                      : 'border-linea text-gris-50 enabled:hover:border-azul'
-                                  }`}
-                    >
-                      {texto}
-                    </button>
-                  )
-                })}
-                {!esDireccion && (
-                  <span className="text-2xs text-gris-50">solo dirección los cambia</span>
-                )}
-              </div>
+              {editando === m.id && (
+                <Persona
+                  id={m.id}
+                  nombre={m.nombre}
+                  email={m.email}
+                  telefono={m.telefono}
+                  activa={m.activa}
+                  esExterna={m.es_externa}
+                  roles={m.roles}
+                  permisos={generales.filter((g) => g.persona_id === m.id)}
+                  puedeEditar={puedeConfigurar}
+                  esDireccion={esDireccion}
+                  alCerrar={() => setEditando(null)}
+                />
+              )}
+
+              {editando !== m.id && (
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {m.roles.length === 0 ? (
+                    <span className="text-2xs text-gris-50">sin rol</span>
+                  ) : (
+                    m.roles.map((r) => (
+                      <span
+                        key={r}
+                        className="rounded-full border border-linea px-2 py-0.5 text-2xs text-gris"
+                      >
+                        {NOMBRE_ROL.get(r) ?? r}
+                      </span>
+                    ))
+                  )}
+                  <span className="cifra ml-1 text-2xs text-gris-50">
+                    {generales.filter((g) => g.persona_id === m.id && g.puede).length} permisos
+                  </span>
+                  {generales.some((g) => g.persona_id === m.id && g.ajustado) && (
+                    <span className="rounded-full bg-amarillo-aire px-1.5 py-px text-[10px] font-medium text-amarillo">
+                      {generales.filter((g) => g.persona_id === m.id && g.ajustado).length} ajustado
+                    </span>
+                  )}
+                </span>
+              )}
 
               {/* Permisos puntuales */}
               {suyos.length > 0 && (
@@ -223,7 +300,7 @@ export default function Permisos({
                 </ul>
               )}
 
-              {editando && (
+              {abierta === m.id && (
                 <div className="surge flex flex-wrap items-end gap-2 rounded-md border border-azul bg-azul-aire p-3">
                   <label className="flex flex-col gap-0.5">
                     <span className={rotulo}>En qué proyecto</span>
