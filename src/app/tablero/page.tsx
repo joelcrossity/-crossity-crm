@@ -1,11 +1,9 @@
 import Shell, { Titulo } from '@/components/Shell'
 import Asistente from '@/components/Asistente'
-import { Grupo, type Fila } from '@/components/TablaProyectos'
-import TableroEstados from '@/components/TableroEstados'
-import Vistas from '@/components/Vistas'
+import { type Fila } from '@/components/TablaProyectos'
+import VistaProyectos from '@/components/VistaProyectos'
 import { createClient } from '@/lib/supabase/server'
 
-const ORDEN = ['verde', 'amarillo', 'gris', 'naranja', 'rojo']
 
 export default async function Tablero() {
   const supabase = await createClient()
@@ -47,19 +45,10 @@ export default async function Tablero() {
           </p>
         </div>
       ) : (
-        <Vistas
-          clave="crossity.proyectos"
-          acciones={
-            <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />
-          }
-          tablero={<TableroEstados filas={filas} />}
-          lista={
-            <div className="flex flex-col gap-8">
-              {ORDEN.map((color) => (
-                <Grupo key={color} color={color} filas={filas.filter((f) => f.color === color)} />
-              ))}
-            </div>
-          }
+        <VistaProyectos
+          filas={filas}
+          responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
+          alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
         />
       )}
     </Shell>

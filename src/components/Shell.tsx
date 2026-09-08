@@ -1,15 +1,43 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Campanita, { type Aviso } from '@/components/Campanita'
+import { plata } from '@/lib/estados'
 
-const NAVEGACION = [
-  { href: '/hoy',         nombre: 'Hoy',         detalle: 'lo que necesita atención' },
-  { href: '/tablero',     nombre: 'Proyectos',   detalle: 'todo lo que está en curso' },
-  { href: '/pipeline',    nombre: 'Pipeline',    detalle: 'lo enviado y por seguir' },
-  { href: '/cuentas',     nombre: 'Clientes',    detalle: 'las cuentas y sus marcas' },
-  { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },
-  { href: '/mi-posicion', nombre: 'Mi posición', detalle: 'lo que me toca cobrar' },
+type Pulso = {
+  en_vivo: number
+  atrasados: number
+  frenados: number
+  en_pipeline: number
+  seguimientos_vencidos: number
+  por_cobrar: number
+  abonos: number
+}
+
+/* Agrupada por área, no por lista plana: cuando sean quince pantallas
+   la diferencia entre "encontrarla" y "recorrerlas todas" es esto. */
+const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string; detalle: string }[] }[] = [
+  {
+    grupo: null,
+    items: [{ href: '/hoy', nombre: 'Hoy', detalle: 'lo que necesita atención' }],
+  },
+  {
+    grupo: 'Trabajo',
+    items: [
+      { href: '/tablero',  nombre: 'Proyectos', detalle: 'todo lo que está en curso' },
+      { href: '/pipeline', nombre: 'Pipeline',  detalle: 'lo enviado y por seguir' },
+      { href: '/cuentas',  nombre: 'Clientes',  detalle: 'las cuentas y sus marcas' },
+    ],
+  },
+  {
+    grupo: 'Plata',
+    items: [
+      { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },
+      { href: '/mi-posicion', nombre: 'Mi posición',    detalle: 'lo que me toca cobrar' },
+    ],
+  },
 ]
+
+const TODAS = NAVEGACION.flatMap((g) => g.items)
 
 export default async function Shell({
   children,
@@ -30,9 +58,10 @@ export default async function Shell({
   const yo = data?.personas as unknown as { nombre: string; roles: string[] } | undefined
   const iniciales = yo?.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('') ?? '?'
 
-  const [{ data: crudos }, { data: lectura }] = await Promise.all([
+  const [{ data: crudos }, { data: lectura }, { data: pulso }] = await Promise.all([
     supabase.from('v_campanita').select('*').order('momento', { ascending: false }).limit(40),
     supabase.from('lecturas').select('campanita_at').maybeSingle(),
+    supabase.from('v_estado_general').select('*').maybeSingle(),
   ])
 
   /* Sin marca de lectura, todo es nuevo: la primera vez que alguien
@@ -64,30 +93,36 @@ export default async function Shell({
           Crossity
         </Link>
 
-        <nav className="flex flex-1 flex-wrap gap-1 lg:flex-col lg:flex-nowrap lg:gap-0.5">
-          {NAVEGACION.map((item) => {
-            const aca = activo === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={item.detalle}
-                aria-current={aca ? 'page' : undefined}
-                className={`rounded-md px-2.5 py-1.5 text-base transition-colors duration-150 ${
-                  aca
-                    ? 'bg-azul-aire font-bold text-azul-hondo'
-                    : 'text-gris hover:bg-superficie hover:text-tinta'
-                }`}
-              >
-                {item.nombre}
-                {aca && (
-                  <span className="block text-2xs font-normal text-azul-hondo/70">
-                    {item.detalle}
-                  </span>
-                )}
-              </Link>
-            )
-          })}
+        <nav className="flex flex-1 flex-wrap gap-x-4 gap-y-3 lg:flex-col lg:flex-nowrap lg:gap-4">
+          {NAVEGACION.map((g) => (
+            <div key={g.grupo ?? 'raiz'} className="flex flex-col gap-0.5">
+              {g.grupo && (
+                <span className="hidden px-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-gris-50 lg:block">
+                  {g.grupo}
+                </span>
+              )}
+              <span className="flex flex-wrap gap-1 lg:flex-col lg:gap-0.5">
+                {g.items.map((item) => {
+                  const aca = activo === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      title={item.detalle}
+                      aria-current={aca ? 'page' : undefined}
+                      className={`rounded-md px-2.5 py-1.5 text-base transition-colors duration-150 ${
+                        aca
+                          ? 'bg-azul-aire font-bold text-azul-hondo'
+                          : 'text-gris hover:bg-superficie hover:text-tinta'
+                      }`}
+                    >
+                      {item.nombre}
+                    </Link>
+                  )
+                })}
+              </span>
+            </div>
+          ))}
         </nav>
       </aside>
 
@@ -95,11 +130,14 @@ export default async function Shell({
         {/* Los avisos van donde se los busca: arriba y a la derecha. En
             la barra lateral el desplegable quedaba apretado contra el
             borde y encima había que ir a buscarlo a un lugar raro. */}
-        <div
-          className="sticky top-0 z-(--z-fijo) flex items-center justify-end gap-3
-                     border-b border-linea bg-lienzo px-5 py-2 lg:px-10"
-        >
-          <Campanita avisos={avisos} />
+        <div className="sticky top-0 z-(--z-fijo) flex flex-col border-b border-linea bg-lienzo">
+          <div className="flex items-center justify-between gap-3 px-5 py-2 lg:px-10">
+            <span className="min-w-0 truncate text-base font-medium text-tinta">
+              {TODAS.find((i) => i.href === activo)?.nombre ?? 'Crossity'}
+            </span>
+
+            <span className="flex items-center gap-3">
+              <Campanita avisos={avisos} />
 
           {yo && (
             <span className="flex items-center gap-2 border-l border-linea pl-3">
@@ -118,6 +156,10 @@ export default async function Shell({
               </span>
             </span>
           )}
+            </span>
+          </div>
+
+          <Franja pulso={pulso as Pulso | null} />
         </div>
 
         <div className="px-5 py-7 lg:px-10 lg:py-9">
@@ -189,5 +231,86 @@ export function Rastro({
         </span>
       ))}
     </nav>
+  )
+}
+
+
+/* ------------------------------------------------------------------
+   La franja de estado.
+
+   Cuatro señales de cómo viene la empresa, fijas arriba en todas las
+   pantallas. El dato también está en Hoy: lo que agrega acá es que no
+   haya que ir a buscarlo. Si algo está en rojo, se ve mientras estás
+   haciendo otra cosa, que es cuando importa.
+   ------------------------------------------------------------------ */
+
+function Franja({ pulso }: { pulso: Pulso | null }) {
+  if (!pulso) return null
+
+  const señales: { rotulo: string; valor: string; nota?: string; alarma: boolean; href: string }[] = [
+    {
+      rotulo: 'En vivo',
+      valor: String(pulso.en_vivo),
+      nota:
+        pulso.frenados > 0
+          ? `${pulso.frenados} frenado${pulso.frenados > 1 ? 's' : ''}`
+          : pulso.abonos > 0
+            ? `+ ${pulso.abonos} abonos`
+            : undefined,
+      alarma: pulso.frenados > 0,
+      href: '/tablero',
+    },
+    {
+      rotulo: 'Atrasados',
+      valor: String(pulso.atrasados),
+      nota: pulso.atrasados > 0 ? 'pasaron la fecha' : 'ninguno',
+      alarma: pulso.atrasados > 0,
+      href: '/tablero',
+    },
+    {
+      rotulo: 'Por cobrar',
+      valor: plata(pulso.por_cobrar),
+      nota: 'facturado sin entrar',
+      alarma: pulso.por_cobrar > 0,
+      href: '/admin',
+    },
+    {
+      rotulo: 'Pipeline',
+      valor: String(pulso.en_pipeline),
+      nota:
+        pulso.seguimientos_vencidos > 0
+          ? `${pulso.seguimientos_vencidos} vencido${pulso.seguimientos_vencidos > 1 ? 's' : ''}`
+          : 'al día',
+      alarma: pulso.seguimientos_vencidos > 0,
+      href: '/pipeline',
+    },
+  ]
+
+  return (
+    <div className="riel flex gap-x-6 overflow-x-auto border-t border-linea px-5 py-1.5 lg:px-10">
+      {señales.map((s) => (
+        <Link
+          key={s.rotulo}
+          href={s.href}
+          className="group flex shrink-0 items-baseline gap-1.5 text-2xs"
+        >
+          <span
+            className={`size-1.5 shrink-0 self-center rounded-full ${
+              s.alarma ? 'bg-rojo' : 'bg-verde'
+            }`}
+            aria-hidden
+          />
+          <span className="font-medium uppercase tracking-wider text-gris-50">{s.rotulo}</span>
+          <span
+            className={`cifra font-bold transition-colors duration-150 ${
+              s.alarma ? 'text-rojo' : 'text-tinta'
+            } group-hover:text-azul-hondo`}
+          >
+            {s.valor}
+          </span>
+          {s.nota && <span className="text-gris-50">{s.nota}</span>}
+        </Link>
+      ))}
+    </div>
   )
 }

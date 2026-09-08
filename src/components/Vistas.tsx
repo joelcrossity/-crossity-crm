@@ -40,6 +40,47 @@ function elegir(clave: string, cual: string) {
   oyentes.forEach((f) => f())
 }
 
+export function useVista(clave: string) {
+  return useSyncExternalStore(
+    suscribir,
+    () => leer(clave),
+    () => 'tablero',
+  )
+}
+
+export function Selector({ clave, vista }: { clave: string; vista: string }) {
+  return (
+    <div
+      role="group"
+      aria-label="Cómo mirar"
+      className="flex shrink-0 gap-0.5 rounded-md border border-linea bg-panel p-0.5"
+    >
+      {(
+        [
+          ['tablero', 'Tablero', <Columnas key="t" />],
+          ['lista', 'Lista', <Renglones key="l" />],
+        ] as const
+      ).map(([valor, texto, icono]) => (
+        <button
+          key={valor}
+          type="button"
+          onClick={() => elegir(clave, valor)}
+          aria-pressed={vista === valor}
+          className={`flex items-center gap-1.5 rounded-[5px] px-2.5 py-1 text-sm
+                      transition-colors duration-150 ${
+                        vista === valor
+                          ? 'bg-superficie font-medium text-tinta shadow-[0_1px_2px_oklch(0.232_0.003_106/0.08)]'
+                          : 'text-gris-50 hover:text-gris'
+                      }`}
+        >
+          {icono}
+          {texto}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function Vistas({
   clave,
   tablero,
@@ -51,43 +92,12 @@ export default function Vistas({
   lista: React.ReactNode
   acciones?: React.ReactNode
 }) {
-  const vista = useSyncExternalStore(
-    suscribir,
-    () => leer(clave),
-    () => 'tablero',
-  )
+  const vista = useVista(clave)
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div
-          role="group"
-          aria-label="Cómo mirar"
-          className="flex gap-0.5 rounded-md border border-linea bg-panel p-0.5"
-        >
-          {(
-            [
-              ['tablero', 'Tablero', <Columnas key="t" />],
-              ['lista', 'Lista', <Renglones key="l" />],
-            ] as const
-          ).map(([valor, texto, icono]) => (
-            <button
-              key={valor}
-              type="button"
-              onClick={() => elegir(clave, valor)}
-              aria-pressed={vista === valor}
-              className={`flex items-center gap-1.5 rounded-[5px] px-2.5 py-1 text-sm
-                          transition-colors duration-150 ${
-                            vista === valor
-                              ? 'bg-superficie font-medium text-tinta shadow-[0_1px_2px_oklch(0.232_0.003_106/0.08)]'
-                              : 'text-gris-50 hover:text-gris'
-                          }`}
-            >
-              {icono}
-              {texto}
-            </button>
-          ))}
-        </div>
+        <Selector clave={clave} vista={vista} />
         {acciones}
       </div>
 
