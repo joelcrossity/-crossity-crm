@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import Campanita, { type Aviso } from '@/components/Campanita'
 
 const NAVEGACION = [
   { href: '/hoy',         nombre: 'Hoy',         detalle: 'lo que necesita atención' },
@@ -29,18 +30,42 @@ export default async function Shell({
   const yo = data?.personas as unknown as { nombre: string; roles: string[] } | undefined
   const iniciales = yo?.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('') ?? '?'
 
+  const [{ data: crudos }, { data: lectura }] = await Promise.all([
+    supabase.from('v_campanita').select('*').order('momento', { ascending: false }).limit(40),
+    supabase.from('lecturas').select('campanita_at').maybeSingle(),
+  ])
+
+  /* Sin marca de lectura, todo es nuevo: la primera vez que alguien
+     abre el sistema tiene que ver lo que se venía acumulando. */
+  const desde = (lectura?.campanita_at as string | undefined) ?? null
+  const avisos: Aviso[] = ((crudos ?? []) as Record<string, unknown>[]).map((a) => ({
+    clave: a.clave as string,
+    clase: a.clase as string,
+    momento: (a.momento as string) ?? null,
+    titulo: a.titulo as string,
+    proyecto: (a.proyecto as string) ?? null,
+    codigo: (a.codigo as string) ?? null,
+    es_mi_plata: !!a.es_mi_plata,
+    urgencia: (a.urgencia as string) ?? 'normal',
+    // Lo que va a pasar no se "lee": sigue pendiente hasta que se resuelve.
+    nuevo: a.clase !== 'paso' || !desde || (a.momento as string) > desde,
+  }))
+
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <aside
         className="flex shrink-0 flex-col gap-6 border-b border-linea bg-panel px-4 py-4
                    lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:border-r lg:border-b-0 lg:py-6"
       >
-        <Link
-          href="/hoy"
-          className="px-2 text-2xs font-bold uppercase tracking-[0.2em] text-azul-hondo"
-        >
-          Crossity
-        </Link>
+        <div className="flex items-center justify-between gap-2 pl-2">
+          <Link
+            href="/hoy"
+            className="text-2xs font-bold uppercase tracking-[0.2em] text-azul-hondo"
+          >
+            Crossity
+          </Link>
+          <Campanita avisos={avisos} />
+        </div>
 
         <nav className="flex flex-1 flex-wrap gap-1 lg:flex-col lg:flex-nowrap lg:gap-0.5">
           {NAVEGACION.map((item) => {
@@ -58,6 +83,11 @@ export default async function Shell({
                 }`}
               >
                 {item.nombre}
+                {aca && (
+                  <span className="block text-2xs font-normal text-azul-hondo/70">
+                    {item.detalle}
+                  </span>
+                )}
               </Link>
             )
           })}

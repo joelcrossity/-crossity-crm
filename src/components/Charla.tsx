@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { anotarCharla } from '@/app/acciones'
+import Dictado from '@/components/Dictado'
 
 /* ------------------------------------------------------------------
    Anotar una charla, en veinte segundos.
@@ -47,6 +48,8 @@ export default function Charla({
   const [loHablado, setLoHablado] = useState('')
   const [origen, setOrigen] = useState('')
   const [cuando, setCuando] = useState('')
+  const [referidoPor, setReferidoPor] = useState('')
+  const [referidoNota, setReferidoNota] = useState('')
 
   const elegido = clientes.find((c) => c.id === clienteId)
 
@@ -121,6 +124,36 @@ export default function Charla({
           </select>
         </label>
 
+        {(origen === 'recomendacion' || origen === 'referido') && (
+          <>
+            <label className="flex flex-col gap-0.5">
+              <span className={rotulo}>Quién lo trajo</span>
+              <input
+                value={referidoPor}
+                onChange={(e) => setReferidoPor(e.target.value)}
+                placeholder="Nombre y apellido"
+                className={campo}
+              />
+              <span className="text-2xs text-gris-50">
+                Si ya nos refirió antes, se reconoce y no se duplica.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-0.5">
+              <span className={rotulo}>Qué se habló de su comisión</span>
+              <input
+                value={referidoNota}
+                onChange={(e) => setReferidoNota(e.target.value)}
+                placeholder="Nada todavía, o «con un 10 % está bien»"
+                className={campo}
+              />
+              <span className="text-2xs text-gris-50">
+                El porcentaje lo cierra administración cuando haya monto.
+              </span>
+            </label>
+          </>
+        )}
+
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>Tema, si ya hay uno</span>
           <input
@@ -146,8 +179,14 @@ export default function Charla({
         </label>
       </div>
 
-      <label className="flex flex-col gap-0.5">
-        <span className={rotulo}>De qué hablaron</span>
+      <label className="flex flex-col gap-1">
+        <span className="flex flex-wrap items-center justify-between gap-2">
+          <span className={rotulo}>De qué hablaron</span>
+          <Dictado
+            etiqueta="Contalo hablando"
+            alDictar={(t) => setLoHablado((v) => (v ? `${v} ${t}` : t).replace(/\s+/g, ' '))}
+          />
+        </span>
         <textarea
           value={loHablado}
           onChange={(e) => setLoHablado(e.target.value)}
@@ -164,7 +203,9 @@ export default function Charla({
           onClick={() => {
             setError(null)
             empezar(async () => {
-              const r = await anotarCharla({ clienteId, clienteNuevo, tema, loHablado, origen, cuando })
+              const r = await anotarCharla({
+                clienteId, clienteNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
+              })
               if (r.ok && r.ir) router.push(r.ir)
               else if (!r.ok) setError(r.error)
             })

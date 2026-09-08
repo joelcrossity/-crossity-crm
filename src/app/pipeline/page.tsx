@@ -1,9 +1,9 @@
-import Link from 'next/link'
-import Shell from '@/components/Shell'
+import Shell, { Titulo } from '@/components/Shell'
 import Asistente from '@/components/Asistente'
 import Charla from '@/components/Charla'
 import { createClient } from '@/lib/supabase/server'
-import { ETAPAS, plata } from '@/lib/estados'
+import Tablero, { type Op as Tarjeta } from '@/components/Tablero'
+import { plata } from '@/lib/estados'
 
 type Op = {
   id: string
@@ -38,98 +38,79 @@ export default async function Pipeline() {
     proyectos: (c.proyectos_totales as number) ?? 0,
     enVivo: (c.en_vivo as number) ?? 0,
   }))
-  const [{ data }, { data: recontactar }] = await Promise.all([
+  const [{ data }, { data: recontactar }, { data: referidos }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
     supabase.from('v_para_recontactar').select('codigo, nombre, cliente, origen'),
+    supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
   ])
   const ops = (data ?? []) as Op[]
 
   const total = ops.reduce((s, o) => s + (o.moneda === 'ARS' ? 0 : o.monto_neto ?? 0), 0)
   const enPesos = ops.reduce((s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0), 0)
 
+  const porReferente = new Map(
+    ((referidos ?? []) as Record<string, unknown>[]).map((r) => [
+      r.id as string,
+      ((r.personas as { nombre: string } | null)?.nombre ?? null) as string | null,
+    ]),
+  )
+  const tarjetas: Tarjeta[] = ops.map((o) => ({
+    id: o.id,
+    codigo: o.codigo,
+    nombre: o.nombre,
+    cliente: o.cliente,
+    etapa: o.etapa,
+    monto_neto: o.monto_neto,
+    moneda: o.moneda,
+    proxima_accion: o.proxima_accion,
+    sin_agendar: o.sin_agendar,
+    seguimiento_vencido: o.seguimiento_vencido,
+    negocia_sin_base: o.negocia_sin_base,
+    cotizado_sin_monto: o.cotizado_sin_monto,
+    referente: porReferente.get(o.id) ?? null,
+  }))
+
+  const vencidos = ops.filter((o) => o.seguimiento_vencido).length
+  const sinAgendar = ops.filter((o) => o.sin_agendar).length
+
   return (
     <Shell activo="/pipeline">
-      <div className="flex flex-col gap-9">
-        <header className="flex flex-col gap-4 border-b border-linea pb-6">
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-gris-50">
-            Pipeline
-          </span>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {ops.length} oportunidades abiertas
-          </h1>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-[13px] text-gris">
-            {enPesos > 0 && <span>{plata(enPesos, 'ARS')} cotizados</span>}
-            {total > 0 && <span>{plata(total, 'USD')} cotizados</span>}
-            <span className="text-gris-50">
-              {ops.filter((o) => o.sin_agendar).length} sin seguimiento agendado
-            </span>
-          </div>
-        </header>
+      <Titulo
+        seccion="Pipeline"
+        bajada={
+          vencidos > 0
+            ? `${vencidos} con el seguimiento vencido. Ésas se caen solas si nadie las toca.`
+            : sinAgendar > 0
+              ? `${sinAgendar} sin próximo seguimiento agendado: figuran activas pero nadie las está siguiendo.`
+              : 'Todas con su próximo paso agendado.'
+        }
+      >
+        {ops.length} oportunidades abiertas
+      </Titulo>
+
+      <div className="flex flex-col gap-8">
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Dato valor={plata(enPesos, 'ARS')} titulo="cotizado en pesos" />
+          {total > 0 && <Dato valor={plata(total, 'USD')} titulo="cotizado en dólares" />}
+          <Dato
+            valor={String(vencidos)}
+            titulo="con seguimiento vencido"
+            tono={vencidos > 0 ? 'rojo' : 'verde'}
+          />
+        </section>
 
         <div className="flex flex-wrap items-start gap-2">
           <Charla clientes={clientes} />
           <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
         </div>
 
-        <div className="flex flex-col gap-8">
-          {ETAPAS.map((etapa) => {
-            const deEtapa = ops.filter((o) => o.etapa === etapa.valor)
-            if (deEtapa.length === 0) return null
-
-            return (
-              <section key={etapa.valor} className="flex flex-col gap-3">
-                <div className="flex items-baseline gap-3">
-                  <h2 className="text-base font-bold tracking-tight">{etapa.etiqueta}</h2>
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-gris-50">
-                    {deEtapa.length}
-                  </span>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {deEtapa.map((o) => (
-                    <Link
-                      key={o.id}
-                      href={`/proyecto/${o.codigo}`}
-                      className="flex flex-col gap-2.5 rounded-lg border border-linea bg-white p-4
-                                 transition-colors hover:border-azul"
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-bold leading-snug tracking-tight">
-                          {o.nombre}
-                        </span>
-                        <span className="font-mono text-[11px] text-gris-50">{o.cliente}</span>
-                      </div>
-
-                      {o.monto_neto !== null ? (
-                        <span className="font-mono text-sm tabular-nums">
-                          {plata(o.monto_neto, o.moneda)}
-                        </span>
-                      ) : o.cotizado_sin_monto ? (
-                        <span className="font-mono text-[11px] text-amarillo">cotizado sin monto</span>
-                      ) : null}
-
-                      {o.proxima_accion && (
-                        <p className="text-[13px] leading-snug text-gris">{o.proxima_accion}</p>
-                      )}
-
-                      <div className="flex flex-wrap gap-1.5">
-                        {o.sin_agendar && <Chip tono="amarillo">sin agendar</Chip>}
-                        {o.seguimiento_vencido && <Chip tono="rojo">seguimiento vencido</Chip>}
-                        {o.negocia_sin_base && <Chip tono="amarillo">nurturing pendiente</Chip>}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )
-          })}
-        </div>
+        <Tablero ops={tarjetas} />
 
         {(recontactar?.length ?? 0) > 0 && (
           <section className="flex flex-col gap-3 border-t border-linea pt-8">
             <div className="flex flex-col gap-1">
               <h2 className="text-base font-bold tracking-tight">Para recontactar</h2>
-              <p className="text-[13px] text-gris">
+              <p className="max-w-[65ch] text-sm text-gris">
                 No se perdieron: se apagaron sin que nadie decidiera nada.
               </p>
             </div>
@@ -137,7 +118,7 @@ export default async function Pipeline() {
               {recontactar!.map((r: { codigo: string; nombre: string; cliente: string }) => (
                 <li key={r.codigo} className="text-sm text-gris">
                   <span className="font-medium text-tinta">{r.nombre}</span>
-                  <span className="font-mono text-[11px] text-gris-50"> · {r.cliente}</span>
+                  <span className="cifra text-2xs text-gris-50"> · {r.cliente}</span>
                 </li>
               ))}
             </ul>
@@ -148,11 +129,20 @@ export default async function Pipeline() {
   )
 }
 
-function Chip({ tono, children }: { tono: 'amarillo' | 'rojo'; children: React.ReactNode }) {
-  const color = tono === 'rojo' ? 'border-rojo text-rojo' : 'border-amarillo text-amarillo'
+function Dato({
+  valor,
+  titulo,
+  tono = 'tinta',
+}: {
+  valor: string
+  titulo: string
+  tono?: 'tinta' | 'rojo' | 'verde'
+}) {
+  const color = tono === 'rojo' ? 'text-rojo' : tono === 'verde' ? 'text-verde' : 'text-tinta'
   return (
-    <span className={`rounded-full border px-1.5 py-px font-mono text-[9px] uppercase tracking-wider ${color}`}>
-      {children}
-    </span>
+    <div className="surge flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+      <span className={`cifra text-xl font-bold ${color}`}>{valor}</span>
+      <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</span>
+    </div>
   )
 }

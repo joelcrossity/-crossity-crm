@@ -669,6 +669,8 @@ export type Charla = {
   loHablado: string
   origen: string
   cuando: string
+  referidoPor: string
+  referidoNota: string
 }
 
 export async function anotarCharla(c: Charla): Promise<Resultado> {
@@ -688,12 +690,23 @@ export async function anotarCharla(c: Charla): Promise<Resultado> {
   if (!organizacion_id) return { ok: false, error: 'Elegí de quién es la charla.' }
 
   const supabase = await createClient()
+
+  // Quien lo trajo se anota ahora, que es cuando se sabe. El porcentaje
+  // lo acuerda administración cuando haya monto: son dos momentos.
+  let referido_por: string | null = null
+  if (c.referidoPor.trim()) {
+    const { data: id } = await supabase.rpc('referente', { p_nombre: c.referidoPor.trim() })
+    referido_por = (id as string) ?? null
+  }
+
   const { data, error } = await supabase
     .from('proyectos')
     .insert({
       organizacion_id,
       // Sin nombre todavía: se llama por lo que se habló hasta que tenga uno.
       nombre: c.tema.trim() || 'Por definir',
+      referido_por,
+      referido_nota: c.referidoNota.trim() || null,
       color: 'amarillo',
       etapa: 'interes',
       esquema_cobro: 'a_convenir',
@@ -711,4 +724,30 @@ export async function anotarCharla(c: Charla): Promise<Resultado> {
 
   revalidatePath('/', 'layout')
   return { ok: true, ir: `/proyecto/${data.codigo}` }
+}
+
+
+export async function cambiarReferido(
+  proyectoId: string,
+  nombre: string,
+  nota: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+
+  let referido_por: string | null = null
+  if (nombre.trim()) {
+    const { data, error } = await supabase.rpc('referente', { p_nombre: nombre.trim() })
+    if (error) return { ok: false, error: traducir(error.message) }
+    referido_por = data as string
+  }
+
+  return guardar(proyectoId, { referido_por, referido_nota: nota.trim() || null })
+}
+
+export async function marcarLeido(): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('marcar_leido')
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
 }

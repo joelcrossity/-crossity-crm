@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { cargarNovedad } from '@/app/acciones'
+import Dictado from '@/components/Dictado'
 
 const TIPOS = [
   { valor: 'entrega',        texto: 'Entrega',       ayuda: 'avanzó el trabajo' },
@@ -49,6 +50,11 @@ export default function Novedad({ proyectoId }: { proyectoId: string }) {
                    text-base leading-relaxed text-tinta transition-colors duration-150
                    placeholder:text-gris-50 hover:border-linea-fuerte focus:border-azul
                    disabled:opacity-50"
+      />
+
+      <Dictado
+        etiqueta="Contalo hablando"
+        alDictar={(t) => setTexto((v) => (v ? `${v} ${t}` : t).replace(/\s+/g, ' '))}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

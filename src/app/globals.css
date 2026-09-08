@@ -62,6 +62,11 @@
   --font-sans: var(--fuente-metropolis), "Open Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
+  /* Movimiento. Salidas exponenciales: arrancan rápido y frenan solas,
+     que es como se mueve algo que pesa. Nada rebota. */
+  --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-suave:  cubic-bezier(0.33, 1, 0.68, 1);
+
   --z-desplegable: 30;
   --z-fijo: 40;
   --z-fondo-modal: 50;
@@ -114,9 +119,61 @@ h1, h2, h3, h4 {
   font-feature-settings: "tnum";
 }
 
+/* ------------------------------------------------------------------
+   Entrada. El contenido aparece de abajo, escalonado, para que el ojo
+   siga un orden en vez de recibir la pantalla entera de golpe.
+
+   `both` deja el estado final aplicado: si la animación no llega a
+   correr, lo que se ve es el contenido, nunca el vacío.
+   ------------------------------------------------------------------ */
+
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.surge {
+  animation: surgir 0.34s var(--ease-salida) both;
+}
+
+/* El escalonado se corta a los diez: más que eso deja de leerse como
+   ritmo y empieza a leerse como espera. */
+.escalona > * { animation: surgir 0.34s var(--ease-salida) both; }
+.escalona > *:nth-child(1)  { animation-delay: 0ms; }
+.escalona > *:nth-child(2)  { animation-delay: 28ms; }
+.escalona > *:nth-child(3)  { animation-delay: 56ms; }
+.escalona > *:nth-child(4)  { animation-delay: 84ms; }
+.escalona > *:nth-child(5)  { animation-delay: 112ms; }
+.escalona > *:nth-child(6)  { animation-delay: 140ms; }
+.escalona > *:nth-child(7)  { animation-delay: 168ms; }
+.escalona > *:nth-child(8)  { animation-delay: 196ms; }
+.escalona > *:nth-child(9)  { animation-delay: 224ms; }
+.escalona > *:nth-child(n+10) { animation-delay: 250ms; }
+
+/* Riel horizontal del tablero: la barra no debe robarle presencia a
+   las tarjetas. */
+.riel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-linea-fuerte) transparent;
+  scroll-snap-type: x proximity;
+}
+.riel::-webkit-scrollbar { height: 8px; }
+.riel::-webkit-scrollbar-thumb {
+  background: var(--color-linea-fuerte);
+  border-radius: 4px;
+}
+.riel::-webkit-scrollbar-track { background: transparent; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
