@@ -1,20 +1,21 @@
 import Link from 'next/link'
-import { ETAPAS, plata, fechaCorta } from '@/lib/estados'
+import { plata, fechaCorta, type EtapaViva } from '@/lib/estados'
 import type { Op } from '@/components/Tablero'
 
 /* Las mismas oportunidades en renglones: el tablero dice dónde se traba,
    la lista deja comparar montos y fechas de corrido. */
 
-const ETIQUETA = new Map<string, string>(ETAPAS.map((e) => [e.valor, e.etiqueta]))
-
 export default function ListaPipeline({
   ops,
   seguimientos,
+  etapas,
 }: {
   ops: Op[]
   seguimientos: Map<string, string | null>
+  etapas: EtapaViva[]
 }) {
-  const orden = new Map<string, number>(ETAPAS.map((e, i) => [e.valor, i]))
+  const ETIQUETA = new Map<string, string>(etapas.map((e) => [e.valor, e.etiqueta]))
+  const orden = new Map<string, number>(etapas.map((e, i) => [e.valor, i]))
   const filas = [...ops].sort(
     (a, b) => (orden.get(b.etapa) ?? 0) - (orden.get(a.etapa) ?? 0),
   )

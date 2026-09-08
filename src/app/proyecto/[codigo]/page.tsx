@@ -67,6 +67,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: documentos },
     { data: cambio },
     { data: servicios },
+    { data: filasEtapas },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -111,6 +112,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         .order('created_at', { ascending: false }),
       supabase.from('v_cotizaciones').select('codigo, valor, dias_de_atraso'),
       supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
+      supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -208,6 +210,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             proximaAccion={p.proxima_accion}
             proximoSeguimiento={p.proximo_seguimiento}
             vencido={!!enPipeline?.seguimiento_vencido}
+            etapas={((filasEtapas ?? []) as { clave: string; etiqueta: string }[]).map((e) => ({
+              valor: e.clave,
+              etiqueta: e.etiqueta,
+            }))}
           />
         ) : null}
 

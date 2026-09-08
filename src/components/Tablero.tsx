@@ -4,9 +4,7 @@ import { useOptimistic, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
-import { ETAPAS, plata } from '@/lib/estados'
-
-const ETIQUETA = new Map<string, string>(ETAPAS.map((e) => [e.valor, e.etiqueta]))
+import { plata, type EtapaViva } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -45,7 +43,8 @@ export type Op = {
    en vez de empezar de nuevo. */
 const FRIA = '__fria'
 
-export default function Tablero({ ops }: { ops: Op[] }) {
+export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[] }) {
+  const ETIQUETA = new Map<string, string>(etapas.map((e) => [e.valor, e.etiqueta]))
   const router = useRouter()
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
@@ -91,7 +90,7 @@ export default function Tablero({ ops }: { ops: Op[] }) {
 
   return (
     <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
-      {[...ETAPAS, { valor: FRIA, etiqueta: 'Sin respuesta' }].map((etapa) => {
+      {[...etapas, { valor: FRIA, etiqueta: 'Sin respuesta' }].map((etapa) => {
         const fria = etapa.valor === FRIA
         const suyas = fria
           ? vista.filter((o) => o.enfriada)

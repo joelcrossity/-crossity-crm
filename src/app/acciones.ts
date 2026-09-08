@@ -1260,3 +1260,75 @@ export async function borrarCostoFijo(id: string): Promise<Resultado> {
   revalidatePath('/admin')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Las etapas del embudo.
+
+   Salieron del código a la base porque el embudo cambia: es la forma en
+   que la agencia trabaja y esa forma se ajusta con el tiempo.
+   ------------------------------------------------------------------ */
+
+function aClave(texto: string) {
+  return texto
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40)
+}
+
+export async function guardarEtapa(
+  clave: string,
+  etiqueta: string,
+  ayuda: string,
+): Promise<Resultado> {
+  const nombre = etiqueta.trim()
+  if (!nombre) return { ok: false, error: 'La etapa necesita un nombre.' }
+
+  const llave = clave || aClave(nombre)
+  if (!llave) return { ok: false, error: 'Ese nombre no sirve como etapa. Poné al menos una letra.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guardar_etapa', {
+    p_clave: llave,
+    p_etiqueta: nombre,
+    p_ayuda: ayuda.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function moverEtapa(clave: string, hacia: number): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('mover_etapa', { p_clave: clave, p_hacia: hacia })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function apagarEtapa(clave: string, activa: boolean): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('apagar_etapa', { p_clave: clave, p_activa: activa })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function renombrarEstado(
+  color: string,
+  etiqueta: string,
+  ayuda: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('renombrar_estado', {
+    p_color: color,
+    p_etiqueta: etiqueta,
+    p_ayuda: ayuda,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

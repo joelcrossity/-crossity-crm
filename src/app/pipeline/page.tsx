@@ -4,7 +4,7 @@ import Charla from '@/components/Charla'
 import { createClient } from '@/lib/supabase/server'
 import { type Op as Tarjeta } from '@/components/Tablero'
 import VistaPipeline from '@/components/VistaPipeline'
-import { plata } from '@/lib/estados'
+import { ETAPAS, plata, type EtapaViva } from '@/lib/estados'
 
 type Op = {
   id: string
@@ -40,9 +40,10 @@ export default async function Pipeline() {
     proyectos: (c.proyectos_totales as number) ?? 0,
     enVivo: (c.en_vivo as number) ?? 0,
   }))
-  const [{ data }, { data: referidos }] = await Promise.all([
+  const [{ data }, { data: referidos }, { data: filas }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
     supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
+    supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
   ])
   const ops = (data ?? []) as Op[]
 
@@ -78,6 +79,16 @@ export default async function Pipeline() {
   }))
 
   const seguimientos: [string, string | null][] = ops.map((o) => [o.id, o.proximo_seguimiento])
+  /* Si la consulta falla, se dibuja con la lista de respaldo en vez de
+     mostrar un pipeline vacío, que parecería que no hay nada. */
+  const etapas: EtapaViva[] =
+    (filas ?? []).length > 0
+      ? (filas as { clave: string; etiqueta: string }[]).map((e) => ({
+          valor: e.clave,
+          etiqueta: e.etiqueta,
+        }))
+      : ETAPAS.map((e) => ({ valor: e.valor, etiqueta: e.etiqueta }))
+
   const vencidos = vivas.filter((o) => o.seguimiento_vencido).length
   const sinAgendar = vivas.filter((o) => o.sin_agendar).length
 
@@ -111,6 +122,7 @@ export default async function Pipeline() {
         <VistaPipeline
           ops={tarjetas}
           seguimientos={seguimientos}
+          etapas={etapas}
           alta={
             <span className="flex flex-wrap items-start gap-2">
               <Charla clientes={clientes} />

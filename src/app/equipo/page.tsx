@@ -1,5 +1,7 @@
 import Shell, { Titulo } from '@/components/Shell'
 import Permisos, { type Miembro, type Permiso } from '@/components/Permisos'
+import Etapas, { type Etapa, type Estado } from '@/components/Etapas'
+import Pestanas from '@/components/Pestanas'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Equipo() {
@@ -17,7 +19,13 @@ export default async function Equipo() {
   const puedeConfigurar =
     esDireccion || roles.includes('administracion') || roles.includes('coordinacion')
 
-  const [{ data: equipo }, { data: permisos }, { data: proyectos }] = await Promise.all([
+  const [
+    { data: equipo },
+    { data: permisos },
+    { data: proyectos },
+    { data: etapas },
+    { data: estados },
+  ] = await Promise.all([
     supabase.from('v_equipo').select('*').eq('activa', true).order('nombre'),
     supabase.from('permisos_proyecto').select('id, persona_id, proyecto_id, accion, motivo'),
     supabase
@@ -25,6 +33,8 @@ export default async function Equipo() {
       .select('id, nombre, codigo')
       .in('color', ['verde', 'amarillo'])
       .order('nombre'),
+    supabase.from('v_etapas').select('*'),
+    supabase.from('estados_proyecto').select('*'),
   ])
 
   const gente = (equipo ?? []) as Miembro[]
@@ -33,7 +43,7 @@ export default async function Equipo() {
   return (
     <Shell activo="/equipo">
       <Titulo
-        seccion="Equipo"
+        seccion="Sistema"
         bajada={
           puedeConfigurar
             ? 'Quién es quién y qué puede ver cada uno. Los permisos se dan por proyecto y por acción, no en bloque.'
@@ -44,21 +54,46 @@ export default async function Equipo() {
         {sinCuenta > 0 && `, ${sinCuenta} sin cuenta`}
       </Titulo>
 
-      {sinCuenta > 0 && (
-        <p className="surge mb-6 rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
-          Hay <span className="font-medium text-tinta">{sinCuenta}</span> sin cuenta en el sistema.
-          No es un problema: participar y cobrar no exige entrar. Las cuentas se crean en Supabase
-          con el mismo correo y se enlazan solas.
-        </p>
-      )}
+      <Pestanas
+        solapas={[
+          {
+            clave: 'gente',
+            texto: 'Usuarios y roles',
+            señal: sinCuenta,
+            contenido: (
+              <div className="flex flex-col gap-6">
+                {sinCuenta > 0 && (
+                  <p className="rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
+                    Hay <span className="font-medium text-tinta">{sinCuenta}</span> sin cuenta en el
+                    sistema. No es un problema: participar y cobrar no exige entrar. Las cuentas se
+                    crean en Supabase con el mismo correo y se enlazan solas.
+                  </p>
+                )}
 
-      <Permisos
-        equipo={gente}
-        permisos={(permisos ?? []) as Permiso[]}
-        proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
-        puedeConfigurar={puedeConfigurar}
-        esDireccion={esDireccion}
+                <Permisos
+                  equipo={gente}
+                  permisos={(permisos ?? []) as Permiso[]}
+                  proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
+                  puedeConfigurar={puedeConfigurar}
+                  esDireccion={esDireccion}
+                />
+              </div>
+            ),
+          },
+          {
+            clave: 'etapas',
+            texto: 'Etapas y estados',
+            contenido: (
+              <Etapas
+                etapas={(etapas ?? []) as Etapa[]}
+                estados={(estados ?? []) as Estado[]}
+                esDireccion={esDireccion}
+              />
+            ),
+          },
+        ]}
       />
+
     </Shell>
   )
 }

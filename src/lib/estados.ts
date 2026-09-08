@@ -19,9 +19,11 @@ export const SUBESTADO: Record<string, string> = {
   no_se_dio: 'no se dio',
 }
 
-/* A cotizar y Cotizado son dos momentos distintos: uno es trabajo
-   nuestro pendiente, el otro es esperar al cliente. Confundirlos hacía
-   que el que espera pareciera que avanza. */
+export type EtapaViva = { valor: string; etiqueta: string }
+
+/* Las etapas ahora viven en la base y se editan desde Sistema. Esta
+   lista queda solo como respaldo: si la consulta falla, el pipeline
+   sigue dibujándose en vez de aparecer vacío. */
 export const ETAPAS = [
   { valor: 'interes',        etiqueta: 'Interés' },
   { valor: 'primera_charla', etiqueta: 'Primera charla' },

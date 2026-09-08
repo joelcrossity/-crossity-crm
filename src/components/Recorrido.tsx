@@ -9,7 +9,7 @@ import {
   ganarOportunidad,
   perderOportunidad,
 } from '@/app/acciones'
-import { ETAPAS } from '@/lib/estados'
+import { type EtapaViva } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
    El recorrido de una oportunidad, arriba de todo mientras todavía no
@@ -52,6 +52,7 @@ export default function Recorrido({
   proximaAccion,
   proximoSeguimiento,
   vencido,
+  etapas,
 }: {
   proyectoId: string
   etapa: string
@@ -59,6 +60,7 @@ export default function Recorrido({
   proximaAccion: string | null
   proximoSeguimiento: string | null
   vencido: boolean
+  etapas: EtapaViva[]
 }) {
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
@@ -71,7 +73,7 @@ export default function Recorrido({
   const [accion, setAccion] = useState(proximaAccion ?? '')
   const [cuando, setCuando] = useState(proximoSeguimiento?.slice(0, 10) ?? '')
 
-  const actual = ETAPAS.findIndex((e) => e.valor === etapa)
+  const actual = etapas.findIndex((e) => e.valor === etapa)
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string; ir?: string }>) {
     setError(null)
@@ -96,7 +98,7 @@ export default function Recorrido({
       {/* La escalera. Se ve de dónde viene y cuánto falta, no solo dónde
           está: cinco botones sueltos no cuentan un recorrido. */}
       <ol className="flex flex-wrap items-start gap-y-2">
-        {ETAPAS.map((e, i) => {
+        {etapas.map((e, i) => {
           const hecha = i < actual
           const aca = i === actual
           return (
@@ -128,7 +130,7 @@ export default function Recorrido({
                   </span>
                   <span
                     className={`h-px flex-1 ${
-                      i === ETAPAS.length - 1
+                      i === etapas.length - 1
                         ? 'bg-transparent'
                         : hecha
                           ? 'bg-azul-hondo'

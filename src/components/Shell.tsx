@@ -40,9 +40,9 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
     ],
   },
   {
-    grupo: 'Adentro',
+    grupo: 'Sistema',
     items: [
-      { href: '/equipo', nombre: 'Equipo', detalle: 'quién es quién y qué ve cada uno' },
+      { href: '/equipo', nombre: 'Usuarios y roles', detalle: 'quién es quién y qué ve cada uno' },
     ],
   },
 ]

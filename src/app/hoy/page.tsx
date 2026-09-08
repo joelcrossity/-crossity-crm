@@ -34,12 +34,18 @@ export default async function Hoy() {
   const esAdmin = roles.includes('administracion')
   const esComercial = roles.includes('vendedor') || roles.includes('project_manager')
 
-  const [{ data: proyectos }, { data: pipeline }, { data: hitos }, { data: cuentas }] =
-    await Promise.all([
+  const [
+    { data: proyectos },
+    { data: pipeline },
+    { data: hitos },
+    { data: cuentas },
+    { data: filasEtapas },
+  ] = await Promise.all([
       supabase.from('v_tablero').select('*'),
       supabase.from('v_pipeline').select('etapa, monto_neto, moneda, sin_agendar, seguimiento_vencido'),
       supabase.from('hitos').select('monto_neto, moneda, facturado_at, cobrado_at'),
       supabase.from('v_cuenta').select('*'),
+      supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
     ])
 
   const filas = (proyectos ?? []) as Fila[]
@@ -80,7 +86,15 @@ export default async function Hoy() {
 
   // Embudo
   const ops = (pipeline ?? []) as Record<string, unknown>[]
-  const embudo = ETAPAS.map((e) => {
+  const lasEtapas =
+    (filasEtapas ?? []).length > 0
+      ? (filasEtapas as { clave: string; etiqueta: string }[]).map((e) => ({
+          valor: e.clave,
+          etiqueta: e.etiqueta,
+        }))
+      : ETAPAS.map((e) => ({ valor: e.valor as string, etiqueta: e.etiqueta as string }))
+
+  const embudo = lasEtapas.map((e) => {
     const de = ops.filter((o) => o.etapa === e.valor)
     return {
       etapa: e.etiqueta,
