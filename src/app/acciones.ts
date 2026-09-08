@@ -1205,3 +1205,58 @@ export async function descartarNota(notaId: string): Promise<Resultado> {
 export async function cambiarServicio(proyectoId: string, servicioId: string): Promise<Resultado> {
   return guardar(proyectoId, { servicio_id: servicioId || null })
 }
+
+/* ------------------------------------------------------------------
+   Lo financiero: la factura que nos deben y los costos fijos.
+   ------------------------------------------------------------------ */
+
+export async function marcarFacturaRecibida(
+  porcionId: string,
+  fecha: string,
+  numero: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('porciones')
+    .update(
+      { factura_at: fecha || null, factura_numero: numero.trim() || null },
+      { count: 'exact' },
+    )
+    .eq('id', porcionId)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para tocar las liquidaciones.' }
+  revalidatePath('/admin')
+  revalidatePath('/mi-posicion')
+  return { ok: true }
+}
+
+export async function sumarCostoFijo(datos: FormData): Promise<Resultado> {
+  const concepto = String(datos.get('concepto') ?? '').trim()
+  const bruto = String(datos.get('monto') ?? '').replace(/\./g, '').replace(',', '.')
+  const monto = parseFloat(bruto)
+
+  if (!concepto) return { ok: false, error: 'Poné qué es.' }
+  if (!Number.isFinite(monto) || monto <= 0) return { ok: false, error: 'El monto no se entiende.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('costos_fijos').insert({
+    concepto,
+    proveedor: String(datos.get('proveedor') ?? '').trim() || null,
+    monto,
+    cada: String(datos.get('cada') ?? 'mensual'),
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function borrarCostoFijo(id: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('costos_fijos').delete().eq('id', id)
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/admin')
+  return { ok: true }
+}

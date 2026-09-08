@@ -1,9 +1,21 @@
 import Shell, { Titulo } from '@/components/Shell'
 import FilaCarga, { type Proyecto } from '@/components/FilaCarga'
-import { Marco, Barras, Cifra } from '@/components/Grafico'
+import { Marco, Barras } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
-import { plata } from '@/lib/estados'
 import { Cotizaciones, type Cotizacion } from '@/components/Plata'
+import Pestanas from '@/components/Pestanas'
+import Cashflow, { type Mes } from '@/components/Cashflow'
+import Posiciones, { type Posicion } from '@/components/Posiciones'
+import { Saldos, type Saldo } from '@/components/CuentaCorriente'
+import {
+  PorFacturar,
+  FacturasARecibir,
+  Recurrentes,
+  type PorFacturar as Factura,
+  type PorRecibir,
+  type Recurrente,
+  type CostoFijo,
+} from '@/components/Financiero'
 
 export default async function Admin(props: {
   searchParams: Promise<{ ver?: string }>
@@ -18,6 +30,13 @@ export default async function Admin(props: {
     { data: hitos },
     { data: repartos },
     { data: monedas },
+    { data: porFacturarFilas },
+    { data: aRecibir },
+    { data: cashflow },
+    { data: posiciones },
+    { data: saldos },
+    { data: recurrentes },
+    { data: costos },
   ] = await Promise.all([
       supabase
         .from('proyectos')
@@ -32,6 +51,13 @@ export default async function Admin(props: {
         .select('monto_neto, moneda, facturado_at, cobrado_at, proyectos(organizaciones(nombre_canonico))'),
       supabase.from('v_reparto_incompleto').select('codigo, nombre, cliente, suma_porcentajes'),
       supabase.from('v_cotizaciones').select('codigo, nombre, valor, fecha, dias_de_atraso'),
+      supabase.from('v_por_facturar').select('*').order('dias_desde_la_entrega', { ascending: false }),
+      supabase.from('v_facturas_a_recibir').select('*'),
+      supabase.from('v_cashflow').select('*'),
+      supabase.from('v_posicion_proyecto').select('*'),
+      supabase.from('v_cuenta_corriente').select('*'),
+      supabase.from('v_recurrente').select('*'),
+      supabase.from('costos_fijos').select('id, concepto, proveedor, monto, moneda, cada, hasta').order('concepto'),
     ])
 
   const todos: Proyecto[] = (proyectos ?? []).map(
@@ -51,16 +77,11 @@ export default async function Admin(props: {
 
   const incompletos = todos.filter((p) => !p.monto_neto || !p.fecha_comprometida || !p.responsable_id)
   const filas = soloIncompletos ? incompletos : todos
-  const listo = todos.length - incompletos.length
 
   // Facturado sin cobrar, por cliente. La deuda que hay que ir a buscar.
   const deuda = new Map<string, number>()
-  let facturadoTotal = 0
-  let cobradoTotal = 0
   for (const h of (hitos ?? []) as Record<string, unknown>[]) {
     const monto = (h.monto_neto as number) ?? 0
-    if (h.facturado_at) facturadoTotal += monto
-    if (h.cobrado_at) cobradoTotal += monto
     if (h.facturado_at && !h.cobrado_at) {
       const org = (h.proyectos as { organizaciones: { nombre_canonico: string } } | null)
         ?.organizaciones?.nombre_canonico
@@ -80,28 +101,48 @@ export default async function Admin(props: {
         Carga y cobranza
       </Titulo>
 
-      <div className="flex flex-col gap-9">
-        <section className="grid gap-6 sm:grid-cols-3">
-          <Cifra
-            valor={`${listo} de ${todos.length}`}
-            titulo="proyectos completos"
-            nota="tienen monto, fecha y responsable"
-            tono={listo === todos.length ? 'verde' : 'amarillo'}
-          />
-          <Cifra
-            valor={plata(facturadoTotal - cobradoTotal)}
-            titulo="facturado sin cobrar"
-            nota="lo que hay que ir a buscar"
-            tono={facturadoTotal - cobradoTotal > 0 ? 'rojo' : 'verde'}
-          />
-          <Cifra
-            valor={`${repartos?.length ?? 0}`}
-            titulo="repartos sin cerrar"
-            nota="las participaciones no suman 100 %"
-            tono={(repartos?.length ?? 0) > 0 ? 'amarillo' : 'verde'}
-          />
-        </section>
-
+      <Pestanas
+        solapas={[
+          {
+            clave: 'facturar',
+            texto: 'Por facturar',
+            señal: (porFacturarFilas ?? []).length,
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <PorFacturar filas={(porFacturarFilas ?? []) as Factura[]} />
+                <FacturasARecibir filas={(aRecibir ?? []) as PorRecibir[]} />
+              </div>
+            ),
+          },
+          {
+            clave: 'cobranza',
+            texto: 'Cobranza',
+            contenido: <Saldos saldos={(saldos ?? []) as Saldo[]} />,
+          },
+          {
+            clave: 'caja',
+            texto: 'Caja',
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <Cashflow meses={(cashflow ?? []) as Mes[]} />
+                <Recurrentes
+                  recurrentes={(recurrentes ?? []) as Recurrente[]}
+                  costos={(costos ?? []) as CostoFijo[]}
+                />
+              </div>
+            ),
+          },
+          {
+            clave: 'proyectos',
+            texto: 'Posición',
+            contenido: <Posiciones filas={(posiciones ?? []) as Posicion[]} />,
+          },
+          {
+            clave: 'carga',
+            texto: 'Carga',
+            señal: incompletos.length,
+            contenido: (
+              <div className="flex flex-col gap-9">
         <section className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <div className="flex flex-col gap-0.5">
@@ -178,7 +219,12 @@ export default async function Admin(props: {
             />
           </Marco>
         </section>
-      </div>
+              </div>
+            ),
+          },
+        ]}
+      />
+
       <div className="mt-9 border-t border-linea pt-8">
         <Cotizaciones monedas={(monedas ?? []) as Cotizacion[]} />
       </div>

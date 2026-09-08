@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import Campanita, { type Aviso } from '@/components/Campanita'
 import { plata } from '@/lib/estados'
+import { ICONOS } from '@/components/Iconos'
 
 type Pulso = {
   en_vivo: number
@@ -128,12 +129,16 @@ export default async function Shell({
                       href={item.href}
                       title={item.detalle}
                       aria-current={aca ? 'page' : undefined}
-                      className={`rounded-md px-2.5 py-1.5 text-base transition-colors duration-150 ${
-                        aca
-                          ? 'bg-azul-aire font-bold text-azul-hondo'
-                          : 'text-gris hover:bg-superficie hover:text-tinta'
-                      }`}
+                      className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-base
+                                  transition-colors duration-150 ${
+                                    aca
+                                      ? 'bg-azul-aire font-bold text-azul-hondo'
+                                      : 'text-gris hover:bg-superficie hover:text-tinta'
+                                  }`}
                     >
+                      <span className={aca ? 'text-azul-hondo' : 'text-gris-50'}>
+                        {ICONOS[item.href]}
+                      </span>
                       {item.nombre}
                     </Link>
                   )

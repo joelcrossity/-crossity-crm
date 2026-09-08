@@ -4,6 +4,7 @@ import Shell, { Rastro } from '@/components/Shell'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Calendario, { type Evento } from '@/components/Calendario'
 import Ofrecer, { type Sugerencia, type Nota } from '@/components/Ofrecer'
+import CuentaCorriente, { type Saldo, type Movimiento } from '@/components/CuentaCorriente'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
@@ -45,6 +46,8 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: marcas },
     { data: contactos },
     { data: agenda },
+    { data: saldos },
+    { data: movimientos },
     { data: sugerencias },
     { data: notas },
     { data: servicios },
@@ -65,6 +68,13 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
       supabase.from('marcas').select('id, nombre, es_principal').eq('organizacion_id', org.id),
       supabase.from('contactos').select('id, nombre, rol, email, telefono').eq('organizacion_id', org.id),
       supabase.from('v_agenda').select('*').eq('organizacion_id', org.id).order('fecha'),
+      supabase.from('v_cuenta_corriente').select('*').eq('organizacion_id', org.id),
+      supabase
+        .from('v_movimientos')
+        .select('*')
+        .eq('organizacion_id', org.id)
+        .order('fecha', { ascending: false })
+        .limit(60),
       supabase.from('v_para_ofrecer').select('*').eq('organizacion_id', org.id),
       supabase
         .from('notas_de_venta')
@@ -286,6 +296,13 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
             />
           </div>
         </section>
+      </div>
+
+      <div className="mt-9">
+        <CuentaCorriente
+          saldos={(saldos ?? []) as Saldo[]}
+          movimientos={(movimientos ?? []) as Movimiento[]}
+        />
       </div>
 
       <div className="mt-9">
