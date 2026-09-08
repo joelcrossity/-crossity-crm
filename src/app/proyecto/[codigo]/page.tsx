@@ -15,6 +15,7 @@ import {
 import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
+import PanelProyecto from '@/components/PanelProyecto'
 import { plata, fechaCorta } from '@/lib/estados'
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -52,6 +53,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: porciones },
     { data: abono },
     { data: origen },
+    { data: pulso },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -86,6 +88,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       p.origen_id
         ? supabase.from('proyectos').select('codigo, nombre').eq('id', p.origen_id).maybeSingle()
         : Promise.resolve({ data: null }),
+      supabase.from('v_pulso').select('dias_sin_novedades').eq('id', p.id).maybeSingle(),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -148,6 +151,28 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       </header>
 
       <div className="flex flex-col gap-9">
+        <PanelProyecto
+          color={p.color}
+          detalle={detalle}
+          diasSinNovedades={(pulso?.dias_sin_novedades as number) ?? 0}
+          total={total}
+          entregado={entregado}
+          cobrado={cobrado}
+          moneda={p.moneda}
+          proxima={
+            proximo
+              ? {
+                  titulo: proximo.titulo as string,
+                  fecha: proximo.fecha_comprometida as string | null,
+                }
+              : null
+          }
+          fechaFinal={esAbono ? p.vigencia_desde : p.fecha_comprometida}
+          rendicion={rendicion}
+          esAbono={esAbono}
+          montoMensual={p.monto_mensual}
+        />
+
         <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
           <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
 
@@ -233,8 +258,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         {total > 0 && (
           <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-md font-bold tracking-tight">En qué está</h2>
-              <p className="text-sm text-gris">
+              <h2 className="text-md font-bold tracking-tight">El detalle de la plata</h2>
+              <p className="max-w-[70ch] text-sm text-gris">
                 El avance se mide por plata entregada, no por cantidad de entregas: una que vale la
                 mitad del proyecto no pesa igual que una que vale el trece por ciento.
               </p>
