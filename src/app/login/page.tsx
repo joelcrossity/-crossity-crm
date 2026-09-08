@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -32,13 +34,18 @@ export default function Login() {
   return (
     <main className="min-h-dvh grid place-items-center px-6">
       <form onSubmit={entrar} className="w-full max-w-sm flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <span className="text-2xs font-bold tracking-[0.2em] uppercase text-azul-hondo">
-            Crossity
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight text-tinta">
-            Sistema operativo
-          </h1>
+        <div className="flex flex-col gap-3">
+          {/* Acá el logo va con más aire: es la primera pantalla y no
+              compite con nada. El manual pide zona de protección. */}
+          <Image
+            src="/marca/crossity.png"
+            alt="Crossity"
+            width={900}
+            height={276}
+            priority
+            className="h-9 w-auto"
+          />
+          <h1 className="text-2xl font-bold tracking-tight text-tinta">Sistema operativo</h1>
         </div>
 
         <div className="flex flex-col gap-3">

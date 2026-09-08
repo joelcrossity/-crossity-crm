@@ -17,12 +17,14 @@
   /* marca */
   --color-azul:        oklch(0.639 0.152 262);   /* #4880E6 exacto */
   --color-azul-hondo:  oklch(0.520 0.165 262);   /* rellenos y enlaces */
-  --color-azul-50:     oklch(0.815 0.078 262);   /* tinte 50 % del manual */
+  --color-azul-75:     oklch(0.727 0.115 262);   /* tinte 75 % del manual */
+  --color-azul-50:     oklch(0.815 0.078 262);   /* tinte 50 % */
   --color-azul-25:     oklch(0.905 0.040 262);   /* tinte 25 % */
   --color-azul-aire:   oklch(0.968 0.014 262);   /* selección, fondos suaves */
 
   --color-violeta:     oklch(0.330 0.225 288);   /* #390094 exacto, acento */
-  --color-violeta-50:  oklch(0.640 0.135 288);
+  --color-violeta-50:  oklch(0.640 0.135 288);   /* tinte 50 % del manual */
+  --color-violeta-25:  oklch(0.800 0.070 288);   /* tinte 25 % */
   --color-violeta-aire: oklch(0.962 0.020 288);
 
   /* neutros: el gris del manual manda en el texto */

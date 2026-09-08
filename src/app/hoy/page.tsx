@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Shell, { Titulo } from '@/components/Shell'
 import { Marco, Barras, Columnas, Embudo, Cifra } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
-import { plata } from '@/lib/estados'
+import { ETAPAS, plata } from '@/lib/estados'
 
 type Fila = {
   id: string
@@ -17,14 +17,6 @@ type Fila = {
 }
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-const ETAPAS: [string, string][] = [
-  ['interes', 'Interés'],
-  ['primera_charla', 'Primera charla'],
-  ['relevamiento', 'Relevamiento'],
-  ['cotizacion', 'Cotización'],
-  ['negociacion', 'Negociación'],
-]
 
 export default async function Hoy() {
   const supabase = await createClient()
@@ -88,10 +80,10 @@ export default async function Hoy() {
 
   // Embudo
   const ops = (pipeline ?? []) as Record<string, unknown>[]
-  const embudo = ETAPAS.map(([valor, texto]) => {
-    const de = ops.filter((o) => o.etapa === valor)
+  const embudo = ETAPAS.map((e) => {
+    const de = ops.filter((o) => o.etapa === e.valor)
     return {
-      etapa: texto,
+      etapa: e.etiqueta,
       cantidad: de.length,
       valor: de.reduce((s, o) => s + (o.moneda === 'ARS' ? ((o.monto_neto as number) ?? 0) : 0), 0),
       moneda: 'ARS',

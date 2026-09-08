@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import Campanita, { type Aviso } from '@/components/Campanita'
 import { plata } from '@/lib/estados'
@@ -95,11 +96,19 @@ export default async function Shell({
         className="flex shrink-0 flex-col gap-6 border-b border-linea bg-panel px-4 py-4
                    lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:border-r lg:border-b-0 lg:py-6"
       >
-        <Link
-          href="/hoy"
-          className="px-2 text-2xs font-bold uppercase tracking-[0.2em] text-azul-hondo"
-        >
-          Crossity
+        {/* El logotipo, no la palabra escrita con otra tipografía. El
+            manual fija el mínimo sin eslogan en 23 px de alto y una zona
+            de protección alrededor: los 28 px y el padding salen de ahí,
+            no de lo que quedaba lindo. */}
+        <Link href="/hoy" className="w-fit px-2 py-1" aria-label="Crossity — ir al inicio">
+          <Image
+            src="/marca/crossity.png"
+            alt="Crossity"
+            width={900}
+            height={276}
+            priority
+            className="h-7 w-auto"
+          />
         </Link>
 
         <nav className="flex flex-1 flex-wrap gap-x-4 gap-y-3 lg:flex-col lg:flex-nowrap lg:gap-4">
