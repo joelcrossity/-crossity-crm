@@ -13,6 +13,9 @@ function traducir(mensaje: string): string {
   if (mensaje.includes('subestado_solo_verde')) return 'El sub-estado sólo aplica a lo que está en vivo.'
   if (mensaje.includes('porcentaje es un acuerdo')) return 'El porcentaje sólo lo cambia dirección.'
   if (mensaje.includes('propia visibilidad')) return 'No podés cambiar tu propia visibilidad.'
+  if (mensaje.includes('ya tiene su mantenimiento')) return 'Este proyecto ya tiene su mantenimiento abierto.'
+  if (mensaje.includes('ya es un mantenimiento')) return 'Esto ya es un mantenimiento.'
+  if (mensaje.includes('participaciones')) return 'El reparto sólo lo copia dirección. Abrilo sin copiarlo y cargalo después.'
   return mensaje
 }
 
@@ -203,5 +206,34 @@ export async function borrarCobro(cobroId: string): Promise<Resultado> {
 
   revalidatePath('/proyecto', 'layout')
   revalidatePath('/admin')
+  return { ok: true }
+}
+
+/* Abrir el mantenimiento de un proyecto entregado.
+   Es el momento donde hoy se pierde plata en silencio: si nadie lo abre,
+   se dejó de facturar sin haberlo decidido. */
+export async function abrirMantenimiento(
+  proyectoId: string,
+  montoMensual: string,
+  desde: string,
+  copiarReparto: boolean
+): Promise<Resultado> {
+  const n = parseFloat(montoMensual.replace(/\./g, '').replace(',', '.'))
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'Poné el abono mensual.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('pasar_a_mantenimiento', {
+    p_proyecto: proyectoId,
+    p_monto_mensual: n,
+    p_desde: desde || new Date().toISOString().slice(0, 10),
+    p_copiar_reparto: copiarReparto,
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/tablero')
+  revalidatePath('/cuentas', 'layout')
+  revalidatePath('/hoy')
   return { ok: true }
 }

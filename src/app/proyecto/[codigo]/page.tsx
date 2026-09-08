@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Shell from '@/components/Shell'
 import Novedad from '@/components/Novedad'
@@ -6,6 +7,7 @@ import { Fecha, Numero, Select, Casilla } from '@/components/Campo'
 import { createClient } from '@/lib/supabase/server'
 import { cambiarFecha, cambiarPrioridad, cambiarResponsable, marcarHito } from '@/app/acciones'
 import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
+import AbrirMantenimiento from '@/components/Mantenimiento'
 import { plata, fechaCorta } from '@/lib/estados'
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -24,7 +26,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     .select(`
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
-      es_producto_propio, monto_mensual, vigencia_desde, responsable_id,
+      es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id,
       organizaciones ( codigo, nombre_canonico )
     `)
     .eq('codigo', codigo)
@@ -40,6 +42,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: personas },
     { data: cobros },
     { data: porciones },
+    { data: abono },
+    { data: origen },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -66,6 +70,14 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
           'estado, monto, moneda, hitos!inner(proyecto_id), participaciones(concepto, es_crossity, personas(nombre))'
         )
         .eq('hitos.proyecto_id', p.id),
+      supabase
+        .from('proyectos')
+        .select('codigo, nombre, monto_mensual, moneda')
+        .eq('origen_id', p.id)
+        .maybeSingle(),
+      p.origen_id
+        ? supabase.from('proyectos').select('codigo, nombre').eq('id', p.origen_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -93,6 +105,9 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     fila[x.estado as 'comprometido' | 'devengado' | 'a_liquidar' | 'liquidado'] += Number(x.monto)
     rendicion.set(quien, fila)
   }
+
+  const elAbono = abono as unknown as { codigo: string; nombre: string; monto_mensual: number; moneda: string } | null
+  const elOrigen = origen as unknown as { codigo: string; nombre: string } | null
 
   const conCobro = new Set(
     ((cobros ?? []) as Record<string, unknown>[]).map((c) => (c.hitos as { id?: string })?.id)
@@ -211,14 +226,30 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               </p>
             )}
 
-            {!proximo && !esAbono && (
+            {!proximo && !esAbono && elAbono && (
               <p className="border-t border-linea pt-3 text-sm text-gris">
-                Todas las entregas están hechas. Lo que sigue es{' '}
-                <span className="font-bold text-tinta">abrir el mantenimiento</span>: entregar no es
-                terminar, es cuando empieza a facturarse todos los meses.
+                Ya tiene su mantenimiento:{' '}
+                <Link href={`/proyecto/${elAbono.codigo}`} className="font-bold text-azul-hondo hover:underline">
+                  {elAbono.nombre}
+                </Link>
+                , {plata(elAbono.monto_mensual, elAbono.moneda)} por mes.
               </p>
             )}
           </section>
+        )}
+
+        {!proximo && !esAbono && !elAbono && total > 0 && (
+          <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
+        )}
+
+        {esAbono && elOrigen && (
+          <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
+            Nace del proyecto{' '}
+            <Link href={`/proyecto/${elOrigen.codigo}`} className="font-bold text-azul-hondo hover:underline">
+              {elOrigen.nombre}
+            </Link>
+            . La historia de la obra sigue ahí; acá empieza la del abono.
+          </p>
         )}
 
         {rendicion.size > 0 && (
