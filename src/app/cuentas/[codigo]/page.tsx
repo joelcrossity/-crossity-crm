@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
 import Documentos, { type Documento } from '@/components/Documentos'
+import Calendario, { type Evento } from '@/components/Calendario'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
@@ -42,6 +43,8 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: razones },
     { data: marcas },
     { data: contactos },
+    { data: agenda },
+    { data: hoyRow },
     { data: documentos },
   ] = await Promise.all([
       supabase
@@ -57,7 +60,9 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         .eq('organizacion_id', org.id),
       supabase.from('marcas').select('id, nombre, es_principal').eq('organizacion_id', org.id),
       supabase.from('contactos').select('id, nombre, rol, email, telefono').eq('organizacion_id', org.id),
-    supabase
+      supabase.from('v_agenda').select('*').eq('organizacion_id', org.id).order('fecha'),
+      supabase.rpc('hoy_es'),
+      supabase
         .from('v_documentos')
         .select('id, titulo, url, clase, version, enviado_at, enviado_por')
         .eq('organizacion_id', org.id)
@@ -270,6 +275,32 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
             />
           </div>
         </section>
+      </div>
+
+      <div className="mt-9 flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-md font-bold tracking-tight">Su calendario</h2>
+            <p className="max-w-[65ch] text-sm text-gris">
+              Lo que le tenemos que entregar y lo que nos tiene que pagar. Es la agenda general
+              recortada a esta cuenta, no una lista aparte.
+            </p>
+          </div>
+          <Link
+            href="/agenda"
+            className="shrink-0 text-2xs text-gris-50 transition-colors duration-150 hover:text-azul-hondo"
+          >
+            Ver la agenda completa →
+          </Link>
+        </div>
+
+        {((agenda ?? []) as Evento[]).length === 0 ? (
+          <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+            No hay nada con fecha para esta cuenta.
+          </p>
+        ) : (
+          <Calendario eventos={(agenda ?? []) as Evento[]} hoy={(hoyRow as string) ?? ''} />
+        )}
       </div>
 
       <div className="mt-9">

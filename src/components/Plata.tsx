@@ -19,11 +19,13 @@ const MONEDAS: [string, string][] = [
   ['EUR', 'Euros'],
 ]
 
+/* Cuando lleva, casi siempre es 21. La alícuota solo aparece si el
+   interruptor está prendido: preguntar "cuánto" antes de "si" hace que
+   el cero parezca un valor raro en vez de una respuesta normal. */
 const ALICUOTAS: [string, string][] = [
   ['21', '21 %'],
   ['10.5', '10,5 %'],
   ['27', '27 %'],
-  ['0', 'No lleva IVA'],
 ]
 
 const campo =
@@ -87,21 +89,51 @@ export default function Plata({
           </select>
         </label>
 
-        <label className="flex flex-col gap-0.5">
+        <span className="flex flex-col gap-0.5">
           <span className={rotulo}>IVA</span>
-          <select
-            value={String(alicuota)}
-            disabled={pendiente}
-            onChange={(e) => correr(() => cambiarIva(proyectoId, e.target.value, nota))}
-            className={`${campo} w-36 ${alicuota === 0 ? 'border-amarillo text-amarillo' : ''}`}
-          >
-            {ALICUOTAS.map(([v, t]) => (
-              <option key={v} value={v}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={alicuota > 0}
+              aria-label="Lleva IVA"
+              disabled={pendiente}
+              onClick={() =>
+                correr(() => cambiarIva(proyectoId, alicuota > 0 ? '0' : '21', nota))
+              }
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200
+                          disabled:opacity-50 ${
+                            alicuota > 0 ? 'bg-azul-hondo' : 'bg-linea-fuerte'
+                          }`}
+            >
+              <span
+                className={`absolute top-0.5 size-5 rounded-full bg-white transition-[left]
+                            duration-200 ease-(--ease-salida) ${
+                              alicuota > 0 ? 'left-[1.375rem]' : 'left-0.5'
+                            }`}
+                aria-hidden
+              />
+            </button>
+
+            {alicuota > 0 ? (
+              <select
+                value={String(alicuota)}
+                disabled={pendiente}
+                onChange={(e) => correr(() => cambiarIva(proyectoId, e.target.value, nota))}
+                className={`${campo} w-24`}
+                aria-label="Alícuota"
+              >
+                {ALICUOTAS.map(([v, t]) => (
+                  <option key={v} value={v}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-sm font-medium text-amarillo">No aplica</span>
+            )}
+          </span>
+        </span>
 
         <span className="flex flex-col gap-0.5">
           <span className={rotulo}>Cómo queda</span>

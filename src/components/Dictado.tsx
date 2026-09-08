@@ -56,6 +56,12 @@ export default function Dictado({
   const [error, setError] = useState<string | null>(null)
   const ref = useRef<Reconocimiento | null>(null)
 
+  /* El navegador corta la escucha solo: por silencio, por tiempo, o
+     porque sí. Cortaba el dictado a la mitad y se perdía lo que faltaba.
+     Con esta marca sabemos si el corte lo pidió la persona o el
+     navegador, y si fue el navegador se vuelve a arrancar. */
+  const queriaCortar = useRef(false)
+
   /* El motor solo existe en el navegador. Se lee como lo que es —una
      capacidad del entorno, no un estado— para que el servidor y el
      cliente rindan lo mismo y no haya un salto en la hidratación. */
@@ -65,7 +71,13 @@ export default function Dictado({
     () => false,
   )
 
-  useEffect(() => () => ref.current?.stop(), [])
+  useEffect(
+    () => () => {
+      queriaCortar.current = true
+      ref.current?.stop()
+    },
+    [],
+  )
 
   function arrancar() {
     const Motor = motor()
@@ -89,19 +101,38 @@ export default function Dictado({
     }
 
     r.onerror = (e) => {
+      // Un silencio largo no es un error: no hay que cortar por eso.
+      if (e.error === 'no-speech') return
       setError(EXCUSAS[e.error] ?? 'No se pudo escuchar.')
+      queriaCortar.current = true
       setGrabando(false)
     }
 
     r.onend = () => {
-      setGrabando(false)
       setParcial('')
+      if (queriaCortar.current) {
+        setGrabando(false)
+        return
+      }
+      // Lo cortó el navegador, no la persona: sigue escuchando.
+      try {
+        r.start()
+      } catch {
+        setGrabando(false)
+      }
     }
 
     setError(null)
+    queriaCortar.current = false
     setGrabando(true)
     r.start()
     ref.current = r
+  }
+
+  function cortar() {
+    queriaCortar.current = true
+    ref.current?.stop()
+    setGrabando(false)
   }
 
   if (!disponible) return null
@@ -110,7 +141,7 @@ export default function Dictado({
     <span className="flex flex-wrap items-center gap-2">
       <button
         type="button"
-        onClick={() => (grabando ? ref.current?.stop() : arrancar())}
+        onClick={() => (grabando ? cortar() : arrancar())}
         aria-pressed={grabando}
         className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm
                     transition-colors duration-150 ${
@@ -127,6 +158,11 @@ export default function Dictado({
         {grabando ? 'Escuchando… tocá para cortar' : etiqueta}
       </button>
 
+      {grabando && !parcial && (
+        <span className="text-2xs text-gris-50">
+          Hablá todo lo que necesites: no se corta solo.
+        </span>
+      )}
       {parcial && <span className="text-2xs text-gris-50 italic">{parcial}</span>}
       {error && <span className="text-2xs text-rojo">{error}</span>}
     </span>
