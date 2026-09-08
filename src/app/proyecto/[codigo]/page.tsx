@@ -16,6 +16,7 @@ import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
+import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -35,7 +36,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
       es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id,
-      responsable_tecnico_id, programa,
+      responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
       organizaciones ( codigo, nombre_canonico )
     `)
     .eq('codigo', codigo)
@@ -54,6 +55,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: abono },
     { data: origen },
     { data: pulso },
+    { data: enPipeline },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -89,6 +91,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         ? supabase.from('proyectos').select('codigo, nombre').eq('id', p.origen_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from('v_pulso').select('dias_sin_novedades').eq('id', p.id).maybeSingle(),
+      supabase.from('v_pipeline').select('seguimiento_vencido').eq('id', p.id).maybeSingle(),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -125,6 +128,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
   )
 
   const cliente = p.organizaciones as unknown as { codigo: string; nombre_canonico: string }
+  /* Sigue siendo una charla mientras no se haya ganado. La misma fila
+     pasa a proyecto al ganarse: por eso se pregunta por la etapa y no
+     por otro registro. */
+  const esOportunidad = !!p.etapa && p.etapa !== 'ganado'
   const esAbono = p.tipo === 'mantenimiento'
   const detalle = p.subestado ?? p.motivo_gris ?? p.motivo_rojo
 
@@ -151,6 +158,17 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       </header>
 
       <div className="flex flex-col gap-9">
+        {esOportunidad ? (
+          <Recorrido
+            proyectoId={p.id}
+            etapa={p.etapa}
+            origen={p.origen}
+            proximaAccion={p.proxima_accion}
+            proximoSeguimiento={p.proximo_seguimiento}
+            vencido={!!enPipeline?.seguimiento_vencido}
+          />
+        ) : null}
+
         <PanelProyecto
           color={p.color}
           detalle={detalle}

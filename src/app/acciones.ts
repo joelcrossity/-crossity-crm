@@ -487,3 +487,228 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
   revalidatePath('/cuentas', 'layout')
   return { ok: true, ir: `/proyecto/${data.codigo}` }
 }
+
+/* ------------------------------------------------------------------
+   El cliente también se edita. Lo que se ve, se toca.
+   ------------------------------------------------------------------ */
+
+async function guardarCliente(id: string, cambios: Record<string, unknown>): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('organizaciones')
+    .update(cambios, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) {
+    if (error.message.includes('duplicate')) return { ok: false, error: 'Ya existe otro cliente así.' }
+    return { ok: false, error: traducir(error.message) }
+  }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para cambiar este cliente.' }
+
+  revalidatePath('/cuentas', 'layout')
+  revalidatePath('/tablero')
+  return { ok: true }
+}
+
+export async function cambiarCliente(
+  id: string,
+  campo: 'nombre_canonico' | 'cuit' | 'notas',
+  valor: string
+): Promise<Resultado> {
+  if (campo === 'nombre_canonico' && !valor.trim()) {
+    return { ok: false, error: 'El cliente necesita un nombre.' }
+  }
+  return guardarCliente(id, { [campo]: valor.trim() || null })
+}
+
+/* Los alias no son prolijidad: son contra qué resuelve el sistema a quién
+   pertenece un mensaje que llega escrito de cualquier forma. */
+export async function cambiarAlias(id: string, texto: string): Promise<Resultado> {
+  const alias = texto.split(',').map((a) => a.trim()).filter(Boolean)
+  return guardarCliente(id, { alias })
+}
+
+export async function agregarRazonSocial(
+  organizacion_id: string,
+  razon_social: string,
+  cuit: string
+): Promise<Resultado> {
+  if (!razon_social.trim()) return { ok: false, error: 'Poné la razón social.' }
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('razones_sociales')
+    .insert({ organizacion_id, razon_social: razon_social.trim(), cuit: cuit.trim() || null })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function agregarMarca(organizacion_id: string, nombre: string): Promise<Resultado> {
+  if (!nombre.trim()) return { ok: false, error: 'Poné el nombre de la marca.' }
+  const supabase = await createClient()
+  const { error } = await supabase.from('marcas').insert({ organizacion_id, nombre: nombre.trim() })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function agregarContacto(
+  organizacion_id: string,
+  nombre: string,
+  rol: string,
+  email: string,
+  telefono: string
+): Promise<Resultado> {
+  if (!nombre.trim()) return { ok: false, error: 'Poné el nombre del contacto.' }
+  const supabase = await createClient()
+  const { error } = await supabase.from('contactos').insert({
+    organizacion_id,
+    nombre: nombre.trim(),
+    rol: rol.trim() || null,
+    email: email.trim() || null,
+    telefono: telefono.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+export async function borrarDelCliente(
+  tabla: 'razones_sociales' | 'marcas' | 'contactos',
+  id: string
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase.from(tabla).delete({ count: 'exact' }).eq('id', id).select('id')
+  if (error) {
+    if (error.message.includes('violates foreign key'))
+      return { ok: false, error: 'No se puede borrar: hay proyectos que la usan.' }
+    return { ok: false, error: traducir(error.message) }
+  }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para borrarlo.' }
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   El recorrido comercial: de una charla suelta a proyecto.
+
+   La misma fila avanza de etapa y al ganarse se vuelve proyecto. No se
+   crea un registro nuevo: por eso la conversación del primer día y la
+   entrega del último cuelgan del mismo hilo.
+   ------------------------------------------------------------------ */
+
+export async function cambiarOrigen(proyectoId: string, origen: string): Promise<Resultado> {
+  return guardar(proyectoId, { origen: origen || null })
+}
+
+export async function cambiarProximaAccion(
+  proyectoId: string,
+  accion: string,
+  cuando: string,
+): Promise<Resultado> {
+  return guardar(proyectoId, {
+    proxima_accion: accion.trim() || null,
+    proximo_seguimiento: cuando || null,
+  })
+}
+
+export async function ganarOportunidad(
+  proyectoId: string,
+  esquema: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('ganar_oportunidad', {
+    p_proyecto: proyectoId,
+    p_esquema: esquema,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  const { data } = await supabase.from('proyectos').select('codigo').eq('id', proyectoId).single()
+  revalidatePath('/', 'layout')
+  return { ok: true, ir: data ? `/proyecto/${data.codigo}` : undefined }
+}
+
+export async function perderOportunidad(
+  proyectoId: string,
+  motivo: 'no_se_dio' | 'perdido',
+  detalle: string,
+): Promise<Resultado> {
+  return motivo === 'no_se_dio'
+    ? guardar(proyectoId, {
+        color: 'gris',
+        motivo_gris: 'no_se_dio',
+        motivo_condicion: detalle.trim() || null,
+        proxima_accion: null,
+        proximo_seguimiento: null,
+      })
+    : guardar(proyectoId, {
+        color: 'rojo',
+        motivo_rojo: 'perdido',
+        motivo_condicion: detalle.trim() || null,
+        proxima_accion: null,
+        proximo_seguimiento: null,
+      })
+}
+
+/* ------------------------------------------------------------------
+   Anotar una charla.
+
+   El momento más frágil de todo el recorrido: alguien se interesó y
+   todavía no hay proyecto, ni alcance, ni monto. Si en ese momento hay
+   que llenar un formulario, no se carga y se pierde.
+
+   Se pide lo mínimo: de quién, qué se habló, de dónde salió y cuándo se
+   vuelve. Todo lo demás se completa cuando exista.
+   ------------------------------------------------------------------ */
+
+export type Charla = {
+  clienteId: string
+  clienteNuevo: string
+  tema: string
+  loHablado: string
+  origen: string
+  cuando: string
+}
+
+export async function anotarCharla(c: Charla): Promise<Resultado> {
+  if (!c.loHablado.trim()) return { ok: false, error: 'Escribí de qué hablaron.' }
+
+  let organizacion_id = c.clienteId
+  if (organizacion_id === 'nuevo') {
+    if (!c.clienteNuevo.trim()) return { ok: false, error: 'Poné de quién es la charla.' }
+    const r = await altaDeCuenta(c.clienteNuevo.trim(), [])
+    if ('error' in r) {
+      if (r.error.includes('duplicate'))
+        return { ok: false, error: 'Ya existe un cliente con ese nombre. Elegilo de la lista.' }
+      return { ok: false, error: traducir(r.error) }
+    }
+    organizacion_id = r.id
+  }
+  if (!organizacion_id) return { ok: false, error: 'Elegí de quién es la charla.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert({
+      organizacion_id,
+      // Sin nombre todavía: se llama por lo que se habló hasta que tenga uno.
+      nombre: c.tema.trim() || 'Por definir',
+      color: 'amarillo',
+      etapa: 'interes',
+      esquema_cobro: 'a_convenir',
+      origen: c.origen || null,
+      proxima_accion: 'Volver a hablar',
+      proximo_seguimiento: c.cuando || null,
+    })
+    .select('id, codigo')
+    .single()
+
+  if (error || !data) return { ok: false, error: traducir(error?.message ?? 'No se pudo anotar') }
+
+  // La charla misma queda como primera novedad: es el día uno del hilo.
+  await cargarNovedad(data.id as string, 'comercial', c.loHablado.trim())
+
+  revalidatePath('/', 'layout')
+  return { ok: true, ir: `/proyecto/${data.codigo}` }
+}

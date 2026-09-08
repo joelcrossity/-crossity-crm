@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Shell from '@/components/Shell'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
+import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
 import { plata, fechaCorta, SUBESTADO } from '@/lib/estados'
 
@@ -29,7 +30,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
 
   const { data: org } = await supabase
     .from('organizaciones')
-    .select('id, codigo, nombre_canonico, alias, unidad')
+    .select('id, codigo, nombre_canonico, alias, unidad, cuit, notas')
     .eq('codigo', codigo)
     .maybeSingle()
 
@@ -46,10 +47,10 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         .order('color'),
       supabase
         .from('razones_sociales')
-        .select('razon_social, cuit, es_principal')
+        .select('id, razon_social, cuit, es_principal')
         .eq('organizacion_id', org.id),
-      supabase.from('marcas').select('nombre, es_principal').eq('organizacion_id', org.id),
-      supabase.from('contactos').select('nombre, rol, email, telefono').eq('organizacion_id', org.id),
+      supabase.from('marcas').select('id, nombre, es_principal').eq('organizacion_id', org.id),
+      supabase.from('contactos').select('id, nombre, rol, email, telefono').eq('organizacion_id', org.id),
     ])
 
   type P = {
@@ -91,25 +92,19 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         <span className="cifra text-2xs text-gris-50">{org.codigo}</span>
         <h1 className="text-2xl font-bold tracking-tight text-balance">{org.nombre_canonico}</h1>
 
-        <div className="flex flex-wrap gap-x-8 gap-y-2">
-          {(marcas?.length ?? 0) > 0 && (
-            <Dato titulo="Marcas">
-              {marcas!.map((m: { nombre: string }) => m.nombre).join(' · ')}
-            </Dato>
-          )}
-          {(razones?.length ?? 0) > 0 && (
-            <Dato titulo={`Razones sociales (${razones!.length})`}>
-              {razones!
-                .map((r: { razon_social: string; es_principal: boolean }) =>
-                  r.es_principal ? `${r.razon_social} ★` : r.razon_social
-                )
-                .join(' · ')}
-            </Dato>
-          )}
-          {(org.alias?.length ?? 0) > 0 && (
-            <Dato titulo="También aparece como">{org.alias.join(' · ')}</Dato>
-          )}
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <DatoCliente id={org.id} campo="nombre_canonico" etiqueta="Nombre" valor={org.nombre_canonico} />
+          <DatoCliente id={org.id} campo="cuit" etiqueta="CUIT" valor={org.cuit} marcador="30-…" ancho="w-40" />
+          <DatoCliente
+            id={org.id}
+            campo="notas"
+            etiqueta="Notas"
+            valor={org.notas}
+            marcador="Cómo llegó, con quién hablar…"
+            ancho="w-72"
+          />
         </div>
+        <AliasCliente id={org.id} alias={org.alias ?? []} />
       </header>
 
       <div className="flex flex-col gap-9">
@@ -215,36 +210,55 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
             <Barras datos={porProyecto} serie={1} />
           </Marco>
 
-          <Marco
-            titulo="Contactos"
-            detalle="Quién decide y quién paga del otro lado"
-            hayDatos={(contactos?.length ?? 0) > 0}
-            vacio="Todavía no hay contactos cargados."
-          >
-            <ul className="flex flex-col gap-2">
-              {(contactos ?? []).map(
-                (c: { nombre: string; rol: string | null; email: string | null }, i: number) => (
-                  <li key={i} className="flex flex-col">
-                    <span className="text-sm font-medium text-tinta">{c.nombre}</span>
-                    <span className="text-2xs text-gris-50">
-                      {[c.rol, c.email].filter(Boolean).join(' · ')}
-                    </span>
-                  </li>
-                )
+          <div className="flex flex-col gap-7">
+            <Lista
+              titulo="Contactos"
+              ayuda="Quién decide y quién paga del otro lado."
+              organizacionId={org.id}
+              tabla="contactos"
+              tipo="contacto"
+              items={(contactos ?? []).map(
+                (c: { id: string; nombre: string; rol: string | null; email: string | null }) => ({
+                  id: c.id,
+                  principal: c.nombre,
+                  secundario: [c.rol, c.email].filter(Boolean).join(' · ') || null,
+                })
               )}
-            </ul>
-          </Marco>
+            />
+
+            <Lista
+              titulo="Razones sociales"
+              ayuda="A quién se le factura. Un mismo cliente puede facturar por varias empresas."
+              organizacionId={org.id}
+              tabla="razones_sociales"
+              tipo="razon"
+              items={(razones ?? []).map(
+                (r: { id: string; razon_social: string; cuit: string | null; es_principal: boolean }) => ({
+                  id: r.id,
+                  principal: r.razon_social,
+                  secundario: r.cuit,
+                  esPrincipal: r.es_principal,
+                })
+              )}
+            />
+
+            <Lista
+              titulo="Marcas"
+              ayuda="Los nombres de fantasía con los que se lo conoce."
+              organizacionId={org.id}
+              tabla="marcas"
+              tipo="marca"
+              items={(marcas ?? []).map(
+                (m: { id: string; nombre: string; es_principal: boolean }) => ({
+                  id: m.id,
+                  principal: m.nombre,
+                  esPrincipal: m.es_principal,
+                })
+              )}
+            />
+          </div>
         </section>
       </div>
     </Shell>
-  )
-}
-
-function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</dt>
-      <dd className="text-sm text-tinta">{children}</dd>
-    </div>
   )
 }

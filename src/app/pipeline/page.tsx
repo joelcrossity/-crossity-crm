@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Shell from '@/components/Shell'
 import Asistente from '@/components/Asistente'
+import Charla from '@/components/Charla'
 import { createClient } from '@/lib/supabase/server'
 import { ETAPAS, plata } from '@/lib/estados'
 
@@ -65,7 +66,10 @@ export default async function Pipeline() {
           </div>
         </header>
 
-        <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
+        <div className="flex flex-wrap items-start gap-2">
+          <Charla clientes={clientes} />
+          <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
+        </div>
 
         <div className="flex flex-col gap-8">
           {ETAPAS.map((etapa) => {
