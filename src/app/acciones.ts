@@ -1471,3 +1471,80 @@ export async function soltarPermiso(personaId: string, accion: string): Promise<
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   El reparto y el cierre de un abono.
+
+   El reparto era la pieza que faltaba: el sistema calculaba porciones y
+   liquidaciones a partir de participaciones que no se podían ver desde
+   ninguna pantalla. Un número que sale de algo invisible no se puede
+   creer.
+   ------------------------------------------------------------------ */
+
+export async function guardarReparto(
+  proyectoId: string,
+  personaId: string,
+  concepto: string,
+  porcentaje: string,
+  apertura: string,
+): Promise<Resultado> {
+  const pct = parseFloat(porcentaje.replace(',', '.'))
+  if (!Number.isFinite(pct) || pct <= 0 || pct > 100)
+    return { ok: false, error: 'El porcentaje tiene que estar entre 0 y 100.' }
+
+  const esCrossity = personaId === 'casa'
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guardar_reparto', {
+    p_proyecto: proyectoId,
+    p_persona: esCrossity ? null : personaId,
+    p_es_crossity: esCrossity,
+    p_concepto: concepto,
+    p_porcentaje: pct,
+    p_apertura: apertura,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function quitarReparto(participacionId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('quitar_reparto', { p_participacion: participacionId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  return { ok: true }
+}
+
+export async function cambiarVigencia(
+  proyectoId: string,
+  campo: 'vigencia_desde' | 'vigencia_hasta',
+  fecha: string,
+): Promise<Resultado> {
+  return guardar(proyectoId, { [campo]: fecha || null })
+}
+
+export async function cerrarMantenimiento(
+  proyectoId: string,
+  hasta: string,
+  motivo: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('cerrar_mantenimiento', {
+    p_proyecto: proyectoId,
+    p_hasta: hasta || new Date().toISOString().slice(0, 10),
+    p_motivo: motivo.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function reabrirMantenimiento(proyectoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('reabrir_mantenimiento', { p_proyecto: proyectoId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

@@ -21,6 +21,8 @@ import BorrarProyecto from '@/components/BorrarProyecto'
 import AsignarCliente from '@/components/AsignarCliente'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Plata from '@/components/Plata'
+import Reparto, { type Parte } from '@/components/Reparto'
+import Abono from '@/components/Abono'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -35,13 +37,23 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
   const { codigo } = await props.params
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', user?.id ?? '')
+    .maybeSingle()
+  const esDireccion =
+    ((yo?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []).includes('direccion')
+
   const { data: p } = await supabase
     .from('proyectos')
     .select(`
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
       alicuota_iva, nota_iva,
-      es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id, carpeta_url,
+      es_producto_propio, monto_mensual, vigencia_desde, vigencia_hasta, responsable_id,
+      origen_id, carpeta_url,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
       servicio_id,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
@@ -68,6 +80,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: cambio },
     { data: servicios },
     { data: filasEtapas },
+    { data: reparto },
+    { data: hoyRow },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -113,6 +127,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('v_cotizaciones').select('codigo, valor, dias_de_atraso'),
       supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
       supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
+      supabase.from('v_reparto').select('*').eq('proyecto_id', p.id),
+      supabase.rpc('hoy_es'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -622,6 +638,19 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
           )}
         </section>
 
+        {esAbono && (
+          <Abono
+            proyectoId={p.id}
+            desde={p.vigencia_desde}
+            hasta={p.vigencia_hasta}
+            mensual={p.monto_mensual}
+            moneda={p.moneda}
+            cerrado={p.color === 'naranja' || p.color === 'rojo'}
+            cobrado={cobrado}
+            hoy={(hoyRow as string) ?? ''}
+          />
+        )}
+
         <Plata
           proyectoId={p.id}
           neto={p.monto_neto}
@@ -636,6 +665,14 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
               ?.dias_de_atraso as number | null ?? null
           }
+        />
+
+        <Reparto
+          proyectoId={p.id}
+          partes={(reparto ?? []) as Parte[]}
+          personas={(personas ?? []) as { id: string; nombre: string }[]}
+          moneda={p.moneda}
+          puedeEditar={esDireccion}
         />
 
         <Documentos
