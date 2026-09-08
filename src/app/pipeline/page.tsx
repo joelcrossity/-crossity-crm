@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Shell from '@/components/Shell'
+import { NuevoProyecto } from '@/components/Alta'
 import { createClient } from '@/lib/supabase/server'
 import { ETAPAS, plata } from '@/lib/estados'
 
