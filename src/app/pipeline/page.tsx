@@ -23,6 +23,7 @@ type Op = {
   seguimiento_vencido: boolean
   negocia_sin_base: boolean
   cotizado_sin_monto: boolean
+  enfriada: boolean
 }
 
 export default async function Pipeline() {
@@ -39,15 +40,19 @@ export default async function Pipeline() {
     proyectos: (c.proyectos_totales as number) ?? 0,
     enVivo: (c.en_vivo as number) ?? 0,
   }))
-  const [{ data }, { data: recontactar }, { data: referidos }] = await Promise.all([
+  const [{ data }, { data: referidos }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
-    supabase.from('v_para_recontactar').select('codigo, nombre, cliente, origen'),
     supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
   ])
   const ops = (data ?? []) as Op[]
 
-  const total = ops.reduce((s, o) => s + (o.moneda === 'ARS' ? 0 : o.monto_neto ?? 0), 0)
-  const enPesos = ops.reduce((s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0), 0)
+  /* Las enfriadas siguen en el tablero pero no suman al pipeline: contar
+     como cotizado algo que nadie contesta hace parecer que hay más de lo
+     que hay. */
+  const vivas = ops.filter((o) => !o.enfriada)
+  const frias = ops.length - vivas.length
+  const total = vivas.reduce((s, o) => s + (o.moneda === 'ARS' ? 0 : o.monto_neto ?? 0), 0)
+  const enPesos = vivas.reduce((s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0), 0)
 
   const porReferente = new Map(
     ((referidos ?? []) as Record<string, unknown>[]).map((r) => [
@@ -69,11 +74,12 @@ export default async function Pipeline() {
     negocia_sin_base: o.negocia_sin_base,
     cotizado_sin_monto: o.cotizado_sin_monto,
     referente: porReferente.get(o.id) ?? null,
+    enfriada: !!o.enfriada,
   }))
 
   const seguimientos: [string, string | null][] = ops.map((o) => [o.id, o.proximo_seguimiento])
-  const vencidos = ops.filter((o) => o.seguimiento_vencido).length
-  const sinAgendar = ops.filter((o) => o.sin_agendar).length
+  const vencidos = vivas.filter((o) => o.seguimiento_vencido).length
+  const sinAgendar = vivas.filter((o) => o.sin_agendar).length
 
   return (
     <Shell activo="/pipeline">
@@ -87,7 +93,7 @@ export default async function Pipeline() {
               : 'Todas con su próximo paso agendado.'
         }
       >
-        {ops.length} oportunidades abiertas
+        {vivas.length} oportunidades abiertas
       </Titulo>
 
       <div className="flex flex-col gap-8">
@@ -99,6 +105,7 @@ export default async function Pipeline() {
             titulo="con seguimiento vencido"
             tono={vencidos > 0 ? 'rojo' : 'verde'}
           />
+          {frias > 0 && <Dato valor={String(frias)} titulo="enfriadas, para reflotar" />}
         </section>
 
         <VistaPipeline
@@ -112,24 +119,6 @@ export default async function Pipeline() {
           }
         />
 
-        {(recontactar?.length ?? 0) > 0 && (
-          <section className="flex flex-col gap-3 border-t border-linea pt-8">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-base font-bold tracking-tight">Para recontactar</h2>
-              <p className="max-w-[65ch] text-sm text-gris">
-                No se perdieron: se apagaron sin que nadie decidiera nada.
-              </p>
-            </div>
-            <ul className="flex flex-col gap-1.5">
-              {recontactar!.map((r: { codigo: string; nombre: string; cliente: string }) => (
-                <li key={r.codigo} className="text-sm text-gris">
-                  <span className="font-medium text-tinta">{r.nombre}</span>
-                  <span className="cifra text-2xs text-gris-50"> · {r.cliente}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
       </div>
     </Shell>
   )

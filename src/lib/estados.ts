@@ -19,11 +19,15 @@ export const SUBESTADO: Record<string, string> = {
   no_se_dio: 'no se dio',
 }
 
+/* A cotizar y Cotizado son dos momentos distintos: uno es trabajo
+   nuestro pendiente, el otro es esperar al cliente. Confundirlos hacía
+   que el que espera pareciera que avanza. */
 export const ETAPAS = [
   { valor: 'interes',        etiqueta: 'Interés' },
   { valor: 'primera_charla', etiqueta: 'Primera charla' },
   { valor: 'relevamiento',   etiqueta: 'Relevamiento' },
-  { valor: 'cotizacion',     etiqueta: 'Cotización' },
+  { valor: 'a_cotizar',      etiqueta: 'A cotizar' },
+  { valor: 'cotizado',       etiqueta: 'Cotizado' },
   { valor: 'negociacion',    etiqueta: 'Negociación' },
 ] as const
 

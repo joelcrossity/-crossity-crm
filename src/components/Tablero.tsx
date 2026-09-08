@@ -3,8 +3,10 @@
 import { useOptimistic, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { cambiarEtapa } from '@/app/acciones'
+import { cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
 import { ETAPAS, plata } from '@/lib/estados'
+
+const ETIQUETA = new Map<string, string>(ETAPAS.map((e) => [e.valor, e.etiqueta]))
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -33,7 +35,15 @@ export type Op = {
   negocia_sin_base: boolean
   cotizado_sin_monto: boolean
   referente: string | null
+  enfriada: boolean
 }
+
+/* La enfriada no es una etapa más. Una etapa dice hasta dónde llegó la
+   conversación, y eso no cambia porque el cliente deje de contestar:
+   sigue siendo una cotización enviada. Lo que cambia es que está fría.
+   Por eso conserva su etapa, y volver a levantarla retoma donde estaba
+   en vez de empezar de nuevo. */
+const FRIA = '__fria'
 
 export default function Tablero({ ops }: { ops: Op[] }) {
   const router = useRouter()
@@ -42,29 +52,50 @@ export default function Tablero({ ops }: { ops: Op[] }) {
   const [encima, setEncima] = useState<string | null>(null)
 
   // La tarjeta se mueve al soltarla, no cuando contesta el servidor.
-  const [vista, mover] = useOptimistic(ops, (actual: Op[], cambio: { id: string; etapa: string }) =>
-    actual.map((o) => (o.id === cambio.id ? { ...o, etapa: cambio.etapa } : o)),
+  const [vista, mover] = useOptimistic(
+    ops,
+    (actual: Op[], c: { id: string; etapa?: string; fria?: boolean }) =>
+      actual.map((o) =>
+        o.id === c.id
+          ? { ...o, etapa: c.etapa ?? o.etapa, enfriada: c.fria ?? o.enfriada }
+          : o,
+      ),
   )
 
-  function soltar(etapa: string) {
+  function soltar(columna: string) {
     const id = arrastrando
     setArrastrando(null)
     setEncima(null)
     if (!id) return
     const op = vista.find((o) => o.id === id)
-    if (!op || op.etapa === etapa) return
+    if (!op) return
 
     empezar(async () => {
-      mover({ id, etapa })
-      await cambiarEtapa(id, etapa)
+      if (columna === FRIA) {
+        if (op.enfriada) return
+        mover({ id, fria: true })
+        await enfriar(id, '')
+      } else if (op.enfriada) {
+        // Sale del frío y, si además la soltaron en otra columna, avanza.
+        mover({ id, fria: false, etapa: columna })
+        await reflotar(id)
+        if (op.etapa !== columna) await cambiarEtapa(id, columna)
+      } else {
+        if (op.etapa === columna) return
+        mover({ id, etapa: columna })
+        await cambiarEtapa(id, columna)
+      }
       router.refresh()
     })
   }
 
   return (
     <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
-      {ETAPAS.map((etapa) => {
-        const suyas = vista.filter((o) => o.etapa === etapa.valor)
+      {[...ETAPAS, { valor: FRIA, etiqueta: 'Sin respuesta' }].map((etapa) => {
+        const fria = etapa.valor === FRIA
+        const suyas = fria
+          ? vista.filter((o) => o.enfriada)
+          : vista.filter((o) => o.etapa === etapa.valor && !o.enfriada)
         const enPesos = suyas.reduce(
           (s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0),
           0,
@@ -84,7 +115,9 @@ export default function Tablero({ ops }: { ops: Op[] }) {
                         transition-colors duration-200 [scroll-snap-align:start] ${
                           objetivo
                             ? 'border-azul bg-azul-aire'
-                            : 'border-linea bg-panel'
+                            : fria
+                              ? 'border-dashed border-linea-fuerte bg-panel/60'
+                              : 'border-linea bg-panel'
                         }`}
           >
             <header className="flex flex-col gap-0.5 px-1 pt-0.5">
@@ -93,7 +126,11 @@ export default function Tablero({ ops }: { ops: Op[] }) {
                 <span className="cifra text-2xs text-gris-50">{suyas.length}</span>
               </span>
               <span className="cifra text-2xs text-gris-50">
-                {enPesos > 0 ? plata(enPesos, 'ARS') : '—'}
+                {fria
+                  ? 'se enfriaron, no se perdieron'
+                  : enPesos > 0
+                    ? plata(enPesos, 'ARS')
+                    : '—'}
               </span>
             </header>
 
@@ -141,12 +178,13 @@ export default function Tablero({ ops }: { ops: Op[] }) {
                       </span>
                     )}
 
-                    {(o.sin_agendar || o.seguimiento_vencido || o.negocia_sin_base || o.referente) && (
+                    {(o.sin_agendar || o.seguimiento_vencido || o.negocia_sin_base || o.referente || o.enfriada) && (
                       <span className="flex flex-wrap gap-1">
-                        {o.seguimiento_vencido && <Chip tono="rojo">vencido</Chip>}
-                        {o.sin_agendar && <Chip tono="amarillo">sin agendar</Chip>}
-                        {o.negocia_sin_base && <Chip tono="amarillo">nurturing</Chip>}
+                        {!o.enfriada && o.seguimiento_vencido && <Chip tono="rojo">vencido</Chip>}
+                        {!o.enfriada && o.sin_agendar && <Chip tono="amarillo">sin agendar</Chip>}
+                        {!o.enfriada && o.negocia_sin_base && <Chip tono="amarillo">nurturing</Chip>}
                         {o.referente && <Chip tono="violeta">por {o.referente.split(' ')[0]}</Chip>}
+                    {o.enfriada && <Chip tono="gris">{ETIQUETA.get(o.etapa) ?? o.etapa}</Chip>}
                       </span>
                     )}
                   </Link>
@@ -162,7 +200,7 @@ export default function Tablero({ ops }: { ops: Op[] }) {
                                   : 'border-linea-fuerte text-gris-50'
                               }`}
                 >
-                  {objetivo ? 'Soltala acá' : 'Vacía'}
+                  {objetivo ? 'Soltala acá' : fria ? 'Ninguna enfriada' : 'Vacía'}
                 </li>
               )}
             </ul>
@@ -177,7 +215,7 @@ function Chip({
   tono,
   children,
 }: {
-  tono: 'amarillo' | 'rojo' | 'violeta'
+  tono: 'amarillo' | 'rojo' | 'violeta' | 'gris'
   children: React.ReactNode
 }) {
   const color =
@@ -185,7 +223,9 @@ function Chip({
       ? 'border-rojo text-rojo'
       : tono === 'violeta'
         ? 'border-violeta-50 text-violeta-50'
-        : 'border-amarillo text-amarillo'
+        : tono === 'gris'
+          ? 'border-linea-fuerte text-gris-50'
+          : 'border-amarillo text-amarillo'
   return (
     <span
       className={`rounded-full border px-1.5 py-px text-[10px] uppercase tracking-wider ${color}`}

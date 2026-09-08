@@ -1005,3 +1005,26 @@ export async function cambiarCarpeta(
   revalidatePath('/cuentas', 'layout')
   return { ok: true }
 }
+
+
+/* Enfriar conserva la etapa: que el cliente deje de contestar no borra
+   hasta dónde se había llegado. Reflotar la devuelve exactamente ahí. */
+
+export async function enfriar(proyectoId: string, motivo: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('enfriar', {
+    p_proyecto: proyectoId,
+    p_motivo: motivo.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function reflotar(proyectoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('reflotar', { p_proyecto: proyectoId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
