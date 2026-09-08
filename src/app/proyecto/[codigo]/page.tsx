@@ -13,7 +13,7 @@ import {
   cambiarProgramaYResponsables,
   cambiarResponsable,
 } from '@/app/acciones'
-import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
+import { RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
@@ -22,6 +22,7 @@ import AsignarCliente from '@/components/AsignarCliente'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Plata from '@/components/Plata'
 import Reparto, { type Parte } from '@/components/Reparto'
+import Pestanas from '@/components/Pestanas'
 import Abono from '@/components/Abono'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
@@ -135,7 +136,6 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
   const hs = (hitos ?? []) as H[]
   const total = hs.reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
   const entregado = hs.filter((h) => h.entregado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
-  const facturado = hs.filter((h) => h.facturado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
   const cobrado = hs.filter((h) => h.cobrado_at).reduce((a, h) => a + ((h.monto_neto as number) ?? 0), 0)
   const proximo = hs.find((h) => !h.entregado_at)
 
@@ -262,430 +262,402 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
           }))}
         />
 
-        <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
-          <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
+        {/* Antes esto era un scroll de catorce secciones donde había que
+            recordar dónde estaba cada cosa, con dos bloques que repetían
+            lo que el panel de arriba ya decía. Agrupado por lo que uno
+            viene a hacer, no por el orden en que se fue construyendo. */}
+        <Pestanas
+          solapas={[
+            {
+              clave: 'trabajo',
+              texto: 'El trabajo',
+              contenido: (
+                <div className="flex flex-col gap-9">
+                  <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
+                    <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Fecha
-              etiqueta={esAbono ? 'Vigente desde' : 'Entrega comprometida'}
-              valor={esAbono ? p.vigencia_desde : p.fecha_comprometida}
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarFecha(p.id, v)
-              }}
-            />
-            <Select
-              etiqueta="Qué es"
-              valor={p.servicio_id}
-              vacio="sin clasificar"
-              opciones={((servicios ?? []) as { id: string; nombre: string }[]).map((x) => ({
-                valor: x.id,
-                texto: x.nombre,
-              }))}
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarServicio(p.id, v)
-              }}
-            />
-            <Select
-              etiqueta="Responsable"
-              valor={p.responsable_id}
-              vacio="sin asignar"
-              opciones={(personas ?? []).map((x: { id: string; nombre: string }) => ({
-                valor: x.id,
-                texto: x.nombre,
-              }))}
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarResponsable(p.id, v)
-              }}
-            />
-            <Numero
-              etiqueta="Prioridad"
-              valor={p.prioridad}
-              ayuda="1 es lo más importante"
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarPrioridad(p.id, v)
-              }}
-            />
-            <Select
-              etiqueta="Responsable técnico"
-              valor={p.responsable_tecnico_id}
-              vacio="sin asignar"
-              opciones={(personas ?? []).map((x: { id: string; nombre: string }) => ({
-                valor: x.id,
-                texto: x.nombre,
-              }))}
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarProgramaYResponsables(p.id, 'responsable_tecnico_id', v)
-              }}
-            />
-            <Numero
-              etiqueta={esAbono ? 'Abono mensual' : 'Monto neto, sin IVA'}
-              valor={esAbono ? p.monto_mensual : p.monto_neto}
-              ayuda="Al cambiarlo se reajustan las entregas no facturadas"
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarMonto(p.id, v, p.moneda)
-              }}
-            />
-            <Texto
-              etiqueta="Programa"
-              valor={p.programa}
-              marcador="Kit 4.0, CFI, Repec…"
-              alCambiar={async (v) => {
-                'use server'
-                return cambiarProgramaYResponsables(p.id, 'programa', v)
-              }}
-            />
-          </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <Fecha
+                        etiqueta={esAbono ? 'Vigente desde' : 'Entrega comprometida'}
+                        valor={esAbono ? p.vigencia_desde : p.fecha_comprometida}
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarFecha(p.id, v)
+                        }}
+                      />
+                      <Select
+                        etiqueta="Qué es"
+                        valor={p.servicio_id}
+                        vacio="sin clasificar"
+                        opciones={((servicios ?? []) as { id: string; nombre: string }[]).map((x) => ({
+                          valor: x.id,
+                          texto: x.nombre,
+                        }))}
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarServicio(p.id, v)
+                        }}
+                      />
+                      <Select
+                        etiqueta="Responsable"
+                        valor={p.responsable_id}
+                        vacio="sin asignar"
+                        opciones={(personas ?? []).map((x: { id: string; nombre: string }) => ({
+                          valor: x.id,
+                          texto: x.nombre,
+                        }))}
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarResponsable(p.id, v)
+                        }}
+                      />
+                      <Numero
+                        etiqueta="Prioridad"
+                        valor={p.prioridad}
+                        ayuda="1 es lo más importante"
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarPrioridad(p.id, v)
+                        }}
+                      />
+                      <Select
+                        etiqueta="Responsable técnico"
+                        valor={p.responsable_tecnico_id}
+                        vacio="sin asignar"
+                        opciones={(personas ?? []).map((x: { id: string; nombre: string }) => ({
+                          valor: x.id,
+                          texto: x.nombre,
+                        }))}
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarProgramaYResponsables(p.id, 'responsable_tecnico_id', v)
+                        }}
+                      />
+                      <Numero
+                        etiqueta={esAbono ? 'Abono mensual' : 'Monto neto, sin IVA'}
+                        valor={esAbono ? p.monto_mensual : p.monto_neto}
+                        ayuda="Al cambiarlo se reajustan las entregas no facturadas"
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarMonto(p.id, v, p.moneda)
+                        }}
+                      />
+                      <Texto
+                        etiqueta="Programa"
+                        valor={p.programa}
+                        marcador="Kit 4.0, CFI, Repec…"
+                        alCambiar={async (v) => {
+                          'use server'
+                          return cambiarProgramaYResponsables(p.id, 'programa', v)
+                        }}
+                      />
+                    </div>
 
-          <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-linea pt-3.5">
-            <Dato titulo="Con IVA (21 %)">
-              {plata(Math.round((esAbono ? (p.monto_mensual ?? 0) : (p.monto_neto ?? 0)) * 1.21), p.moneda)}
-            </Dato>
-            {(miParte?.length ?? 0) > 0 && (
-              <Dato titulo={miParte!.length > 1 ? 'Reparto' : 'Tu participación'}>
-                {miParte!
-                  .map((m: { concepto: string; porcentaje: number }) => `${m.porcentaje} % ${m.concepto}`)
-                  .join(' · ')}
-              </Dato>
-            )}
-
-          </dl>
-        </section>
-
-        {total > 0 && (
-          <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
-            <div className="flex flex-col gap-0.5">
-              <h2 className="text-md font-bold tracking-tight">El detalle de la plata</h2>
-              <p className="max-w-[70ch] text-sm text-gris">
-                El avance se mide por plata entregada, no por cantidad de entregas: una que vale la
-                mitad del proyecto no pesa igual que una que vale el trece por ciento.
-              </p>
-            </div>
-
-            <Avance
-              entregado={entregado}
-              facturado={facturado}
-              cobrado={cobrado}
-              total={total}
-              moneda={p.moneda}
-            />
-
-            {proximo && (
-              <p className="border-t border-linea pt-3 text-sm text-gris">
-                Lo que sigue: <span className="font-bold text-tinta">{proximo.titulo as string}</span>
-                {proximo.entregable ? ` — ${proximo.entregable as string}` : ''}
-                {proximo.fecha_comprometida
-                  ? `, comprometida para el ${fechaCorta(proximo.fecha_comprometida as string)}`
-                  : ''}
-                .
-              </p>
-            )}
-
-
-          </section>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-md font-bold tracking-tight">Equipo</h2>
-            <p className="text-sm text-gris">
-              Más allá de los dos responsables, quién más está trabajando en esto.
-            </p>
-          </div>
-          <Equipo
-            proyectoId={p.id}
-            miembros={(equipo ?? []) as unknown as Miembro[]}
-            personas={personas ?? []}
-            editable
-          />
-        </section>
-
-        {elAbono && (
-          <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
-            Ya tiene su mantenimiento:{' '}
-            <Link
-              href={`/proyecto/${elAbono.codigo}`}
-              className="font-bold text-azul-hondo hover:underline"
-            >
-              {elAbono.nombre}
-            </Link>
-            , {plata(elAbono.monto_mensual, elAbono.moneda)} por mes.
-          </p>
-        )}
-
-        {/* El formulario aparece cuando el trabajo terminó: o está en naranja,
-            o no le queda ninguna entrega pendiente. Un proyecto sin hitos
-            cargados también cuenta si ya se dio por terminado. */}
-        {!esAbono && !elAbono && (p.color === 'naranja' || (total > 0 && !proximo)) && (
-          <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
-        )}
-
-        {esAbono && elOrigen && (
-          <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
-            Nace del proyecto{' '}
-            <Link href={`/proyecto/${elOrigen.codigo}`} className="font-bold text-azul-hondo hover:underline">
-              {elOrigen.nombre}
-            </Link>
-            . La historia de la obra sigue ahí; acá empieza la del abono.
-          </p>
-        )}
-
-        {rendicion.size > 0 && (
-          <section className="flex flex-col gap-3">
-            <div className="flex flex-col gap-0.5">
-              <h2 className="text-md font-bold tracking-tight">Qué falta rendir</h2>
-              <p className="text-sm text-gris">
-                A liquidar es lo que el cliente ya pagó y todavía no se transfirió. Devengado se
-                ganó pero no entró.
-              </p>
-            </div>
-            <div className="overflow-x-auto rounded-lg border border-linea bg-superficie">
-              <table className="w-full min-w-[560px]">
-                <thead>
-                  <tr className="border-b border-linea bg-panel">
-                    {['Participante', 'Comprometido', 'Devengado', 'A liquidar', 'Liquidado'].map((h) => (
-                      <th key={h} className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wider text-gris-50">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...rendicion.entries()].map(([quien, f]) => (
-                    <tr key={quien} className="border-b border-linea last:border-0">
-                      <td className="px-3 py-2 text-sm font-medium text-tinta">{quien}</td>
-                      <td className="cifra px-3 py-2 text-sm text-gris">{plata(f.comprometido, f.moneda)}</td>
-                      <td className="cifra px-3 py-2 text-sm text-amarillo">{plata(f.devengado, f.moneda)}</td>
-                      <td className="cifra px-3 py-2 text-sm font-bold text-azul-hondo">{plata(f.a_liquidar, f.moneda)}</td>
-                      <td className="cifra px-3 py-2 text-sm text-verde">{plata(f.liquidado, f.moneda)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-md font-bold tracking-tight">Pagos que entraron</h2>
-            <p className="text-sm text-gris">
-              Desde que arrancó el proyecto, con su fecha y su medio.
-            </p>
-          </div>
-          {(cobros?.length ?? 0) === 0 ? (
-            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
-              Todavía no se registró ningún pago. Se cargan desde cada entrega, más abajo.
-            </p>
-          ) : (
-            <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
-              {cobros!.map((c: Record<string, unknown>) => (
-                <li key={c.id as string} className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 px-3.5 py-2.5">
-                  <span className="min-w-0">
-                    <span className="block text-base font-medium text-tinta">
-                      {(c.hitos as { titulo: string }).titulo}
-                    </span>
-                    <span className="cifra block text-2xs text-gris-50">
-                      {fechaCorta(c.fecha as string)}
-                      {c.medio ? ` · ${c.medio as string}` : ''}
-                    </span>
-                  </span>
-                  <span className="flex items-baseline gap-3">
-                    <span className="cifra text-sm font-bold text-verde">
-                      {plata(c.monto as number, c.moneda as string)}
-                    </span>
-                    <BorrarCobro cobroId={c.id as string} />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-md font-bold tracking-tight">Contar qué pasó</h2>
-            <p className="text-sm text-gris">
-              Lo que escribas acá es lo que le evita a alguien tener que preguntarte.
-            </p>
-          </div>
-          <Novedad proyectoId={p.id} />
-        </section>
-
-        {(hitos?.length ?? 0) > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-md font-bold tracking-tight">
-              {esAbono ? 'Cuotas' : 'Entregas'}
-            </h2>
-            <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
-              {hitos!.map((h: Record<string, string | number | boolean | null>) => (
-                <li key={h.id as string} className="flex flex-wrap gap-x-6 gap-y-2 px-3.5 py-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline gap-2">
-                      <span className="cifra text-2xs text-gris-50">{h.orden as number}</span>
-                      <span className="text-base font-medium">{h.titulo as string}</span>
-                      {h.es_anticipo ? (
-                        <span className="rounded px-1 py-px text-2xs text-azul-hondo ring-1 ring-azul/40">
-                          anticipo
-                        </span>
-                      ) : null}
-                    </span>
-                    {h.entregable ? (
-                      <span className="mt-0.5 block text-sm leading-snug text-gris">
-                        {h.entregable as string}
-                      </span>
-                    ) : null}
-                  </span>
-
-                  <span className="cifra shrink-0 text-sm text-gris">
-                    {plata(h.monto_neto as number, h.moneda as string)}
-                    {h.fecha_comprometida ? (
-                      <span className="block text-2xs text-gris-50">
-                        {fechaCorta(h.fecha_comprometida as string)}
-                      </span>
-                    ) : null}
-                  </span>
-
-                  <span className="flex shrink-0 flex-wrap items-end gap-3">
-                    <FechaHito
-                      hitoId={h.id as string}
-                      campo="vence_at"
-                      etiqueta="vence"
-                      valor={h.vence_at as string | null}
-                    />
-                    <FechaHito
-                      hitoId={h.id as string}
-                      campo="entregado_at"
-                      etiqueta="entregado"
-                      valor={h.entregado_at as string | null}
-                    />
-                    <FechaHito
-                      hitoId={h.id as string}
-                      campo="facturado_at"
-                      etiqueta="facturado"
-                      valor={h.facturado_at as string | null}
-                    />
-                    <span className="flex flex-col gap-0.5">
-                      <span
-                        className={`text-2xs uppercase tracking-wider ${
-                          h.cobrado_at ? 'text-verde' : 'text-gris-50'
-                        }`}
-                      >
-                        pagado
-                      </span>
-                      {conCobro.has(h.id as string) ? (
-                        <span className="cifra px-1.5 py-1 text-sm text-verde">
-                          {fechaCorta((h.cobrado_at as string).slice(0, 10))}
-                        </span>
-                      ) : (
-                        <RegistrarCobro
-                          hitoId={h.id as string}
-                          sugerido={(h.monto_neto as number) ?? 0}
-                          moneda={(h.moneda as string) ?? 'ARS'}
-                          yaCobrado={!!h.cobrado_at}
-                        />
+                    <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-linea pt-3.5">
+                      <Dato titulo="Con IVA (21 %)">
+                        {plata(Math.round((esAbono ? (p.monto_mensual ?? 0) : (p.monto_neto ?? 0)) * 1.21), p.moneda)}
+                      </Dato>
+                      {(miParte?.length ?? 0) > 0 && (
+                        <Dato titulo={miParte!.length > 1 ? 'Reparto' : 'Tu participación'}>
+                          {miParte!
+                            .map((m: { concepto: string; porcentaje: number }) => `${m.porcentaje} % ${m.concepto}`)
+                            .join(' · ')}
+                        </Dato>
                       )}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="max-w-[70ch] text-2xs text-gris-50">
-              Los tres son hechos distintos con su propia fecha: se puede cobrar sin haber
-              facturado, y facturar mucho después. Cobrar el anticipo pasa el proyecto a en curso y
-              le avisa al equipo.
-            </p>
-          </section>
-        )}
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-md font-bold tracking-tight">Qué viene pasando</h2>
-          {(linea?.length ?? 0) === 0 ? (
-            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
-              Todavía no hay novedades. La primera que cargues arranca la historia del proyecto.
-            </p>
-          ) : (
-            <ol className="flex flex-col">
-              {linea!.map(
-                (
-                  a: { tipo: string; texto: string; ocurrido_at: string; personas: unknown },
-                  i: number
-                ) => (
-                  <li key={i} className="flex gap-4 border-b border-linea py-2.5 last:border-0">
-                    <span className="cifra w-16 shrink-0 pt-0.5 text-2xs text-gris-50">
-                      {new Date(a.ocurrido_at).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: 'short',
-                      })}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-base leading-snug">{a.texto}</span>
-                      <span className="block text-2xs text-gris-50">
-                        {ETIQUETA_TIPO[a.tipo] ?? a.tipo}
-                        {(a.personas as { nombre: string } | null)?.nombre &&
-                          ` · ${(a.personas as { nombre: string }).nombre}`}
-                      </span>
-                    </span>
-                  </li>
-                )
-              )}
-            </ol>
-          )}
-        </section>
+                    </dl>
+                  </section>
+                  <section className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <h2 className="text-md font-bold tracking-tight">Contar qué pasó</h2>
+                      <p className="text-sm text-gris">
+                        Lo que escribas acá es lo que le evita a alguien tener que preguntarte.
+                      </p>
+                    </div>
+                    <Novedad proyectoId={p.id} />
+                  </section>
+                  <section className="flex flex-col gap-3">
+                    <h2 className="text-md font-bold tracking-tight">Qué viene pasando</h2>
+                    {(linea?.length ?? 0) === 0 ? (
+                      <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+                        Todavía no hay novedades. La primera que cargues arranca la historia del proyecto.
+                      </p>
+                    ) : (
+                      <ol className="flex flex-col">
+                        {linea!.map(
+                          (
+                            a: { tipo: string; texto: string; ocurrido_at: string; personas: unknown },
+                            i: number
+                          ) => (
+                            <li key={i} className="flex gap-4 border-b border-linea py-2.5 last:border-0">
+                              <span className="cifra w-16 shrink-0 pt-0.5 text-2xs text-gris-50">
+                                {new Date(a.ocurrido_at).toLocaleDateString('es-AR', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                })}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-base leading-snug">{a.texto}</span>
+                                <span className="block text-2xs text-gris-50">
+                                  {ETIQUETA_TIPO[a.tipo] ?? a.tipo}
+                                  {(a.personas as { nombre: string } | null)?.nombre &&
+                                    ` · ${(a.personas as { nombre: string }).nombre}`}
+                                </span>
+                              </span>
+                            </li>
+                          )
+                        )}
+                      </ol>
+                    )}
+                  </section>
+                </div>
+              ),
+            },
+            {
+              clave: 'entregas',
+              texto: esAbono ? 'Cuotas' : 'Entregas',
+              señal: ((hitos ?? []) as Record<string, unknown>[]).filter((h) => !h.entregado_at)
+                .length,
+              contenido: (
+                <div className="flex flex-col gap-9">
+                  {(hitos?.length ?? 0) > 0 && (
+                    <section className="flex flex-col gap-3">
+                      <h2 className="text-md font-bold tracking-tight">
+                        {esAbono ? 'Cuotas' : 'Entregas'}
+                      </h2>
+                      <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+                        {hitos!.map((h: Record<string, string | number | boolean | null>) => (
+                          <li key={h.id as string} className="flex flex-wrap gap-x-6 gap-y-2 px-3.5 py-3">
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-baseline gap-2">
+                                <span className="cifra text-2xs text-gris-50">{h.orden as number}</span>
+                                <span className="text-base font-medium">{h.titulo as string}</span>
+                                {h.es_anticipo ? (
+                                  <span className="rounded px-1 py-px text-2xs text-azul-hondo ring-1 ring-azul/40">
+                                    anticipo
+                                  </span>
+                                ) : null}
+                              </span>
+                              {h.entregable ? (
+                                <span className="mt-0.5 block text-sm leading-snug text-gris">
+                                  {h.entregable as string}
+                                </span>
+                              ) : null}
+                            </span>
 
-        {esAbono && (
-          <Abono
-            proyectoId={p.id}
-            desde={p.vigencia_desde}
-            hasta={p.vigencia_hasta}
-            mensual={p.monto_mensual}
-            moneda={p.moneda}
-            cerrado={p.color === 'naranja' || p.color === 'rojo'}
-            cobrado={cobrado}
-            hoy={(hoyRow as string) ?? ''}
-          />
-        )}
+                            <span className="cifra shrink-0 text-sm text-gris">
+                              {plata(h.monto_neto as number, h.moneda as string)}
+                              {h.fecha_comprometida ? (
+                                <span className="block text-2xs text-gris-50">
+                                  {fechaCorta(h.fecha_comprometida as string)}
+                                </span>
+                              ) : null}
+                            </span>
 
-        <Plata
-          proyectoId={p.id}
-          neto={p.monto_neto}
-          moneda={p.moneda}
-          alicuota={Number(p.alicuota_iva)}
-          notaIva={p.nota_iva}
-          cotizacion={
-            ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
-              ?.valor as number | null ?? null
-          }
-          diasDeAtraso={
-            ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
-              ?.dias_de_atraso as number | null ?? null
-          }
+                            <span className="flex shrink-0 flex-wrap items-end gap-3">
+                              <FechaHito
+                                hitoId={h.id as string}
+                                campo="vence_at"
+                                etiqueta="vence"
+                                valor={h.vence_at as string | null}
+                              />
+                              <FechaHito
+                                hitoId={h.id as string}
+                                campo="entregado_at"
+                                etiqueta="entregado"
+                                valor={h.entregado_at as string | null}
+                              />
+                              <FechaHito
+                                hitoId={h.id as string}
+                                campo="facturado_at"
+                                etiqueta="facturado"
+                                valor={h.facturado_at as string | null}
+                              />
+                              <span className="flex flex-col gap-0.5">
+                                <span
+                                  className={`text-2xs uppercase tracking-wider ${
+                                    h.cobrado_at ? 'text-verde' : 'text-gris-50'
+                                  }`}
+                                >
+                                  pagado
+                                </span>
+                                {conCobro.has(h.id as string) ? (
+                                  <span className="cifra px-1.5 py-1 text-sm text-verde">
+                                    {fechaCorta((h.cobrado_at as string).slice(0, 10))}
+                                  </span>
+                                ) : (
+                                  <RegistrarCobro
+                                    hitoId={h.id as string}
+                                    sugerido={(h.monto_neto as number) ?? 0}
+                                    moneda={(h.moneda as string) ?? 'ARS'}
+                                    yaCobrado={!!h.cobrado_at}
+                                  />
+                                )}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="max-w-[70ch] text-2xs text-gris-50">
+                        Los tres son hechos distintos con su propia fecha: se puede cobrar sin haber
+                        facturado, y facturar mucho después. Cobrar el anticipo pasa el proyecto a en curso y
+                        le avisa al equipo.
+                      </p>
+                    </section>
+                  )}
+                  <section className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <h2 className="text-md font-bold tracking-tight">Pagos que entraron</h2>
+                      <p className="text-sm text-gris">
+                        Desde que arrancó el proyecto, con su fecha y su medio.
+                      </p>
+                    </div>
+                    {(cobros?.length ?? 0) === 0 ? (
+                      <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+                        Todavía no se registró ningún pago. Se cargan desde cada entrega, más abajo.
+                      </p>
+                    ) : (
+                      <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+                        {cobros!.map((c: Record<string, unknown>) => (
+                          <li key={c.id as string} className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 px-3.5 py-2.5">
+                            <span className="min-w-0">
+                              <span className="block text-base font-medium text-tinta">
+                                {(c.hitos as { titulo: string }).titulo}
+                              </span>
+                              <span className="cifra block text-2xs text-gris-50">
+                                {fechaCorta(c.fecha as string)}
+                                {c.medio ? ` · ${c.medio as string}` : ''}
+                              </span>
+                            </span>
+                            <span className="flex items-baseline gap-3">
+                              <span className="cifra text-sm font-bold text-verde">
+                                {plata(c.monto as number, c.moneda as string)}
+                              </span>
+                              <BorrarCobro cobroId={c.id as string} />
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                  {/* El formulario aparece cuando el trabajo terminó: o está en naranja,
+                      o no le queda ninguna entrega pendiente. Un proyecto sin hitos
+                      cargados también cuenta si ya se dio por terminado. */}
+                  {!esAbono && !elAbono && (p.color === 'naranja' || (total > 0 && !proximo)) && (
+                    <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
+                  )}
+
+                  {esAbono && elOrigen && (
+                    <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
+                      Nace del proyecto{' '}
+                      <Link href={`/proyecto/${elOrigen.codigo}`} className="font-bold text-azul-hondo hover:underline">
+                        {elOrigen.nombre}
+                      </Link>
+                      . La historia de la obra sigue ahí; acá empieza la del abono.
+                    </p>
+                  )}
+                </div>
+              ),
+            },
+            {
+              clave: 'plata',
+              texto: 'La plata',
+              contenido: (
+                <div className="flex flex-col gap-9">
+                  {esAbono && (
+                    <Abono
+                      proyectoId={p.id}
+                      desde={p.vigencia_desde}
+                      hasta={p.vigencia_hasta}
+                      mensual={p.monto_mensual}
+                      moneda={p.moneda}
+                      cerrado={p.color === 'naranja' || p.color === 'rojo'}
+                      cobrado={cobrado}
+                      hoy={(hoyRow as string) ?? ''}
+                    />
+                  )}
+                  <Plata
+                    proyectoId={p.id}
+                    neto={p.monto_neto}
+                    moneda={p.moneda}
+                    alicuota={Number(p.alicuota_iva)}
+                    notaIva={p.nota_iva}
+                    cotizacion={
+                      ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
+                        ?.valor as number | null ?? null
+                    }
+                    diasDeAtraso={
+                      ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
+                        ?.dias_de_atraso as number | null ?? null
+                    }
+                  />
+                  <Reparto
+                    proyectoId={p.id}
+                    partes={(reparto ?? []) as Parte[]}
+                    personas={(personas ?? []) as { id: string; nombre: string }[]}
+                    moneda={p.moneda}
+                    puedeEditar={esDireccion}
+                  />
+                </div>
+              ),
+            },
+            {
+              clave: 'equipo',
+              texto: 'Equipo',
+              señal: equipo?.length ?? 0,
+              contenido: (
+                <div className="flex flex-col gap-9">
+                  <section className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <h2 className="text-md font-bold tracking-tight">Equipo</h2>
+                      <p className="text-sm text-gris">
+                        Más allá de los dos responsables, quién más está trabajando en esto.
+                      </p>
+                    </div>
+                    <Equipo
+                      proyectoId={p.id}
+                      miembros={(equipo ?? []) as unknown as Miembro[]}
+                      personas={personas ?? []}
+                      editable
+                    />
+                  </section>
+
+                  {elAbono && (
+                    <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
+                      Ya tiene su mantenimiento:{' '}
+                      <Link
+                        href={`/proyecto/${elAbono.codigo}`}
+                        className="font-bold text-azul-hondo hover:underline"
+                      >
+                        {elAbono.nombre}
+                      </Link>
+                      , {plata(elAbono.monto_mensual, elAbono.moneda)} por mes.
+                    </p>
+                  )}
+                </div>
+              ),
+            },
+            {
+              clave: 'papeles',
+              texto: 'Documentos',
+              señal: (documentos ?? []).length,
+              contenido: (
+                <div className="flex flex-col gap-9">
+                  <Documentos
+                    documentos={(documentos ?? []) as Documento[]}
+                    proyectoId={p.id}
+                    carpeta={p.carpeta_url}
+                    duenoTabla="proyectos"
+                    duenoId={p.id}
+                  />
+                  <div className="border-t border-linea pt-6">
+                    <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />
+                  </div>
+                </div>
+              ),
+            },
+          ]}
         />
-
-        <Reparto
-          proyectoId={p.id}
-          partes={(reparto ?? []) as Parte[]}
-          personas={(personas ?? []) as { id: string; nombre: string }[]}
-          moneda={p.moneda}
-          puedeEditar={esDireccion}
-        />
-
-        <Documentos
-          documentos={(documentos ?? []) as Documento[]}
-          proyectoId={p.id}
-          carpeta={p.carpeta_url}
-          duenoTabla="proyectos"
-          duenoId={p.id}
-        />
-
-        <div className="border-t border-linea pt-6">
-          <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />
-        </div>
       </div>
     </Shell>
   )
