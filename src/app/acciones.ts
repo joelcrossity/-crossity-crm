@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export type Resultado = { ok: true } | { ok: false; error: string }
@@ -293,4 +294,95 @@ export async function fecharHito(
   revalidatePath('/tablero')
   revalidatePath('/hoy')
   return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   Altas. Sin esto el sistema es un visor de lo que alguien cargó
+   alguna vez.
+   ------------------------------------------------------------------ */
+
+type AltaCuenta = { id: string; codigo: string } | { error: string }
+
+async function altaDeCuenta(nombre: string, alias: string[]): Promise<AltaCuenta> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('organizaciones')
+    .insert({ nombre_canonico: nombre, alias })
+    .select('id, codigo')
+    .single()
+
+  if (error || !data) return { error: error?.message ?? 'No se pudo crear el cliente' }
+
+  // Toda cuenta arranca con una razón social y una marca con su mismo
+  // nombre. Las que facturan por varias se agregan después.
+  await supabase.from('razones_sociales').insert({
+    organizacion_id: data.id, razon_social: nombre, es_principal: true,
+  })
+  await supabase.from('marcas').insert({
+    organizacion_id: data.id, nombre, es_principal: true,
+  })
+
+  return { id: data.id as string, codigo: data.codigo as string }
+}
+
+export async function crearCliente(datos: FormData): Promise<Resultado> {
+  const nombre = String(datos.get('nombre') ?? '').trim()
+  if (!nombre) return { ok: false, error: 'Poné el nombre del cliente.' }
+
+  const alias = String(datos.get('alias') ?? '')
+    .split(',')
+    .map((a) => a.trim())
+    .filter(Boolean)
+
+  const r = await altaDeCuenta(nombre, alias)
+  if ('error' in r) {
+    if (r.error.includes('duplicate')) return { ok: false, error: 'Ya existe un cliente con ese nombre.' }
+    return { ok: false, error: traducir(r.error) }
+  }
+
+  revalidatePath('/cuentas', 'layout')
+  revalidatePath('/hoy')
+  redirect(`/cuentas/${r.codigo}`)
+}
+
+export async function crearProyecto(datos: FormData): Promise<Resultado> {
+  let organizacion_id = String(datos.get('cliente') ?? '')
+  const clienteNuevo = String(datos.get('cliente_nuevo') ?? '').trim()
+  const nombre = String(datos.get('nombre') ?? '').trim()
+  const arranca = String(datos.get('arranca') ?? 'oportunidad')
+
+  if (!nombre) return { ok: false, error: 'Poné el nombre del proyecto.' }
+
+  // El proyecto casi siempre aparece antes que el cliente: si es alguien
+  // nuevo, se da de alta acá mismo y no en otra pantalla.
+  if (organizacion_id === 'nuevo') {
+    if (!clienteNuevo) return { ok: false, error: 'Poné el nombre del cliente nuevo.' }
+    const r = await altaDeCuenta(clienteNuevo, [])
+    if ('error' in r) {
+      if (r.error.includes('duplicate')) return { ok: false, error: 'Ya existe un cliente con ese nombre.' }
+      return { ok: false, error: traducir(r.error) }
+    }
+    organizacion_id = r.id
+  }
+
+  if (!organizacion_id) return { ok: false, error: 'Elegí el cliente.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert(
+      arranca === 'oportunidad'
+        ? { organizacion_id, nombre, color: 'amarillo', etapa: 'interes' }
+        : { organizacion_id, nombre, color: 'verde', subestado: 'en_curso' }
+    )
+    .select('codigo')
+    .single()
+
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/hoy')
+  revalidatePath('/cuentas', 'layout')
+  redirect(`/proyecto/${data.codigo}`)
 }

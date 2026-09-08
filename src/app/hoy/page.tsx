@@ -130,24 +130,27 @@ export default async function Hoy() {
       <div className="flex flex-col gap-9">
         {(esDireccion || esAdmin) && (
           <section className="grid gap-6 sm:grid-cols-4">
-            <Cifra valor={String(vivos.length)} titulo="en vivo" nota="se trabajan ahora" tono="verde" />
+            <Cifra valor={String(vivos.length)} titulo="en vivo" nota="se trabajan ahora" tono="verde" href="/tablero" />
             <Cifra
               valor={plata(porCobrar)}
               titulo="por cobrar"
               nota="facturado y sin entrar"
               tono={porCobrar > 0 ? 'rojo' : 'tinta'}
+              href="/admin"
             />
             <Cifra
               valor={String(ops.length)}
               titulo="en pipeline"
               nota={sinAgendar > 0 ? `${sinAgendar} sin seguimiento agendado` : 'todas con seguimiento'}
               tono={sinAgendar > 0 ? 'amarillo' : 'tinta'}
+              href="/pipeline"
             />
             <Cifra
               valor={String(frenados.length)}
               titulo="frenados"
               nota="más de 7 días sin novedades"
               tono={frenados.length > 0 ? 'rojo' : 'verde'}
+              href="/tablero"
             />
           </section>
         )}

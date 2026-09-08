@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { plata } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
@@ -194,11 +195,15 @@ export function Cifra({
   titulo,
   nota,
   tono = 'tinta',
+  href,
 }: {
   valor: string
   titulo: string
   nota?: string
   tono?: 'tinta' | 'verde' | 'rojo' | 'amarillo'
+  /* Un número que cuenta algo tiene que llevar a lo que cuenta.
+     Si no, obliga a buscar a mano lo que la pantalla ya encontró. */
+  href?: string
 }) {
   const color = {
     tinta: 'text-tinta',
@@ -207,11 +212,23 @@ export function Cifra({
     amarillo: 'text-amarillo',
   }[tono]
 
-  return (
-    <div className="flex flex-col gap-0.5">
+  const cuerpo = (
+    <>
       <span className={`cifra text-xl font-bold ${color}`}>{valor}</span>
       <span className="text-sm font-medium text-tinta">{titulo}</span>
       {nota && <span className="text-2xs text-gris-50">{nota}</span>}
-    </div>
+    </>
+  )
+
+  if (!href) return <div className="flex flex-col gap-0.5">{cuerpo}</div>
+
+  return (
+    <Link
+      href={href}
+      className="-m-2 flex flex-col gap-0.5 rounded-md p-2 transition-colors duration-150
+                 hover:bg-panel"
+    >
+      {cuerpo}
+    </Link>
   )
 }

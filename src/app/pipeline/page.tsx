@@ -24,6 +24,16 @@ type Op = {
 
 export default async function Pipeline() {
   const supabase = await createClient()
+  const { data: cuentas } = await supabase
+    .from('v_cuenta')
+    .select('id, cuenta, proyectos_totales, en_vivo')
+    .order('cuenta')
+  const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
+    id: c.id as string,
+    nombre: c.cuenta as string,
+    proyectos: (c.proyectos_totales as number) ?? 0,
+    enVivo: (c.en_vivo as number) ?? 0,
+  }))
   const [{ data }, { data: recontactar }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
     supabase.from('v_para_recontactar').select('codigo, nombre, cliente, origen'),

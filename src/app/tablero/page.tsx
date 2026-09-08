@@ -1,4 +1,5 @@
 import Shell, { Titulo } from '@/components/Shell'
+import { NuevoProyecto } from '@/components/Alta'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
 import { createClient } from '@/lib/supabase/server'
 
@@ -6,6 +7,16 @@ const ORDEN = ['verde', 'amarillo', 'gris', 'naranja', 'rojo']
 
 export default async function Tablero() {
   const supabase = await createClient()
+  const { data: cuentas } = await supabase
+    .from('v_cuenta')
+    .select('id, cuenta, proyectos_totales, en_vivo')
+    .order('cuenta')
+  const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
+    id: c.id as string,
+    nombre: c.cuenta as string,
+    proyectos: (c.proyectos_totales as number) ?? 0,
+    enVivo: (c.en_vivo as number) ?? 0,
+  }))
   const { data } = await supabase
     .from('v_tablero')
     .select('*')
@@ -23,6 +34,10 @@ export default async function Tablero() {
       >
         {vivos} en vivo, {filas.length} en total
       </Titulo>
+
+      <div className="mb-7 -mt-2">
+        <NuevoProyecto clientes={clientes} arrancaComo="proyecto" />
+      </div>
 
       {filas.length === 0 ? (
         <div className="rounded-lg border border-linea bg-superficie px-4 py-8 text-center">

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Shell from '@/components/Shell'
+import { NuevoCliente } from '@/components/Alta'
 import { createClient } from '@/lib/supabase/server'
 
 type Cuenta = {
@@ -34,6 +35,7 @@ export default async function Cuentas() {
             empresas y tener varias marcas: la economía cierra acá, no proyecto por proyecto.
             {conVarias.length > 0 && ` Hoy ${conVarias.length} factura por más de una.`}
           </p>
+          <NuevoCliente />
         </header>
 
         <div className="overflow-x-auto rounded-lg border border-linea bg-white">
