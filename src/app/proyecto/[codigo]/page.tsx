@@ -486,6 +486,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                   <span className="flex shrink-0 flex-wrap items-end gap-3">
                     <FechaHito
                       hitoId={h.id as string}
+                      campo="vence_at"
+                      etiqueta="vence"
+                      valor={h.vence_at as string | null}
+                    />
+                    <FechaHito
+                      hitoId={h.id as string}
                       campo="entregado_at"
                       etiqueta="entregado"
                       valor={h.entregado_at as string | null}

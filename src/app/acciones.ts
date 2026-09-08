@@ -279,13 +279,22 @@ export async function sacarDelEquipo(asignacionId: string): Promise<Resultado> {
    Se puede cobrar sin haber facturado, y facturar mucho después. */
 export async function fecharHito(
   hitoId: string,
-  campo: 'entregado_at' | 'facturado_at',
+  campo: 'entregado_at' | 'facturado_at' | 'vence_at',
   fecha: string
 ): Promise<Resultado> {
   const supabase = await createClient()
+  /* vence_at es una fecha a secas, no un instante: cuando tiene que
+     estar pagada, no a qué hora pasó algo. */
+  const valor =
+    campo === 'vence_at'
+      ? fecha || null
+      : fecha
+        ? new Date(fecha + 'T12:00:00').toISOString()
+        : null
+
   const { error, count } = await supabase
     .from('hitos')
-    .update({ [campo]: fecha ? new Date(fecha + 'T12:00:00').toISOString() : null }, { count: 'exact' })
+    .update({ [campo]: valor }, { count: 'exact' })
     .eq('id', hitoId)
     .select('id')
 
@@ -749,5 +758,60 @@ export async function marcarLeido(): Promise<Resultado> {
   const { error } = await supabase.rpc('marcar_leido')
   if (error) return { ok: false, error: traducir(error.message) }
   revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   Cheques. Un cheque a noventa días no es un cobro: es una fecha.
+   ------------------------------------------------------------------ */
+
+export async function registrarCheque(datos: FormData): Promise<Resultado> {
+  const numero = String(datos.get('numero') ?? '').trim()
+  const bruto = String(datos.get('importe') ?? '').replace(/\./g, '').replace(',', '.')
+  const importe = parseFloat(bruto)
+
+  if (!numero) return { ok: false, error: 'Poné el número del cheque.' }
+  if (!Number.isFinite(importe) || importe <= 0) return { ok: false, error: 'El importe no se entiende.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios').select('persona_id').eq('id', user?.id ?? '').maybeSingle()
+
+  const { error } = await supabase.from('cheques').insert({
+    tipo: String(datos.get('tipo') ?? 'recibido'),
+    numero,
+    banco: String(datos.get('banco') ?? '').trim() || null,
+    importe,
+    fecha_cobro: String(datos.get('fecha_cobro') ?? ''),
+    organizacion_id: String(datos.get('organizacion_id') ?? '') || null,
+    es_echeq: datos.get('es_echeq') === 'on',
+    registrado_por: yo?.persona_id ?? null,
+  })
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/agenda')
+  return { ok: true }
+}
+
+export async function cambiarEstadoCheque(id: string, estado: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('cheques')
+    .update({ estado }, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para tocar los cheques.' }
+  revalidatePath('/agenda')
+  return { ok: true }
+}
+
+export async function borrarCheque(id: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('cheques').delete().eq('id', id)
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/agenda')
   return { ok: true }
 }

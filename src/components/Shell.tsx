@@ -31,6 +31,7 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
   {
     grupo: 'Plata',
     items: [
+      { href: '/agenda',      nombre: 'Agenda',         detalle: 'todo lo que tiene fecha' },
       { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },
       { href: '/mi-posicion', nombre: 'Mi posición',    detalle: 'lo que me toca cobrar' },
     ],

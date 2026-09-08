@@ -164,7 +164,7 @@ export function FechaHito({
   valor,
 }: {
   hitoId: string
-  campo: 'entregado_at' | 'facturado_at'
+  campo: 'entregado_at' | 'facturado_at' | 'vence_at'
   etiqueta: string
   valor: string | null
 }) {
