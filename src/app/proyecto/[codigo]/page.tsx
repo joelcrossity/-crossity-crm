@@ -17,6 +17,7 @@ import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
+import AsignarCliente from '@/components/AsignarCliente'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -38,7 +39,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
       es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
-      organizaciones ( codigo, nombre_canonico )
+      organizaciones ( codigo, nombre_canonico, es_provisoria )
     `)
     .eq('codigo', codigo)
     .maybeSingle()
@@ -57,6 +58,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: origen },
     { data: pulso },
     { data: enPipeline },
+    { data: cuentasTodas },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -93,6 +95,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         : Promise.resolve({ data: null }),
       supabase.from('v_pulso').select('dias_sin_novedades').eq('id', p.id).maybeSingle(),
       supabase.from('v_pipeline').select('seguimiento_vencido').eq('id', p.id).maybeSingle(),
+      supabase.from('v_cuenta').select('id, cuenta').order('cuenta'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -128,7 +131,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     ((cobros ?? []) as Record<string, unknown>[]).map((c) => (c.hitos as { id?: string })?.id)
   )
 
-  const cliente = p.organizaciones as unknown as { codigo: string; nombre_canonico: string }
+  const cliente = p.organizaciones as unknown as {
+    codigo: string
+    nombre_canonico: string
+    es_provisoria: boolean
+  }
   /* Sigue siendo una charla mientras no se haya ganado. La misma fila
      pasa a proyecto al ganarse: por eso se pregunta por la etapa y no
      por otro registro. */
@@ -168,6 +175,16 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       </header>
 
       <div className="flex flex-col gap-9">
+        {cliente.es_provisoria && (
+          <AsignarCliente
+            proyectoId={p.id}
+            clientes={((cuentasTodas ?? []) as Record<string, unknown>[]).map((c) => ({
+              id: c.id as string,
+              nombre: c.cuenta as string,
+            }))}
+          />
+        )}
+
         {esOportunidad ? (
           <Recorrido
             proyectoId={p.id}

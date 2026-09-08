@@ -123,6 +123,23 @@ export default async function Hoy() {
               ? 'Cobranza y carga. Abajo, lo que falta completar.'
               : 'Tus proyectos y tu pipeline.'
         }
+        acciones={
+          <Link
+            href="/charla"
+            className="flex items-center gap-2 rounded-md bg-azul-hondo px-3.5 py-2 text-sm
+                       font-medium text-white transition-colors duration-150 hover:bg-azul"
+          >
+            <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
+              <path
+                d="M8 3.5v9M3.5 8h9"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+            Anotar una charla
+          </Link>
+        }
       >
         {esDireccion ? 'Cómo viene la empresa' : esAdmin ? 'Qué hay para cobrar' : 'Qué necesita atención'}
       </Titulo>

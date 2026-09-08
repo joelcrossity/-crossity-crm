@@ -34,11 +34,13 @@ const ORIGENES: [string, string][] = [
 
 export default function Charla({
   clientes,
+  siempreAbierto = false,
 }: {
   clientes: { id: string; nombre: string; proyectos: number; enVivo: number }[]
+  siempreAbierto?: boolean
 }) {
   const router = useRouter()
-  const [abierto, setAbierto] = useState(false)
+  const [abierto, setAbierto] = useState(siempreAbierto)
   const [pendiente, empezar] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -86,6 +88,7 @@ export default function Charla({
           >
             <option value="">elegí…</option>
             <option value="nuevo">Alguien nuevo</option>
+            <option value="sin_definir">Todavía no sé de quién es</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
@@ -96,6 +99,11 @@ export default function Charla({
           {elegido && elegido.proyectos > 0 && (
             <span className="text-2xs text-azul-hondo">
               Ya es cliente: esto se suma a su ficha, no abre otra.
+            </span>
+          )}
+          {clienteId === 'sin_definir' && (
+            <span className="text-2xs text-gris-50">
+              Queda en espera y te lo va a recordar la campanita hasta que le pongas nombre.
             </span>
           )}
         </label>
@@ -215,13 +223,15 @@ export default function Charla({
         >
           {pendiente ? 'Anotando…' : 'Anotar la charla'}
         </button>
-        <button
-          type="button"
-          onClick={() => setAbierto(false)}
-          className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
-        >
-          Cancelar
-        </button>
+        {!siempreAbierto && (
+          <button
+            type="button"
+            onClick={() => setAbierto(false)}
+            className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
+          >
+            Cancelar
+          </button>
+        )}
         {error && <span className="text-sm text-rojo">{error}</span>}
       </div>
     </div>

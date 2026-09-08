@@ -685,8 +685,17 @@ export type Charla = {
 export async function anotarCharla(c: Charla): Promise<Resultado> {
   if (!c.loHablado.trim()) return { ok: false, error: 'Escribí de qué hablaron.' }
 
+  const supabaseTmp = await createClient()
+
   let organizacion_id = c.clienteId
-  if (organizacion_id === 'nuevo') {
+
+  /* Todavía no se sabe de quién es. Espera en la cuenta provisoria en
+     vez de no cargarse: la charla que no se carga es la que se pierde. */
+  if (organizacion_id === 'sin_definir') {
+    const { data } = await supabaseTmp.rpc('cuenta_provisoria')
+    organizacion_id = (data as string) ?? ''
+    if (!organizacion_id) return { ok: false, error: 'No se pudo abrir la charla sin cliente.' }
+  } else if (organizacion_id === 'nuevo') {
     if (!c.clienteNuevo.trim()) return { ok: false, error: 'Poné de quién es la charla.' }
     const r = await altaDeCuenta(c.clienteNuevo.trim(), [])
     if ('error' in r) {
@@ -863,4 +872,29 @@ export async function borrarProyecto(proyectoId: string): Promise<Resultado> {
 
   revalidatePath('/', 'layout')
   return { ok: true, ir: '/tablero' }
+}
+
+
+/* Asignarle el cliente después: la charla se anotó sin saber de quién
+   era y ahora sí se sabe. Se mueve de la sala de espera a su cuenta. */
+export async function asignarCliente(
+  proyectoId: string,
+  clienteId: string,
+  clienteNuevo: string,
+): Promise<Resultado> {
+  let organizacion_id = clienteId
+
+  if (organizacion_id === 'nuevo') {
+    if (!clienteNuevo.trim()) return { ok: false, error: 'Poné el nombre del cliente.' }
+    const r = await altaDeCuenta(clienteNuevo.trim(), [])
+    if ('error' in r) {
+      if (r.error.includes('duplicate'))
+        return { ok: false, error: 'Ya existe un cliente con ese nombre. Elegilo de la lista.' }
+      return { ok: false, error: traducir(r.error) }
+    }
+    organizacion_id = r.id
+  }
+  if (!organizacion_id) return { ok: false, error: 'Elegí el cliente.' }
+
+  return guardar(proyectoId, { organizacion_id })
 }

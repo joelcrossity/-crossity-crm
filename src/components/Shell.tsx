@@ -43,9 +43,11 @@ const TODAS = NAVEGACION.flatMap((g) => g.items)
 export default async function Shell({
   children,
   activo,
+  titulo,
 }: {
   children: React.ReactNode
   activo: string
+  titulo?: string
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -134,7 +136,7 @@ export default async function Shell({
         <div className="sticky top-0 z-(--z-fijo) flex flex-col border-b border-linea bg-lienzo">
           <div className="flex items-center justify-between gap-3 px-5 py-2 lg:px-10">
             <span className="min-w-0 truncate text-base font-medium text-tinta">
-              {TODAS.find((i) => i.href === activo)?.nombre ?? 'Crossity'}
+              {titulo ?? TODAS.find((i) => i.href === activo)?.nombre ?? 'Crossity'}
             </span>
 
             <span className="flex items-center gap-3">
