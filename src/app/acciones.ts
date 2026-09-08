@@ -1332,3 +1332,67 @@ export async function renombrarEstado(
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Un abono que no viene de un proyecto.
+
+   Hay trabajos que arrancan siendo mantenimiento y nunca hubo un
+   desarrollo antes: hosting, redes, soporte de algo que hizo otro. La
+   base ya lo permitía —el origen es opcional— pero no había por dónde
+   cargarlo, así que la única forma era inventar un proyecto para poder
+   cerrarlo, que es exactamente el tipo de dato falso que después
+   ensucia todos los números.
+   ------------------------------------------------------------------ */
+
+export async function crearAbono(datos: FormData): Promise<Resultado> {
+  const nombre = String(datos.get('nombre') ?? '').trim()
+  const bruto = String(datos.get('monto_mensual') ?? '').replace(/\./g, '').replace(',', '.')
+  const mensual = parseFloat(bruto)
+  const desde = String(datos.get('vigencia_desde') ?? '')
+
+  if (!nombre) return { ok: false, error: 'Poné de qué es el abono.' }
+  if (!Number.isFinite(mensual) || mensual <= 0)
+    return { ok: false, error: 'El monto mensual no se entiende.' }
+  if (!desde) return { ok: false, error: 'Poné desde cuándo está vigente.' }
+
+  let organizacion_id = String(datos.get('cliente_id') ?? '')
+  if (organizacion_id === 'nuevo') {
+    const nuevo = String(datos.get('cliente_nuevo') ?? '').trim()
+    if (!nuevo) return { ok: false, error: 'Poné el nombre del cliente.' }
+    const r = await altaDeCuenta(nuevo, [])
+    if ('error' in r) {
+      if (r.error.includes('duplicate'))
+        return { ok: false, error: 'Ya existe un cliente con ese nombre. Elegilo de la lista.' }
+      return { ok: false, error: traducir(r.error) }
+    }
+    organizacion_id = r.id
+  }
+  if (!organizacion_id) return { ok: false, error: 'Elegí el cliente.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('proyectos')
+    .insert({
+      organizacion_id,
+      nombre,
+      tipo: 'mantenimiento',
+      color: 'verde',
+      subestado: 'en_curso',
+      esquema_cobro: 'mensual',
+      monto_mensual: mensual,
+      moneda: String(datos.get('moneda') ?? 'ARS'),
+      vigencia_desde: desde,
+      renovacion_automatica: datos.get('renovacion') === 'on',
+      responsable_id: String(datos.get('responsable_id') ?? '') || null,
+      servicio_id: String(datos.get('servicio_id') ?? '') || null,
+      // Sin origen: no salió de ningún proyecto y está bien que así sea.
+      requiere_anticipo: false,
+    })
+    .select('id, codigo')
+    .single()
+
+  if (error || !data) return { ok: false, error: traducir(error?.message ?? 'No se pudo crear') }
+
+  revalidatePath('/', 'layout')
+  return { ok: true, ir: `/proyecto/${data.codigo}` }
+}

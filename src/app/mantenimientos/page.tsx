@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Shell, { Titulo } from '@/components/Shell'
 import { createClient } from '@/lib/supabase/server'
 import { plata, fechaCorta } from '@/lib/estados'
+import NuevoAbono from '@/components/NuevoAbono'
 
 /* ------------------------------------------------------------------
    Los mantenimientos.
@@ -48,10 +49,22 @@ const NOMBRE: Record<string, { texto: string; punto: string }> = {
 export default async function Mantenimientos() {
   const supabase = await createClient()
 
-  const [{ data: abonos }, { data: sin }, { data: pulso }] = await Promise.all([
+  const [
+    { data: abonos },
+    { data: sin },
+    { data: pulso },
+    { data: cuentas },
+    { data: personas },
+    { data: servicios },
+    { data: hoyRow },
+  ] = await Promise.all([
     supabase.from('v_recurrentes').select('*').order('cliente'),
     supabase.from('v_sin_mantenimiento').select('*'),
     supabase.from('v_pulso').select('id, dias_sin_novedades'),
+    supabase.from('v_cuenta').select('id, cuenta').order('cuenta'),
+    supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
+    supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
+    supabase.rpc('hoy_es'),
   ])
 
   const filas = (abonos ?? []) as Abono[]
@@ -72,6 +85,17 @@ export default async function Mantenimientos() {
       <Titulo
         seccion="Mantenimiento"
         bajada="Lo que entra todos los meses sin volver a vender. A un abono no se le pregunta cómo viene: se le pregunta si sigue vigente y si se está cobrando."
+        acciones={
+          <NuevoAbono
+            clientes={((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
+              id: c.id as string,
+              nombre: c.cuenta as string,
+            }))}
+            personas={(personas ?? []) as { id: string; nombre: string }[]}
+            servicios={(servicios ?? []) as { id: string; nombre: string }[]}
+            hoy={(hoyRow as string) ?? ''}
+          />
+        }
       >
         {vigentes.length} abonos vigentes
       </Titulo>
