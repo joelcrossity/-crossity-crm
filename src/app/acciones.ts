@@ -424,6 +424,7 @@ export type ProyectoNuevo = {
   responsableId: string
   responsableTecnicoId: string
   arranca: 'proyecto' | 'oportunidad'
+  iva: string
   hitos: HitoNuevo[]
 }
 
@@ -457,6 +458,7 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
       organizacion_id,
       nombre: d.nombre.trim(),
       moneda: d.moneda,
+      alicuota_iva: Number(d.iva ?? 21),
       monto_neto: total || null,
       programa: d.programa.trim() || null,
       responsable_id: d.responsableId || null,
@@ -1025,6 +1027,44 @@ export async function reflotar(proyectoId: string): Promise<Resultado> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('reflotar', { p_proyecto: proyectoId })
   if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   Moneda e IVA.
+
+   El monto guardado siempre es NETO. El IVA se deriva: guardarlo
+   aparte es garantizar que algún día los dos números no coincidan.
+   ------------------------------------------------------------------ */
+
+export async function cambiarMoneda(proyectoId: string, moneda: string): Promise<Resultado> {
+  return guardar(proyectoId, { moneda })
+}
+
+export async function cambiarIva(
+  proyectoId: string,
+  alicuota: string,
+  nota: string,
+): Promise<Resultado> {
+  const valor = Number(alicuota)
+  if (![0, 10.5, 21, 27].includes(valor))
+    return { ok: false, error: 'Esa alícuota no existe.' }
+
+  return guardar(proyectoId, {
+    alicuota_iva: valor,
+    nota_iva: nota.trim() || null,
+  })
+}
+
+export async function anotarCotizacion(moneda: string, valor: string): Promise<Resultado> {
+  const n = parseFloat(valor.replace(/\./g, '').replace(',', '.'))
+  if (!Number.isFinite(n) || n <= 0) return { ok: false, error: 'El valor no se entiende.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('anotar_cotizacion', { p_moneda: moneda, p_valor: n })
+  if (error) return { ok: false, error: traducir(error.message) }
+
   revalidatePath('/', 'layout')
   return { ok: true }
 }

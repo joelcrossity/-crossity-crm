@@ -50,6 +50,7 @@ export default function Asistente({
   const [nombre, setNombre] = useState('')
   const [monto, setMonto] = useState('')
   const [moneda, setMoneda] = useState('ARS')
+  const [iva, setIva] = useState('21')
   const [programa, setPrograma] = useState('')
   const [responsableId, setResponsableId] = useState('')
   const [responsableTecnicoId, setResponsableTecnicoId] = useState('')
@@ -102,6 +103,7 @@ export default function Asistente({
         nombre,
         monto,
         moneda,
+        iva,
         programa,
         responsableId,
         responsableTecnicoId,
@@ -279,8 +281,22 @@ export default function Asistente({
             </label>
           </div>
 
+          <label className="flex w-40 flex-col gap-0.5">
+            <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">IVA</span>
+            <select value={iva} onChange={(e) => setIva(e.target.value)} className={campo}>
+              <option value="21">21 %</option>
+              <option value="10.5">10,5 %</option>
+              <option value="27">27 %</option>
+              <option value="0">No lleva IVA</option>
+            </select>
+          </label>
+
           {totalProyecto > 0 && (
-            <Nota>Con IVA del 21 %: {plata(Math.round(totalProyecto * 1.21), moneda)}.</Nota>
+            <Nota>
+              {iva === '0'
+                ? `Sin IVA: ${plata(totalProyecto, moneda)}.`
+                : `Con IVA: ${plata(Math.round(totalProyecto * (1 + Number(iva) / 100)), moneda)}.`}
+            </Nota>
           )}
         </div>
       )}

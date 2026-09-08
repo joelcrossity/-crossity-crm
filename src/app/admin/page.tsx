@@ -3,6 +3,7 @@ import FilaCarga, { type Proyecto } from '@/components/FilaCarga'
 import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
 import { plata } from '@/lib/estados'
+import { Cotizaciones, type Cotizacion } from '@/components/Plata'
 
 export default async function Admin(props: {
   searchParams: Promise<{ ver?: string }>
@@ -11,8 +12,13 @@ export default async function Admin(props: {
   const soloIncompletos = ver !== 'todos'
   const supabase = await createClient()
 
-  const [{ data: proyectos }, { data: personas }, { data: hitos }, { data: repartos }] =
-    await Promise.all([
+  const [
+    { data: proyectos },
+    { data: personas },
+    { data: hitos },
+    { data: repartos },
+    { data: monedas },
+  ] = await Promise.all([
       supabase
         .from('proyectos')
         .select(
@@ -25,6 +31,7 @@ export default async function Admin(props: {
         .from('hitos')
         .select('monto_neto, moneda, facturado_at, cobrado_at, proyectos(organizaciones(nombre_canonico))'),
       supabase.from('v_reparto_incompleto').select('codigo, nombre, cliente, suma_porcentajes'),
+      supabase.from('v_cotizaciones').select('codigo, nombre, valor, fecha, dias_de_atraso'),
     ])
 
   const todos: Proyecto[] = (proyectos ?? []).map(
@@ -171,6 +178,9 @@ export default async function Admin(props: {
             />
           </Marco>
         </section>
+      </div>
+      <div className="mt-9 border-t border-linea pt-8">
+        <Cotizaciones monedas={(monedas ?? []) as Cotizacion[]} />
       </div>
     </Shell>
   )

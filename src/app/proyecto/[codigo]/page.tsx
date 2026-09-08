@@ -19,6 +19,7 @@ import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
 import AsignarCliente from '@/components/AsignarCliente'
 import Documentos, { type Documento } from '@/components/Documentos'
+import Plata from '@/components/Plata'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -38,6 +39,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     .select(`
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
+      alicuota_iva, nota_iva,
       es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id, carpeta_url,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
@@ -61,6 +63,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: enPipeline },
     { data: cuentasTodas },
     { data: documentos },
+    { data: cambio },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -103,6 +106,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
         .select('id, titulo, url, clase, version, enviado_at, enviado_por')
         .eq('proyecto_id', p.id)
         .order('created_at', { ascending: false }),
+      supabase.from('v_cotizaciones').select('codigo, valor, dias_de_atraso'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -594,6 +598,22 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             </ol>
           )}
         </section>
+
+        <Plata
+          proyectoId={p.id}
+          neto={p.monto_neto}
+          moneda={p.moneda}
+          alicuota={Number(p.alicuota_iva)}
+          notaIva={p.nota_iva}
+          cotizacion={
+            ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
+              ?.valor as number | null ?? null
+          }
+          diasDeAtraso={
+            ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
+              ?.dias_de_atraso as number | null ?? null
+          }
+        />
 
         <Documentos
           documentos={(documentos ?? []) as Documento[]}
