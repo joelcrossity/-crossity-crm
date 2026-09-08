@@ -16,6 +16,7 @@ function traducir(mensaje: string): string {
   if (mensaje.includes('ya tiene su mantenimiento')) return 'Este proyecto ya tiene su mantenimiento abierto.'
   if (mensaje.includes('ya es un mantenimiento')) return 'Esto ya es un mantenimiento.'
   if (mensaje.includes('participaciones')) return 'El reparto sólo lo copia dirección. Abrilo sin copiarlo y cargalo después.'
+  if (mensaje.includes('arman el equipo')) return 'Sólo dirección, administración o coordinación arman el equipo.'
   return mensaje
 }
 
@@ -234,6 +235,62 @@ export async function abrirMantenimiento(
   revalidatePath('/proyecto', 'layout')
   revalidatePath('/tablero')
   revalidatePath('/cuentas', 'layout')
+  revalidatePath('/hoy')
+  return { ok: true }
+}
+
+export async function cambiarProgramaYResponsables(
+  proyectoId: string,
+  campo: 'programa' | 'responsable_tecnico_id',
+  valor: string
+): Promise<Resultado> {
+  return guardar(proyectoId, { [campo]: valor.trim() || null })
+}
+
+export async function sumarAlEquipo(
+  proyectoId: string,
+  personaId: string,
+  rol: string
+): Promise<Resultado> {
+  if (!personaId) return { ok: false, error: 'Elegí a quién sumar.' }
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('sumar_al_equipo', {
+    p_proyecto: proyectoId,
+    p_persona: personaId,
+    p_rol: rol,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  return { ok: true }
+}
+
+export async function sacarDelEquipo(asignacionId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('sacar_del_equipo', { p_asignacion: asignacionId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  return { ok: true }
+}
+
+/* Entregado, facturado y pagado son tres hechos con fechas propias.
+   Se puede cobrar sin haber facturado, y facturar mucho después. */
+export async function fecharHito(
+  hitoId: string,
+  campo: 'entregado_at' | 'facturado_at',
+  fecha: string
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('hitos')
+    .update({ [campo]: fecha ? new Date(fecha + 'T12:00:00').toISOString() : null }, { count: 'exact' })
+    .eq('id', hitoId)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para cambiar esta entrega.' }
+
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/tablero')
   revalidatePath('/hoy')
   return { ok: true }
 }

@@ -3,11 +3,18 @@ import { notFound } from 'next/navigation'
 import Shell from '@/components/Shell'
 import Novedad from '@/components/Novedad'
 import Estado from '@/components/Estado'
-import { Fecha, Numero, Select, Casilla } from '@/components/Campo'
+import { Fecha, Numero, Select, Texto } from '@/components/Campo'
 import { createClient } from '@/lib/supabase/server'
-import { cambiarFecha, cambiarPrioridad, cambiarResponsable, marcarHito } from '@/app/acciones'
+import {
+  cambiarFecha,
+  cambiarMonto,
+  cambiarPrioridad,
+  cambiarProgramaYResponsables,
+  cambiarResponsable,
+} from '@/app/acciones'
 import { Avance, RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
+import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import { plata, fechaCorta } from '@/lib/estados'
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -27,6 +34,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
       es_producto_propio, monto_mensual, vigencia_desde, responsable_id, origen_id,
+      responsable_tecnico_id, programa,
       organizaciones ( codigo, nombre_canonico )
     `)
     .eq('codigo', codigo)
@@ -48,7 +56,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
         .from('asignaciones')
-        .select('rol, personas(nombre)')
+        .select('id, rol, personas(nombre)')
         .eq('proyecto_id', p.id)
         .is('hasta', null),
       supabase
@@ -174,11 +182,42 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                 return cambiarPrioridad(p.id, v)
               }}
             />
+            <Select
+              etiqueta="Responsable técnico"
+              valor={p.responsable_tecnico_id}
+              vacio="sin asignar"
+              opciones={(personas ?? []).map((x: { id: string; nombre: string }) => ({
+                valor: x.id,
+                texto: x.nombre,
+              }))}
+              alCambiar={async (v) => {
+                'use server'
+                return cambiarProgramaYResponsables(p.id, 'responsable_tecnico_id', v)
+              }}
+            />
+            <Numero
+              etiqueta={esAbono ? 'Abono mensual' : 'Monto neto, sin IVA'}
+              valor={esAbono ? p.monto_mensual : p.monto_neto}
+              ayuda="Al cambiarlo se reajustan las entregas no facturadas"
+              alCambiar={async (v) => {
+                'use server'
+                return cambiarMonto(p.id, v, p.moneda)
+              }}
+            />
+            <Texto
+              etiqueta="Programa"
+              valor={p.programa}
+              marcador="Kit 4.0, CFI, Repec…"
+              alCambiar={async (v) => {
+                'use server'
+                return cambiarProgramaYResponsables(p.id, 'programa', v)
+              }}
+            />
           </div>
 
           <dl className="flex flex-wrap gap-x-8 gap-y-2 border-t border-linea pt-3.5">
-            <Dato titulo={esAbono ? 'Abono mensual' : 'Monto del proyecto'}>
-              {esAbono ? plata(p.monto_mensual, p.moneda) : plata(p.monto_neto, p.moneda)}
+            <Dato titulo="Con IVA (21 %)">
+              {plata(Math.round((esAbono ? (p.monto_mensual ?? 0) : (p.monto_neto ?? 0)) * 1.21), p.moneda)}
             </Dato>
             {(miParte?.length ?? 0) > 0 && (
               <Dato titulo={miParte!.length > 1 ? 'Reparto' : 'Tu participación'}>
@@ -187,13 +226,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                   .join(' · ')}
               </Dato>
             )}
-            {(equipo?.length ?? 0) > 0 && (
-              <Dato titulo="Equipo">
-                {equipo!
-                  .map((a: { personas: unknown }) => (a.personas as { nombre: string }).nombre)
-                  .join(' · ')}
-              </Dato>
-            )}
+
           </dl>
         </section>
 
@@ -229,6 +262,21 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
 
           </section>
         )}
+
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-md font-bold tracking-tight">Equipo</h2>
+            <p className="text-sm text-gris">
+              Más allá de los dos responsables, quién más está trabajando en esto.
+            </p>
+          </div>
+          <Equipo
+            proyectoId={p.id}
+            miembros={(equipo ?? []) as unknown as Miembro[]}
+            personas={personas ?? []}
+            editable
+          />
+        </section>
 
         {elAbono && (
           <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
@@ -376,39 +424,48 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     ) : null}
                   </span>
 
-                  <span className="flex shrink-0 flex-col gap-1">
-                    <Casilla
+                  <span className="flex shrink-0 flex-wrap items-end gap-3">
+                    <FechaHito
+                      hitoId={h.id as string}
+                      campo="entregado_at"
                       etiqueta="entregado"
-                      marcado={!!h.entregado_at}
-                      alCambiar={async (v) => {
-                        'use server'
-                        return marcarHito(h.id as string, 'entregado_at', v)
-                      }}
+                      valor={h.entregado_at as string | null}
                     />
-                    <Casilla
+                    <FechaHito
+                      hitoId={h.id as string}
+                      campo="facturado_at"
                       etiqueta="facturado"
-                      marcado={!!h.facturado_at}
-                      alCambiar={async (v) => {
-                        'use server'
-                        return marcarHito(h.id as string, 'facturado_at', v)
-                      }}
+                      valor={h.facturado_at as string | null}
                     />
-                    {conCobro.has(h.id as string) ? (
-                      <span className="text-xs text-verde">cobrado</span>
-                    ) : (
-                      <RegistrarCobro
-                        hitoId={h.id as string}
-                        sugerido={(h.monto_neto as number) ?? 0}
-                        moneda={(h.moneda as string) ?? 'ARS'}
-                        yaCobrado={!!h.cobrado_at}
-                      />
-                    )}
+                    <span className="flex flex-col gap-0.5">
+                      <span
+                        className={`text-2xs uppercase tracking-wider ${
+                          h.cobrado_at ? 'text-verde' : 'text-gris-50'
+                        }`}
+                      >
+                        pagado
+                      </span>
+                      {conCobro.has(h.id as string) ? (
+                        <span className="cifra px-1.5 py-1 text-sm text-verde">
+                          {fechaCorta((h.cobrado_at as string).slice(0, 10))}
+                        </span>
+                      ) : (
+                        <RegistrarCobro
+                          hitoId={h.id as string}
+                          sugerido={(h.monto_neto as number) ?? 0}
+                          moneda={(h.moneda as string) ?? 'ARS'}
+                          yaCobrado={!!h.cobrado_at}
+                        />
+                      )}
+                    </span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-2xs text-gris-50">
-              Cobrar el anticipo pasa el proyecto a en curso y le avisa al equipo.
+            <p className="max-w-[70ch] text-2xs text-gris-50">
+              Los tres son hechos distintos con su propia fecha: se puede cobrar sin haber
+              facturado, y facturar mucho después. Cobrar el anticipo pasa el proyecto a en curso y
+              le avisa al equipo.
             </p>
           </section>
         )}
