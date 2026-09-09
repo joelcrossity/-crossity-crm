@@ -98,15 +98,14 @@ export default function AbrirMantenimiento({
         <button
           type="submit"
           disabled={pendiente}
-          className="rounded-md bg-azul-hondo px-3.5 py-1.5 text-sm font-medium text-white
-                     transition-colors duration-150 hover:bg-azul disabled:opacity-50"
+          className="boton boton-principal"
         >
           {pendiente ? 'Abriendo…' : 'Abrir'}
         </button>
         <button
           type="button"
           onClick={() => setAbierto(false)}
-          className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
+          className="boton boton-sutil"
         >
           Cancelar
         </button>

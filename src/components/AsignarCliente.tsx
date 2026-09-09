@@ -73,8 +73,7 @@ export default function AsignarCliente({
               else router.refresh()
             })
           }}
-          className="rounded-md bg-azul-hondo px-3.5 py-1.5 text-sm font-medium text-white
-                     transition-colors duration-150 hover:bg-azul disabled:opacity-40"
+          className="boton boton-principal"
         >
           {pendiente ? 'Asignando…' : 'Asignar'}
         </button>

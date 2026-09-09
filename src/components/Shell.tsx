@@ -43,6 +43,7 @@ const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string;
     grupo: 'Sistema',
     items: [
       { href: '/equipo', nombre: 'Usuarios y roles', detalle: 'quién es quién y qué ve cada uno' },
+      { href: '/etapas', nombre: 'Etapas y estados', detalle: 'cómo vende la agencia' },
     ],
   },
 ]

@@ -102,8 +102,7 @@ export default function Etapas({
             <button
               type="button"
               onClick={() => setAbierto(true)}
-              className="shrink-0 rounded-md border border-linea px-2.5 py-1 text-sm text-gris
-                         transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
+              className="boton boton-secundario shrink-0"
             >
               Sumar una etapa
             </button>
@@ -144,15 +143,14 @@ export default function Etapas({
                   },
                 )
               }
-              className="rounded-md bg-azul-hondo px-3 py-1.5 text-sm font-medium text-white
-                         transition-colors duration-150 hover:bg-azul disabled:opacity-40"
+              className="boton boton-principal"
             >
               Sumarla
             </button>
             <button
               type="button"
               onClick={() => setAbierto(false)}
-              className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
+              className="boton boton-sutil"
             >
               Cancelar
             </button>

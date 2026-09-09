@@ -303,7 +303,7 @@ export default function Recorrido({
 
 function Cancelar({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="px-2 py-1.5 text-sm text-gris hover:text-tinta">
+    <button type="button" onClick={onClick} className="boton boton-sutil">
       Cancelar
     </button>
   )

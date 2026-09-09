@@ -57,7 +57,7 @@ export default function BorrarProyecto({
         <button
           type="button"
           onClick={() => setSeguro(false)}
-          className="px-2 py-1.5 text-sm text-gris hover:text-tinta"
+          className="boton boton-sutil"
         >
           No
         </button>

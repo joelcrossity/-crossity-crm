@@ -85,6 +85,13 @@ export const ICONOS: Record<string, React.ReactNode> = {
       <path d="M6.7 4.9 4.5 10M9.3 4.9l2.2 5.1M5.1 11.6h5.8" />
     </svg>
   ),
+  // Etapas: pasos de una escalera
+  '/etapas': (
+    <svg {...base}>
+      <path d="M2 13h3.4V9.3h3.5V5.6h3.4V2" />
+      <path d="M2 13h12" />
+    </svg>
+  ),
   // Nueva charla
   '/charla': (
     <svg {...base}>

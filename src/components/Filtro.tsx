@@ -108,7 +108,7 @@ export default function Filtro<T>({
               setTexto('')
               setElegidos({})
             }}
-            className="rounded-md px-2 py-1.5 text-sm text-gris-50 transition-colors duration-150 hover:text-tinta"
+            className="boton boton-sutil"
           >
             Limpiar
           </button>

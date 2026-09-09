@@ -255,8 +255,7 @@ export function Cotizaciones({ monedas }: { monedas: Cotizacion[] }) {
                       else router.refresh()
                     })
                   }}
-                  className="rounded-md bg-azul-hondo px-2.5 py-1.5 text-sm font-medium text-white
-                             transition-colors duration-150 hover:bg-azul disabled:opacity-40"
+                  className="boton boton-principal"
                 >
                   Guardar
                 </button>
