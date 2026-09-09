@@ -63,7 +63,19 @@ const COLUMNAS: {
   },
 ]
 
-export default function TableroEstados({ filas }: { filas: Fila[] }) {
+export default function TableroEstados({
+  filas,
+  orden,
+}: {
+  filas: Fila[]
+  orden?: string[]
+}) {
+  // El orden lo decide Sistema; si no llegó, queda el de siempre.
+  const columnas =
+    orden && orden.length > 0
+      ? [...COLUMNAS].sort((a, b) => orden.indexOf(a.color) - orden.indexOf(b.color))
+      : COLUMNAS
+
   const router = useRouter()
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
@@ -115,7 +127,7 @@ export default function TableroEstados({ filas }: { filas: Fila[] }) {
       )}
 
       <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
-        {COLUMNAS.map((c) => {
+        {columnas.map((c) => {
           const suyas = vista.filter((f) => f.color === c.color)
           const frenados = suyas.filter((f) => f.dias_sin_novedades > 7).length
           const objetivo = encima === c.color && arrastrando !== null

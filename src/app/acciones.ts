@@ -1548,3 +1548,87 @@ export async function reabrirMantenimiento(proyectoId: string): Promise<Resultad
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Abonos por consumo.
+
+   Hay servicios que se liquidan a mes vencido según lo que se usó: el
+   agente cobra por conversación. Forzarlos a un monto fijo hace que el
+   cashflow proyecte un número que no es, y que la factura salga tarde
+   porque alguien tiene que ir a buscar el consumo a otro lado.
+   ------------------------------------------------------------------ */
+
+export async function cambiarModalidad(
+  proyectoId: string,
+  modalidad: string,
+  unidad: string,
+  precio: string,
+  incluido: string,
+): Promise<Resultado> {
+  const numero = (v: string) => {
+    const n = parseFloat(v.replace(/\./g, '').replace(',', '.'))
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+
+  return guardar(proyectoId, {
+    modalidad,
+    unidad_consumo: unidad.trim() || null,
+    precio_unitario: numero(precio),
+    incluido_en_base: modalidad === 'fijo_mas_consumo' ? numero(incluido) : null,
+  })
+}
+
+export async function anotarConsumo(
+  proyectoId: string,
+  periodo: string,
+  cantidad: string,
+  notas: string,
+): Promise<Resultado> {
+  const n = parseFloat(cantidad.replace(/\./g, '').replace(',', '.'))
+  if (!Number.isFinite(n) || n < 0) return { ok: false, error: 'La cantidad no se entiende.' }
+  if (!periodo) return { ok: false, error: 'Elegí de qué mes es.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('anotar_consumo', {
+    p_proyecto: proyectoId,
+    p_periodo: periodo,
+    p_cantidad: n,
+    p_notas: notas.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function borrarConsumo(id: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('consumos').delete().eq('id', id)
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function fecharConsumo(
+  id: string,
+  campo: 'facturado_at' | 'cobrado_at',
+  fecha: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('consumos')
+    .update({ [campo]: fecha || null }, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No tenés permiso para tocar esto.' }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function moverEstado(color: string, hacia: number): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('mover_estado', { p_color: color, p_hacia: hacia })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

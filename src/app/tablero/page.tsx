@@ -19,6 +19,11 @@ export default async function Tablero() {
     proyectos: (c.proyectos_totales as number) ?? 0,
     enVivo: (c.en_vivo as number) ?? 0,
   }))
+  const { data: columnas } = await supabase
+    .from('estados_proyecto')
+    .select('color')
+    .order('orden')
+
   const { data } = await supabase
     .from('v_tablero')
     .select('*')
@@ -47,6 +52,7 @@ export default async function Tablero() {
       ) : (
         <VistaProyectos
           filas={filas}
+          orden={((columnas ?? []) as { color: string }[]).map((c) => c.color)}
           responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
           alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
         />

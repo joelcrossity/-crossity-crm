@@ -40,10 +40,12 @@ export default function VistaProyectos({
   filas,
   alta,
   responsables,
+  orden,
 }: {
   filas: Fila[]
   alta: React.ReactNode
   responsables: string[]
+  orden?: string[]
 }) {
   const vista = useVista('crossity.proyectos')
 
@@ -74,12 +76,12 @@ export default function VistaProyectos({
           <div key={vista} className="surge">
             {vista === 'lista' ? (
               <div className="flex flex-col gap-8">
-                {ORDEN.map((color) => (
+                {(orden && orden.length > 0 ? orden : ORDEN).map((color) => (
                   <Grupo key={color} color={color} filas={vistos.filter((f) => f.color === color)} />
                 ))}
               </div>
             ) : (
-              <TableroEstados filas={vistos} />
+              <TableroEstados filas={vistos} orden={orden} />
             )}
           </div>
         </div>

@@ -39,10 +39,16 @@ export const APERTURA: Record<number, string> = {
   1: 'sólo lo suyo',
 }
 
+/* El peso lleva su símbolo porque es la moneda de todos los días y no
+   se confunde con nada. El dólar y el euro llevan el código escrito: en
+   una pantalla con tres monedas mezcladas, "US$" y "$" se leen igual de
+   reojo, y confundir uno con otro son mil veces el error. */
 export function plata(monto: number | null, moneda = 'ARS') {
   if (monto === null || monto === undefined) return '—'
-  const simbolo = moneda === 'USD' ? 'US$' : moneda === 'EUR' ? '€' : '$'
-  return `${simbolo} ${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(monto)}`
+  const numero = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(monto)
+  if (moneda === 'USD') return `USD ${numero}`
+  if (moneda === 'EUR') return `EUR ${numero}`
+  return `$ ${numero}`
 }
 
 export function fechaCorta(f: string | null) {

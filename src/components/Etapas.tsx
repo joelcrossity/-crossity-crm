@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { apagarEtapa, guardarEtapa, moverEtapa, renombrarEstado } from '@/app/acciones'
+import {
+  apagarEtapa,
+  guardarEtapa,
+  moverEstado,
+  moverEtapa,
+  renombrarEstado,
+} from '@/app/acciones'
 
 /* ------------------------------------------------------------------
    Las etapas y los estados.
@@ -235,21 +241,37 @@ export default function Etapas({
         <div className="flex flex-col gap-0.5">
           <h2 className="text-md font-bold tracking-tight">Estados de proyecto</h2>
           <p className="max-w-[70ch] text-sm text-gris">
-            Acá solo se cambia el texto. El color no es una etiqueta, es comportamiento: frenado
-            exige un motivo, en vivo exige un detalle, terminado cierra el trabajo. Un sexto color
-            rompería reglas que existen por buenas razones.
+            El orden se cambia como en el pipeline: es cómo se miran las columnas del tablero y
+            hay meses en que lo primero que querés ver es lo frenado. El texto también. Lo que no
+            se toca es el comportamiento: frenado exige un motivo, en vivo exige un detalle,
+            terminado cierra el trabajo. Un sexto color rompería reglas que existen por buenas
+            razones.
           </p>
         </div>
 
         <ul className="flex flex-col gap-1.5">
           {[...estados]
             .sort((a, b) => a.orden - b.orden)
-            .map((e) => (
+            .map((e, i, lista) => (
               <li
                 key={e.color}
                 className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border
                            border-linea bg-superficie px-3.5 py-2.5"
               >
+                {esDireccion && (
+                  <span className="flex shrink-0 flex-col gap-px">
+                    <Flecha
+                      hacia="arriba"
+                      apagada={i === 0 || pendiente}
+                      alClic={() => correr(() => moverEstado(e.color, -1))}
+                    />
+                    <Flecha
+                      hacia="abajo"
+                      apagada={i === lista.length - 1 || pendiente}
+                      alClic={() => correr(() => moverEstado(e.color, 1))}
+                    />
+                  </span>
+                )}
                 <span className={`size-2.5 shrink-0 rounded-full ${PUNTO[e.color]}`} aria-hidden />
                 <span className="min-w-0 flex-1">
                   {esDireccion ? (

@@ -24,6 +24,7 @@ import Plata from '@/components/Plata'
 import Reparto, { type Parte } from '@/components/Reparto'
 import Pestanas from '@/components/Pestanas'
 import Abono from '@/components/Abono'
+import Consumo, { type Consumo as Mes } from '@/components/Consumo'
 import Recorrido from '@/components/Recorrido'
 import { plata, fechaCorta } from '@/lib/estados'
 
@@ -54,7 +55,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
       alicuota_iva, nota_iva,
       es_producto_propio, monto_mensual, vigencia_desde, vigencia_hasta, responsable_id,
-      origen_id, carpeta_url,
+      origen_id, carpeta_url, modalidad, unidad_consumo, precio_unitario, incluido_en_base,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
       servicio_id,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
@@ -82,6 +83,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: servicios },
     { data: filasEtapas },
     { data: reparto },
+    { data: consumos },
     { data: hoyRow },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
@@ -129,6 +131,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
       supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
       supabase.from('v_reparto').select('*').eq('proyecto_id', p.id),
+      supabase
+        .from('consumos')
+        .select('id, periodo, cantidad, precio_unitario, monto, notas, facturado_at, cobrado_at')
+        .eq('proyecto_id', p.id)
+        .order('periodo', { ascending: false }),
       supabase.rpc('hoy_es'),
     ])
 
@@ -273,6 +280,18 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               texto: 'El trabajo',
               contenido: (
                 <div className="flex flex-col gap-9">
+                  {esAbono && (
+                    <Abono
+                      proyectoId={p.id}
+                      desde={p.vigencia_desde}
+                      hasta={p.vigencia_hasta}
+                      mensual={p.monto_mensual}
+                      moneda={p.moneda}
+                      cerrado={p.color === 'naranja' || p.color === 'rojo'}
+                      cobrado={cobrado}
+                      hoy={(hoyRow as string) ?? ''}
+                    />
+                  )}
                   <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
                     <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
 
@@ -564,18 +583,6 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               texto: 'La plata',
               contenido: (
                 <div className="flex flex-col gap-9">
-                  {esAbono && (
-                    <Abono
-                      proyectoId={p.id}
-                      desde={p.vigencia_desde}
-                      hasta={p.vigencia_hasta}
-                      mensual={p.monto_mensual}
-                      moneda={p.moneda}
-                      cerrado={p.color === 'naranja' || p.color === 'rojo'}
-                      cobrado={cobrado}
-                      hoy={(hoyRow as string) ?? ''}
-                    />
-                  )}
                   <Plata
                     proyectoId={p.id}
                     neto={p.monto_neto}
@@ -591,6 +598,20 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                         ?.dias_de_atraso as number | null ?? null
                     }
                   />
+                  {esAbono && (
+                    <Consumo
+                      proyectoId={p.id}
+                      modalidad={p.modalidad}
+                      unidad={p.unidad_consumo}
+                      precio={p.precio_unitario}
+                      incluido={p.incluido_en_base}
+                      mensual={p.monto_mensual}
+                      moneda={p.moneda}
+                      consumos={(consumos ?? []) as Mes[]}
+                      hoy={(hoyRow as string) ?? ''}
+                    />
+                  )}
+
                   <Reparto
                     proyectoId={p.id}
                     partes={(reparto ?? []) as Parte[]}

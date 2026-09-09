@@ -121,7 +121,7 @@ export default function NuevoAbono({
               className={`${campo} cifra min-w-0 flex-1`}
             />
             <select name="moneda" defaultValue="ARS" className={`${campo} w-24`} aria-label="Moneda">
-              <option value="ARS">ARS</option>
+              <option value="ARS">$ ARS</option>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
             </select>

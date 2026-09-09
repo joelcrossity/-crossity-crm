@@ -14,9 +14,9 @@ import { plata } from '@/lib/estados'
    ------------------------------------------------------------------ */
 
 const MONEDAS: [string, string][] = [
-  ['ARS', 'Pesos'],
-  ['USD', 'Dólares'],
-  ['EUR', 'Euros'],
+  ['ARS', '$ Pesos'],
+  ['USD', 'USD Dólares'],
+  ['EUR', 'EUR Euros'],
 ]
 
 /* Cuando lleva, casi siempre es 21. La alícuota solo aparece si el
