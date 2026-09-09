@@ -280,6 +280,19 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               texto: 'El trabajo',
               contenido: (
                 <div className="flex flex-col gap-9">
+                  {/* Aparece cuando el trabajo terminó: está en naranja, o no le
+                      queda ninguna entrega pendiente.
+
+                      Antes exigía además que el proyecto tuviera monto, y eso
+                      dejaba afuera justo el caso donde el abono más importa: el
+                      trabajo bonificado. Regalar el sitio y cobrar el
+                      mantenimiento es una jugada comercial entera, y el sistema
+                      la estaba impidiendo. El monto del abono no tiene nada que
+                      ver con el del proyecto. */}
+                  {!esAbono && !elAbono && (p.color === 'naranja' || !proximo) && (
+                    <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
+                  )}
+
                   {esAbono && (
                     <Abono
                       proyectoId={p.id}
@@ -559,12 +572,6 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       </ul>
                     )}
                   </section>
-                  {/* El formulario aparece cuando el trabajo terminó: o está en naranja,
-                      o no le queda ninguna entrega pendiente. Un proyecto sin hitos
-                      cargados también cuenta si ya se dio por terminado. */}
-                  {!esAbono && !elAbono && (p.color === 'naranja' || (total > 0 && !proximo)) && (
-                    <AbrirMantenimiento proyectoId={p.id} nombre={p.nombre} />
-                  )}
 
                   {esAbono && elOrigen && (
                     <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">

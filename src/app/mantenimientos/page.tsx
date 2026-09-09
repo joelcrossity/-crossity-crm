@@ -23,20 +23,13 @@ type Abono = {
   nombre: string
   cliente: string
   monto_mensual: number | null
+  moneda: string
   vigencia_desde: string | null
   vigencia_hasta: string | null
   renovacion_automatica: boolean
   color: string
   viene_de: string | null
   vence_pronto: boolean
-}
-
-type Huerfano = {
-  id: string
-  codigo: string
-  nombre: string
-  cliente: string
-  fecha_comprometida: string | null
 }
 
 const NOMBRE: Record<string, { texto: string; punto: string }> = {
@@ -51,7 +44,6 @@ export default async function Mantenimientos() {
 
   const [
     { data: abonos },
-    { data: sin },
     { data: pulso },
     { data: cuentas },
     { data: personas },
@@ -59,7 +51,6 @@ export default async function Mantenimientos() {
     { data: hoyRow },
   ] = await Promise.all([
     supabase.from('v_recurrentes').select('*').order('cliente'),
-    supabase.from('v_sin_mantenimiento').select('*'),
     supabase.from('v_pulso').select('id, dias_sin_novedades'),
     supabase.from('v_cuenta').select('id, cuenta').order('cuenta'),
     supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
@@ -69,9 +60,19 @@ export default async function Mantenimientos() {
 
   const filas = (abonos ?? []) as Abono[]
   const vigentes = filas.filter((a) => a.color === 'verde')
-  const mensual = vigentes.reduce((s, a) => s + Number(a.monto_mensual ?? 0), 0)
+
+  /* Cada moneda por separado y no convertida a pesos: un abono en
+     dólares es una cobertura, y esconderlo dentro de un total en pesos
+     borra justamente la información por la que se cobra en dólares. */
+  const porMoneda = new Map<string, number>()
+  for (const a of vigentes) {
+    const m = a.moneda ?? 'ARS'
+    porMoneda.set(m, (porMoneda.get(m) ?? 0) + Number(a.monto_mensual ?? 0))
+  }
+  const monedas = [...porMoneda.entries()]
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => (a[0] === 'ARS' ? -1 : b[0] === 'ARS' ? 1 : a[0].localeCompare(b[0])))
   const vencen = filas.filter((a) => a.vence_pronto && a.color === 'verde')
-  const sinAbono = (sin ?? []) as Huerfano[]
 
   const dias = new Map(
     ((pulso ?? []) as Record<string, unknown>[]).map((p) => [
@@ -101,9 +102,19 @@ export default async function Mantenimientos() {
       </Titulo>
 
       <div className="flex flex-col gap-9">
-        <section className="grid gap-4 sm:grid-cols-3">
-          <Dato rotulo="Por mes" valor={plata(mensual)} nota="mientras estén vigentes" />
-          <Dato rotulo="Por año" valor={plata(mensual * 12)} nota="si ninguno se cae" />
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {monedas.length === 0 ? (
+            <Dato rotulo="Por mes" valor={plata(0)} nota="todavía sin abonos vigentes" />
+          ) : (
+            monedas.map(([moneda, total]) => (
+              <Dato
+                key={moneda}
+                rotulo={`Por mes en ${moneda}`}
+                valor={plata(total, moneda)}
+                nota={`${plata(total * 12, moneda)} al año si ninguno se cae`}
+              />
+            ))
+          )}
           <Dato
             rotulo="Vencen pronto"
             valor={String(vencen.length)}
@@ -177,41 +188,6 @@ export default async function Mantenimientos() {
           )}
         </section>
 
-        {sinAbono.length > 0 && (
-          <section className="flex flex-col gap-2.5 border-t border-linea pt-8">
-            <div className="flex flex-wrap items-baseline gap-x-3">
-              <h2 className="text-md font-bold tracking-tight">Se entregó y no tiene abono</h2>
-              <span className="cifra rounded-full bg-amarillo-aire px-1.5 py-0.5 text-2xs font-medium text-amarillo">
-                {sinAbono.length}
-              </span>
-              <p className="w-full max-w-[70ch] text-sm text-gris">
-                Es plata recurrente que se pierde por no preguntar a tiempo. El momento de proponerlo
-                es al entregar, cuando el trabajo está fresco y el cliente contento.
-              </p>
-            </div>
-
-            <ul className="escalona flex flex-col gap-1.5">
-              {sinAbono.map((h) => (
-                <li key={h.id}>
-                  <Link
-                    href={`/proyecto/${h.codigo}`}
-                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-lg
-                               border border-linea bg-superficie px-3.5 py-2.5 transition-colors
-                               duration-150 hover:border-azul"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-medium text-tinta">
-                        {h.nombre}
-                      </span>
-                      <span className="cifra block truncate text-2xs text-gris-50">{h.cliente}</span>
-                    </span>
-                    <span className="shrink-0 text-2xs text-azul-hondo">Abrirle el abono →</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
       </div>
     </Shell>
   )

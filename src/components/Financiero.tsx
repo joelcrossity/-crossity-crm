@@ -243,8 +243,22 @@ export function Recurrentes({
 
   const entra = recurrentes.filter((r) => r.lado === 'entra')
   const sale = recurrentes.filter((r) => r.lado === 'sale')
-  const totalEntra = entra.reduce((s, r) => s + Number(r.mensual), 0)
-  const totalSale = sale.reduce((s, r) => s + Number(r.mensual), 0)
+
+  /* Separado por moneda: un abono en dólares es una cobertura, y meterlo
+     dentro de un total en pesos borra la información por la que se cobra
+     en dólares. La comparación con los costos se hace en pesos, que es
+     donde se pagan. */
+  const sumar = (filas: Recurrente[]) => {
+    const m = new Map<string, number>()
+    for (const r of filas) m.set(r.moneda, (m.get(r.moneda) ?? 0) + Number(r.mensual))
+    return [...m.entries()]
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => (a[0] === 'ARS' ? -1 : b[0] === 'ARS' ? 1 : a[0].localeCompare(b[0])))
+  }
+  const entraPorMoneda = sumar(entra)
+  const salePorMoneda = sumar(sale)
+  const totalEntra = entra.filter((r) => r.moneda === 'ARS').reduce((s, r) => s + Number(r.mensual), 0)
+  const totalSale = sale.filter((r) => r.moneda === 'ARS').reduce((s, r) => s + Number(r.mensual), 0)
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string }>, luego?: () => void) {
     setError(null)
@@ -271,18 +285,26 @@ export function Recurrentes({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
           <span className={rotulo}>Entra por mes</span>
-          <span className="cifra text-xl font-bold text-verde">{plata(totalEntra)}</span>
+          <span className="cifra flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-verde">
+            {entraPorMoneda.length === 0
+              ? plata(0)
+              : entraPorMoneda.map(([m, v]) => <span key={m}>{plata(v, m)}</span>)}
+          </span>
           <span className="text-2xs text-gris-50">{entra.length} abonos vigentes</span>
         </div>
         <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
           <span className={rotulo}>Sale por mes</span>
-          <span className="cifra text-xl font-bold text-tinta">{plata(totalSale)}</span>
+          <span className="cifra flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-tinta">
+            {salePorMoneda.length === 0
+              ? plata(0)
+              : salePorMoneda.map(([m, v]) => <span key={m}>{plata(v, m)}</span>)}
+          </span>
           <span
             className={`text-2xs ${totalSale > totalEntra ? 'font-medium text-rojo' : 'text-gris-50'}`}
           >
             {totalSale > totalEntra
-              ? `los abonos no lo cubren, faltan ${plata(totalSale - totalEntra)}`
-              : `cubierto por los abonos, sobran ${plata(totalEntra - totalSale)}`}
+              ? `en pesos los abonos no lo cubren, faltan ${plata(totalSale - totalEntra)}`
+              : `en pesos está cubierto, sobran ${plata(totalEntra - totalSale)}`}
           </span>
         </div>
       </div>
