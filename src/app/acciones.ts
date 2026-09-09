@@ -1632,3 +1632,77 @@ export async function moverEstado(color: string, hacia: number): Promise<Resulta
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Lo que se descuenta antes de repartir.
+
+   Gastos e impuestos ya se restaban de la base de reparto desde el
+   primer día, pero no había pantalla para cargarlos. Un cálculo
+   correcto e invisible es, en la práctica, un cálculo que no está: si
+   nadie puede cargar la retención, la retención se descuenta a mano en
+   otro lado y el sistema queda mintiendo.
+   ------------------------------------------------------------------ */
+
+function numero(v: string) {
+  const n = parseFloat(v.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(n) ? n : null
+}
+
+export async function anotarImpuesto(datos: FormData): Promise<Resultado> {
+  const concepto = String(datos.get('concepto') ?? '').trim()
+  if (!concepto) return { ok: false, error: 'Poné qué se descuenta.' }
+
+  const alicuota = numero(String(datos.get('alicuota') ?? ''))
+  const base = numero(String(datos.get('base') ?? ''))
+  const monto = numero(String(datos.get('monto') ?? ''))
+
+  if (monto === null && (alicuota === null || base === null))
+    return { ok: false, error: 'Poné el monto, o la alícuota y sobre cuánto se aplica.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('anotar_impuesto', {
+    p_proyecto: String(datos.get('proyecto_id') ?? ''),
+    p_hito: String(datos.get('hito_id') ?? '') || null,
+    p_concepto: concepto,
+    p_jurisdiccion: String(datos.get('jurisdiccion') ?? 'nacional'),
+    p_alicuota: alicuota,
+    p_base: base,
+    p_monto: monto,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function anotarGasto(datos: FormData): Promise<Resultado> {
+  const descripcion = String(datos.get('descripcion') ?? '').trim()
+  const neto = numero(String(datos.get('neto') ?? ''))
+
+  if (!descripcion) return { ok: false, error: 'Poné qué se gastó.' }
+  if (neto === null || neto <= 0) return { ok: false, error: 'El monto no se entiende.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('anotar_gasto', {
+    p_proyecto: String(datos.get('proyecto_id') ?? ''),
+    p_hito: String(datos.get('hito_id') ?? '') || null,
+    p_descripcion: descripcion,
+    p_proveedor: String(datos.get('proveedor') ?? ''),
+    p_neto: neto,
+    p_alicuota: numero(String(datos.get('alicuota') ?? '21')) ?? 21,
+    p_discriminado: datos.get('discriminado') === 'on',
+    p_fecha: String(datos.get('fecha') ?? '') || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function borrarDescuento(clase: string, id: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('borrar_descuento', { p_clase: clase, p_id: id })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/proyecto', 'layout')
+  return { ok: true }
+}

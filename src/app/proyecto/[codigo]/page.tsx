@@ -22,6 +22,7 @@ import AsignarCliente from '@/components/AsignarCliente'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Plata from '@/components/Plata'
 import Reparto, { type Parte } from '@/components/Reparto'
+import Descuentos, { type Descuento, type ConceptoImpuesto } from '@/components/Descuentos'
 import Pestanas from '@/components/Pestanas'
 import Abono from '@/components/Abono'
 import Consumo, { type Consumo as Mes } from '@/components/Consumo'
@@ -83,6 +84,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: servicios },
     { data: filasEtapas },
     { data: reparto },
+    { data: descuentos },
+    { data: conceptos },
     { data: consumos },
     { data: hoyRow },
   ] = await Promise.all([
@@ -131,6 +134,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
       supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
       supabase.from('v_reparto').select('*').eq('proyecto_id', p.id),
+      supabase.from('v_descuentos').select('*').eq('proyecto_id', p.id).order('fecha'),
+      supabase.from('conceptos_impuesto').select('*').order('orden'),
       supabase
         .from('consumos')
         .select('id, periodo, cantidad, precio_unitario, monto, notas, facturado_at, cobrado_at')
@@ -618,6 +623,21 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       hoy={(hoyRow as string) ?? ''}
                     />
                   )}
+
+                  <Descuentos
+                    proyectoId={p.id}
+                    descuentos={(descuentos ?? []) as Descuento[]}
+                    conceptos={(conceptos ?? []) as ConceptoImpuesto[]}
+                    hitos={((hitos ?? []) as Record<string, unknown>[]).map((h) => ({
+                      id: h.id as string,
+                      titulo: h.titulo as string,
+                      monto: (h.monto_neto as number) ?? 0,
+                    }))}
+                    bruto={esAbono ? (p.monto_mensual ?? 0) : total}
+                    moneda={p.moneda}
+                    hoy={(hoyRow as string) ?? ''}
+                    puedeEditar={esDireccion}
+                  />
 
                   <Reparto
                     proyectoId={p.id}
