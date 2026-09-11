@@ -59,7 +59,7 @@ export default function Login() {
             width={1060}
             height={300}
             priority
-            className="h-9 w-auto"
+            className="h-9 w-auto self-start"
           />
           <h1 className="text-2xl font-bold tracking-tight text-tinta">Sistema operativo</h1>
         </div>

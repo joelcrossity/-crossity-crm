@@ -66,7 +66,7 @@ export default function Clave() {
             width={1060}
             height={300}
             priority
-            className="h-8 w-auto"
+            className="h-8 w-auto self-start"
           />
           <h1 className="text-2xl font-bold tracking-tight text-tinta">Cambiar la contraseña</h1>
           <p className="text-sm text-gris">

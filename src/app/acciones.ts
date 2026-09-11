@@ -1706,3 +1706,70 @@ export async function borrarDescuento(clase: string, id: string): Promise<Result
   revalidatePath('/proyecto', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Hacer entrar a alguien la primera vez.
+
+   El problema real no era cambiar contraseñas: era que no había forma
+   de que una persona nueva entrara nunca. Se resuelve con un enlace de
+   un solo uso que se le pasa por donde sea —correo, WhatsApp— y con el
+   que la persona se pone SU contraseña.
+
+   Es mejor que asignarle una: una contraseña que vos elegís y le mandás
+   pasa por tu pantalla, por el chat y se queda ahí para siempre. Un
+   enlace se usa una vez y se vence.
+   ------------------------------------------------------------------ */
+
+export type Invitacion = { ok: true; enlace: string; nueva: boolean } | { ok: false; error: string }
+
+export async function invitarPersona(personaId: string): Promise<Invitacion> {
+  const supabase = await createClient()
+
+  // Quién pide, antes de tocar nada con la clave de servicio.
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', user?.id ?? '')
+    .maybeSingle()
+
+  const roles = (yo?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+  if (!roles.includes('direccion') && !roles.includes('administracion'))
+    return { ok: false, error: 'Solo dirección o administración pueden invitar.' }
+
+  const { data: persona } = await supabase
+    .from('personas')
+    .select('nombre, email')
+    .eq('id', personaId)
+    .maybeSingle()
+
+  if (!persona?.email)
+    return { ok: false, error: 'Esa persona no tiene correo cargado. Ponéselo primero.' }
+
+  const sitio = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crossity-crm-joels-projects-5fc2b32d.vercel.app'
+
+  let admin
+  try {
+    admin = (await import('@/lib/supabase/admin')).clienteAdmin()
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Falta la clave de servicio.' }
+  }
+
+  // ¿Ya tiene cuenta? Cambia el tipo de enlace, no el resultado.
+  const { data: cuentas } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  const existe = cuentas?.users.find(
+    (u) => u.email?.toLowerCase() === persona.email!.toLowerCase(),
+  )
+
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: existe ? 'recovery' : 'invite',
+    email: persona.email,
+    options: { redirectTo: `${sitio}/clave` },
+  })
+
+  if (error || !data?.properties?.action_link)
+    return { ok: false, error: traducir(error?.message ?? 'No se pudo generar el enlace') }
+
+  revalidatePath('/equipo')
+  return { ok: true, enlace: data.properties.action_link, nueva: !existe }
+}
