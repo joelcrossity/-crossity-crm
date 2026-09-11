@@ -229,6 +229,7 @@ export default function Permisos({
                   telefono={m.telefono}
                   activa={m.activa}
                   esExterna={m.es_externa}
+                  tieneCuenta={m.tiene_cuenta}
                   roles={m.roles}
                   permisos={generales.filter((g) => g.persona_id === m.id)}
                   puedeEditar={puedeConfigurar}

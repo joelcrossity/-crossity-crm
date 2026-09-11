@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Invitar from '@/components/Invitar'
 import {
   ajustarPermiso,
   cambiarRoles,
@@ -54,6 +55,7 @@ export default function Persona({
   telefono,
   activa,
   esExterna,
+  tieneCuenta,
   roles,
   permisos,
   puedeEditar,
@@ -66,6 +68,7 @@ export default function Persona({
   telefono: string | null
   activa: boolean
   esExterna: boolean
+  tieneCuenta: boolean
   roles: string[]
   permisos: Permiso[]
   puedeEditar: boolean
@@ -182,6 +185,25 @@ export default function Persona({
           />
           Externa (no es del equipo, pero participa y cobra)
         </label>
+      </div>
+
+      <div className="flex flex-col gap-1.5 border-t border-azul pt-4">
+        <span className={rotulo}>Acceso al sistema</span>
+        <span className="text-2xs text-gris-50">
+          {tieneCuenta
+            ? 'Ya tiene cuenta y puede entrar.'
+            : 'Todavía no puede entrar. El enlace la deja poner su propia contraseña.'}
+        </span>
+        {puedeEditar && (
+          <span className="mt-1">
+            <Invitar
+              personaId={id}
+              nombre={n}
+              tieneCuenta={tieneCuenta}
+              tieneCorreo={!!e.trim()}
+            />
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5 border-t border-azul pt-4">

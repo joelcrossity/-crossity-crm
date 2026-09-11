@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import Campanita, { type Aviso } from '@/components/Campanita'
+import MenuUsuario from '@/components/MenuUsuario'
 import { plata } from '@/lib/estados'
 import { ICONOS } from '@/components/Iconos'
 
@@ -165,23 +166,7 @@ export default async function Shell({
               <Campanita avisos={avisos} />
 
           {yo && (
-            <span className="flex items-center gap-2 border-l border-linea pl-3">
-              <span className="min-w-0 text-right leading-tight">
-                <span className="block truncate text-sm font-medium text-tinta">{yo.nombre}</span>
-                <span className="block truncate text-2xs text-gris-50">
-                  {yo.roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
-                </span>
-              </span>
-              <Link
-                href="/clave"
-                title="Cambiar mi contraseña"
-                className="grid size-7 shrink-0 place-items-center rounded-full bg-azul-hondo
-                           text-2xs font-bold text-white transition-opacity duration-150
-                           hover:opacity-80"
-              >
-                {iniciales}
-              </Link>
-            </span>
+            <MenuUsuario nombre={yo.nombre} roles={yo.roles} iniciales={iniciales} />
           )}
             </span>
           </div>
