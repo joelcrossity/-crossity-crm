@@ -107,8 +107,8 @@ export default async function Shell({
           <Image
             src="/marca/crossity.png"
             alt="Crossity"
-            width={900}
-            height={276}
+            width={1060}
+            height={300}
             priority
             className="h-7 w-auto"
           />
@@ -172,13 +172,15 @@ export default async function Shell({
                   {yo.roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
                 </span>
               </span>
-              <span
+              <Link
+                href="/clave"
+                title="Cambiar mi contraseña"
                 className="grid size-7 shrink-0 place-items-center rounded-full bg-azul-hondo
-                           text-2xs font-bold text-white"
-                aria-hidden
+                           text-2xs font-bold text-white transition-opacity duration-150
+                           hover:opacity-80"
               >
                 {iniciales}
-              </span>
+              </Link>
             </span>
           )}
             </span>

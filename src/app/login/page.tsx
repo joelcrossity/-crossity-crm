@@ -12,6 +12,22 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [entrando, setEntrando] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  async function recuperar() {
+    if (!email.trim()) {
+      setError('Escribí tu correo y volvé a tocar acá.')
+      return
+    }
+    setError(null)
+    const supabase = createClient()
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/clave`,
+    })
+    /* Se contesta lo mismo exista o no la cuenta: decir "ese correo no
+       está" le confirmaría a cualquiera quién tiene usuario. */
+    setAviso('Si ese correo tiene cuenta, le va a llegar un enlace para cambiarla.')
+  }
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
@@ -40,8 +56,8 @@ export default function Login() {
           <Image
             src="/marca/crossity.png"
             alt="Crossity"
-            width={900}
-            height={276}
+            width={1060}
+            height={300}
             priority
             className="h-9 w-auto"
           />
@@ -76,6 +92,12 @@ export default function Login() {
           </label>
         </div>
 
+        {aviso && (
+          <p className="rounded-md border border-verde bg-verde-aire px-3 py-2 text-sm text-tinta">
+            {aviso}
+          </p>
+        )}
+
         {error && (
           <p className="text-sm text-rojo" role="alert">
             {error}
@@ -91,6 +113,14 @@ export default function Login() {
         >
           {entrando ? 'Entrando…' : 'Entrar'}
         </button>
+        <button
+          type="button"
+          onClick={recuperar}
+          className="w-fit text-sm text-gris-50 transition-colors duration-150 hover:text-azul-hondo"
+        >
+          Me olvidé la contraseña
+        </button>
+
       </form>
     </main>
   )
