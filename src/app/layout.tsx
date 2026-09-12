@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
+import { guionTema } from '@/components/Tema'
 
 // Metrópolis, la familia del manual. Light para aire, Regular para
 // cuerpo, Bold para jerarquía, Black para el impacto puntual.
@@ -25,7 +26,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={metropolis.variable}>
+    <html lang="es" className={metropolis.variable} suppressHydrationWarning>
+      <head>
+        {/* El tema se aplica antes de pintar: si esperara a React,
+            quien eligió oscuro vería un destello blanco en cada carga. */}
+        <script dangerouslySetInnerHTML={{ __html: guionTema }} />
+      </head>
       <body className="font-sans">{children}</body>
     </html>
   )

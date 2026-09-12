@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import Campanita, { type Aviso } from '@/components/Campanita'
 import MenuUsuario from '@/components/MenuUsuario'
+import Tema from '@/components/Tema'
+import Buscador from '@/components/Buscador'
 import { plata } from '@/lib/estados'
 import { ICONOS } from '@/components/Iconos'
 
@@ -97,8 +99,8 @@ export default async function Shell({
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <aside
-        className="flex shrink-0 flex-col gap-6 border-b border-linea bg-panel px-4 py-4
-                   lg:sticky lg:top-0 lg:h-dvh lg:w-56 lg:border-r lg:border-b-0 lg:py-6"
+        className="vidrio flex shrink-0 flex-col gap-7 border-b px-4 py-4
+                   lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:border-r lg:border-b-0 lg:py-6"
       >
         {/* El logotipo, no la palabra escrita con otra tipografía. El
             manual fija el mínimo sin eslogan en 23 px de alto y una zona
@@ -132,10 +134,10 @@ export default async function Shell({
                       href={item.href}
                       title={item.detalle}
                       aria-current={aca ? 'page' : undefined}
-                      className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-base
-                                  transition-colors duration-150 ${
+                      className={`flex items-center gap-2.5 rounded-[var(--radius-control)] px-2.5
+                                  py-2 text-base transition-colors duration-150 ${
                                     aca
-                                      ? 'bg-azul-aire font-bold text-azul-hondo'
+                                      ? 'bg-azul-aire font-semibold text-azul-hondo'
                                       : 'text-gris hover:bg-superficie hover:text-tinta'
                                   }`}
                     >
@@ -156,13 +158,15 @@ export default async function Shell({
         {/* Los avisos van donde se los busca: arriba y a la derecha. En
             la barra lateral el desplegable quedaba apretado contra el
             borde y encima había que ir a buscarlo a un lugar raro. */}
-        <div className="sticky top-0 z-(--z-fijo) flex flex-col border-b border-linea bg-lienzo">
+        <div className="vidrio sticky top-0 z-(--z-fijo) flex flex-col border-b">
           <div className="flex items-center justify-between gap-3 px-5 py-2 lg:px-10">
             <span className="min-w-0 truncate text-base font-medium text-tinta">
               {titulo ?? TODAS.find((i) => i.href === activo)?.nombre ?? 'Crossity'}
             </span>
 
-            <span className="flex items-center gap-3">
+            <span className="flex items-center gap-2.5">
+              <Buscador />
+              <Tema />
               <Campanita avisos={avisos} />
 
           {yo && (
@@ -174,7 +178,7 @@ export default async function Shell({
           <Franja pulso={pulso as Pulso | null} />
         </div>
 
-        <div className="px-5 py-7 lg:px-10 lg:py-9">
+        <div className="px-5 py-8 lg:px-10 lg:py-10">
           <div className="mx-auto max-w-5xl">{children}</div>
         </div>
       </main>

@@ -24,7 +24,7 @@ export function Marco({
   pie?: React.ReactNode
 }) {
   return (
-    <figure className="flex flex-col gap-3 rounded-lg border border-linea bg-superficie p-4">
+    <figure className="tarjeta-flota flex flex-col gap-3.5 p-5">
       <figcaption className="flex flex-col gap-0.5">
         <span className="text-base font-bold text-tinta">{titulo}</span>
         {detalle && <span className="text-2xs text-gris-50">{detalle}</span>}
@@ -214,21 +214,36 @@ export function Cifra({
 
   const cuerpo = (
     <>
-      <span className={`cifra text-xl font-bold ${color}`}>{valor}</span>
-      <span className="text-sm font-medium text-tinta">{titulo}</span>
-      {nota && <span className="text-2xs text-gris-50">{nota}</span>}
+      <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</span>
+      <span className={`cifra text-3xl leading-none font-bold tracking-tight ${color}`}>
+        {valor}
+      </span>
+      {nota && <span className="text-2xs leading-snug text-gris-50">{nota}</span>}
     </>
   )
 
-  if (!href) return <div className="flex flex-col gap-0.5">{cuerpo}</div>
+  const forma = 'tarjeta-flota flex flex-col gap-1.5 p-5'
+
+  if (!href) return <div className={forma}>{cuerpo}</div>
 
   return (
-    <Link
-      href={href}
-      className="-m-2 flex flex-col gap-0.5 rounded-md p-2 transition-colors duration-150
-                 hover:bg-panel"
-    >
+    <Link href={href} className={`${forma} group`}>
       {cuerpo}
+      <span
+        className="mt-1 flex items-center gap-1 text-2xs text-gris-25 transition-colors
+                   duration-150 group-hover:text-azul-hondo"
+      >
+        ver
+        <svg viewBox="0 0 12 12" className="size-3" fill="none" aria-hidden>
+          <path
+            d="M3.5 2 7.5 6l-4 4"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
     </Link>
   )
 }

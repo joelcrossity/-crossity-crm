@@ -1,67 +1,65 @@
 @import "tailwindcss";
 
-/* ------------------------------------------------------------------
-   Manual de marca Crossity.
+/* ==================================================================
+   Crossity — sistema visual.
 
-   Azul #4880E6 protagonista, violeta #390094 de acento, gris #585857
-   estructural, y el blanco como protagonista silencioso: el espacio
-   negativo es marca, no relleno.
+   Dos cosas conviven acá y conviene decir cuál manda en qué.
 
-   Una salvedad de contraste, dicha en voz alta: blanco sobre el azul
-   exacto da 3.9:1, por debajo del mínimo legible para texto chico. Los
-   rellenos con texto encima usan un tono más hondo del MISMO azul.
-   El azul institucional queda intacto donde se ve como color.
-   ------------------------------------------------------------------ */
+   El manual de marca manda en la identidad: el azul #4880E6 es el
+   protagonista, el violeta #390094 el acento, el gris #585857 el neutro
+   estructural, y la tipografía es Metrópolis y solamente Metrópolis.
+   Eso no se negocia; usar otra tipografía es uno de los usos
+   incorrectos que el manual marca explícitamente.
+
+   La gramática de Apple manda en cómo se comporta la superficie: el
+   fondo gris tenue en vez de blanco puro, las esquinas generosas, las
+   sombras difusas, el vidrio en las barras fijas y —sobre todo— el aire.
+   Nada de eso pisa a la marca: son decisiones sobre el material, no
+   sobre la identidad.
+
+   Una aclaración sobre Metrópolis, porque el pedido mencionaba Inter y
+   Montserrat: Metrópolis ES una geométrica de la misma familia que
+   Montserrat, diseñada con el mismo criterio que San Francisco. Ya da
+   el resultado que se buscaba, y además es la de la marca.
+   ================================================================== */
 
 @theme {
-  /* marca */
-  --color-azul:        oklch(0.639 0.152 262);   /* #4880E6 exacto */
-  --color-azul-hondo:  oklch(0.520 0.165 262);   /* rellenos y enlaces */
-  --color-azul-75:     oklch(0.727 0.115 262);   /* tinte 75 % del manual */
-  --color-azul-50:     oklch(0.815 0.078 262);   /* tinte 50 % */
-  --color-azul-25:     oklch(0.905 0.040 262);   /* tinte 25 % */
-  --color-azul-aire:   oklch(0.968 0.014 262);   /* selección, fondos suaves */
+  /* Los colores apuntan a variables de tiempo de ejecución para que el
+     modo oscuro los reemplace sin duplicar una sola clase. */
+  --color-lienzo:       var(--f-lienzo);
+  --color-superficie:   var(--f-superficie);
+  --color-panel:        var(--f-panel);
+  --color-elevado:      var(--f-elevado);
 
-  --color-violeta:     oklch(0.330 0.225 288);   /* #390094 exacto, acento */
-  --color-violeta-50:  oklch(0.640 0.135 288);   /* tinte 50 % del manual */
-  --color-violeta-texto: oklch(0.561 0.135 288); /* el mismo, apenas más hondo, para texto chico */
-  --color-violeta-25:  oklch(0.800 0.070 288);   /* tinte 25 % */
-  --color-violeta-aire: oklch(0.962 0.020 288);
+  --color-tinta:        var(--f-tinta);
+  --color-gris:         var(--f-gris);
+  --color-gris-50:      var(--f-gris-50);
+  --color-gris-25:      var(--f-gris-25);
 
-  /* neutros: el gris del manual manda en el texto */
-  --color-gris:        oklch(0.480 0.002 106);   /* #585857 */
+  --color-linea:        var(--f-linea);
+  --color-linea-fuerte: var(--f-linea-fuerte);
 
-  /* El tinte 50 % del manual da 2,67:1 contra el blanco, menos de la
-     mitad del mínimo legible. Como es el color de casi todo el texto
-     secundario del sistema —rótulos, códigos, notas—, era la causa
-     principal de que cueste leer. Se corre a 0.550, que mide 4,51:1
-     sobre el fondo más claro donde se usa, y sigue a siete puntos de
-     luminosidad del gris principal, así que la jerarquía se conserva.
-     El tinte exacto del manual queda para rellenos, no para texto. */
-  --color-gris-50:     oklch(0.550 0.002 106);
-  --color-gris-tinte:  oklch(0.700 0.002 106);   /* el 50 % del manual, para rellenos */
-  --color-gris-25:     oklch(0.845 0.002 106);
+  --color-azul:         var(--f-azul);
+  --color-azul-hondo:   var(--f-azul-hondo);
+  --color-azul-50:      var(--f-azul-50);
+  --color-azul-25:      var(--f-azul-25);
+  --color-azul-aire:    var(--f-azul-aire);
 
-  --color-tinta:       oklch(0.232 0.003 106);   /* títulos */
-  --color-linea:       oklch(0.915 0.002 106);
-  --color-linea-fuerte: oklch(0.855 0.002 106);
+  --color-violeta:      var(--f-violeta);
+  --color-violeta-50:   var(--f-violeta-50);
+  --color-violeta-25:   var(--f-violeta-25);
+  --color-violeta-aire: var(--f-violeta-aire);
 
-  /* superficies: el blanco es protagonista */
-  --color-lienzo:      oklch(0.988 0.001 262);
-  --color-panel:       oklch(0.975 0.003 262);
-  --color-superficie:  oklch(1 0 0);
+  --color-verde:        var(--f-verde);
+  --color-amarillo:     var(--f-amarillo);
+  --color-naranja:      var(--f-naranja);
+  --color-rojo:         var(--f-rojo);
 
-  /* semáforo: vocabulario de la empresa, no compite con el azul */
-  --color-verde:    oklch(0.520 0.125 158);
-  --color-amarillo: oklch(0.560 0.125 72);
-  --color-naranja:  oklch(0.560 0.150 48);
-  --color-rojo:     oklch(0.520 0.190 25);
+  --color-verde-aire:    var(--f-verde-aire);
+  --color-amarillo-aire: var(--f-amarillo-aire);
+  --color-rojo-aire:     var(--f-rojo-aire);
 
-  --color-verde-aire:    oklch(0.962 0.028 158);
-  --color-amarillo-aire: oklch(0.966 0.038 82);
-  --color-rojo-aire:     oklch(0.962 0.028 25);
-
-  /* escala fija: es una herramienta, no una portada */
+  /* Escala fija: es una herramienta, no una portada. */
   --text-2xs: 0.6875rem;
   --text-xs:  0.75rem;
   --text-sm:  0.8125rem;
@@ -70,12 +68,19 @@
   --text-lg:  1.125rem;
   --text-xl:  1.375rem;
   --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
 
   --font-sans: var(--fuente-metropolis), "Open Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* Movimiento. Salidas exponenciales: arrancan rápido y frenan solas,
-     que es como se mueve algo que pesa. Nada rebota. */
+  /* Esquinas. Generosas en lo que contiene, sobrias en lo que se toca:
+     un botón con la misma curva que una tarjeta se ve blando. */
+  --radius-contenedor: 1rem;
+  --radius-tarjeta:    0.875rem;
+  --radius-control:    0.625rem;
+
+  /* Movimiento: salidas exponenciales, arrancan rápido y frenan solas.
+     Nada rebota. */
   --ease-salida: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-suave:  cubic-bezier(0.33, 1, 0.68, 1);
 
@@ -86,20 +91,175 @@
   --z-aviso: 70;
 }
 
-/* Serie categórica para gráficos, en orden fijo y nunca ciclado.
+/* ------------------------------------------------------------------
+   Modo claro. La base es el gris tenue, no el blanco: sobre blanco puro
+   una tarjeta blanca no se distingue del fondo y hay que dibujarle un
+   borde fuerte. Sobre gris tenue flota sola.
+   ------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+
+  --f-lienzo:       #F5F5F7;
+  --f-superficie:   #FFFFFF;
+  --f-panel:        #FAFAFC;
+  --f-elevado:      #FFFFFF;
+
+  --f-tinta:        #1D1D1F;
+  --f-gris:         #5B5B60;
+  --f-gris-50:      #6B6B70;
+  --f-gris-25:      #A1A1A6;
+
+  --f-linea:        #E5E5EA;
+  --f-linea-fuerte: #D1D1D6;
+
+  --f-azul:         #4880E6;   /* el del manual, exacto */
+  --f-azul-hondo:   #2C5FC4;   /* para texto y rellenos con letras */
+  --f-azul-50:      #A3BFF2;
+  --f-azul-25:      #D1DFF9;
+  --f-azul-aire:    #EEF3FD;
+
+  --f-violeta:      #390094;   /* el del manual, exacto */
+  --f-violeta-50:   #7B54C4;
+  --f-violeta-25:   #BDAAE2;
+  --f-violeta-aire: #F2EDFB;
+
+  --f-verde:        #15733F;
+  --f-amarillo:     #8A5E00;
+  --f-naranja:      #A65400;
+  --f-rojo:         #C0342B;
+
+  --f-verde-aire:    #EAF5EE;
+  --f-amarillo-aire: #FBF3E2;
+  --f-rojo-aire:     #FCEDEC;
+
+  /* Vidrio y sombras. Las sombras van en dos capas —una de contacto y
+     una de profundidad— que es lo que las hace difusas sin ensuciar. */
+  --vidrio:         rgba(255, 255, 255, 0.72);
+  --vidrio-borde:   rgba(0, 0, 0, 0.06);
+  --sombra-apoyada: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
+  --sombra-flotante: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px -8px rgba(0, 0, 0, 0.10);
+  --sombra-alzada:  0 2px 6px rgba(0, 0, 0, 0.06), 0 18px 40px -12px rgba(0, 0, 0, 0.18);
+}
+
+/* ------------------------------------------------------------------
+   Modo oscuro. No es el claro invertido: los grises se eligen de nuevo
+   y los colores se aclaran, porque un color que funciona sobre blanco
+   se apaga sobre negro. El azul de marca sube de luminosidad para
+   seguir leyéndose; el institucional exacto se reserva para los
+   rellenos, donde sigue siendo el de siempre.
+   ------------------------------------------------------------------ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    --f-lienzo:       #000000;
+    --f-superficie:   #1C1C1E;
+    --f-panel:        #242426;
+    --f-elevado:      #2C2C2E;
+
+    --f-tinta:        #F5F5F7;
+    --f-gris:         #A8A8AD;
+    --f-gris-50:      #98989D;
+    --f-gris-25:      #6B6B70;
+
+    --f-linea:        #38383A;
+    --f-linea-fuerte: #48484A;
+
+    --f-azul:         #4880E6;
+    --f-azul-hondo:   #8FB4F5;
+    --f-azul-50:      #3E63A8;
+    --f-azul-25:      #2A3D5C;
+    --f-azul-aire:    #1B2536;
+
+    --f-violeta:      #390094;
+    --f-violeta-50:   #B39BE8;
+    --f-violeta-25:   #4A3A6B;
+    --f-violeta-aire: #221B33;
+
+    --f-verde:        #4CC98A;
+    --f-amarillo:     #E0B33C;
+    --f-naranja:      #F09A4B;
+    --f-rojo:         #FF6B60;
+
+    --f-verde-aire:    #16281F;
+    --f-amarillo-aire: #2A2416;
+    --f-rojo-aire:     #2E1B1A;
+
+    --vidrio:         rgba(28, 28, 30, 0.72);
+    --vidrio-borde:   rgba(255, 255, 255, 0.08);
+    --sombra-apoyada: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --sombra-flotante: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+    --sombra-alzada:  0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  --f-lienzo:       #000000;
+  --f-superficie:   #1C1C1E;
+  --f-panel:        #242426;
+  --f-elevado:      #2C2C2E;
+
+  --f-tinta:        #F5F5F7;
+  --f-gris:         #A8A8AD;
+  --f-gris-50:      #98989D;
+  --f-gris-25:      #6B6B70;
+
+  --f-linea:        #38383A;
+  --f-linea-fuerte: #48484A;
+
+  --f-azul:         #4880E6;
+  --f-azul-hondo:   #8FB4F5;
+  --f-azul-50:      #3E63A8;
+  --f-azul-25:      #2A3D5C;
+  --f-azul-aire:    #1B2536;
+
+  --f-violeta:      #390094;
+  --f-violeta-50:   #B39BE8;
+  --f-violeta-25:   #4A3A6B;
+  --f-violeta-aire: #221B33;
+
+  --f-verde:        #4CC98A;
+  --f-amarillo:     #E0B33C;
+  --f-naranja:      #F09A4B;
+  --f-rojo:         #FF6B60;
+
+  --f-verde-aire:    #16281F;
+  --f-amarillo-aire: #2A2416;
+  --f-rojo-aire:     #2E1B1A;
+
+  --vidrio:         rgba(28, 28, 30, 0.72);
+  --vidrio-borde:   rgba(255, 255, 255, 0.08);
+  --sombra-apoyada: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-flotante: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  --sombra-alzada:  0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* Serie categórica de los gráficos, en orden fijo y nunca ciclado.
    Va fuera de @theme a propósito: los gráficos arman el nombre de la
    variable en tiempo de ejecución, así que Tailwind no ve el uso y las
-   descarta del CSS. Acá siempre se emiten.
-
-   Validada con el script de dataviz: pasa banda de luminosidad, piso de
-   croma, separación para daltonismo (peor par ΔE 16.8 en deuteranopía) y
-   contraste contra la superficie. El violeta va aclarado a un tinte del
-   manual porque el #390094 exacto queda fuera de la banda. */
+   descartaría del CSS. */
 :root {
-  --color-serie-1: #4880E6;  /* azul de marca */
-  --color-serie-2: #0E8F7E;  /* verde azulado */
-  --color-serie-3: #7440C9;  /* violeta aclarado */
-  --color-serie-4: #C77700;  /* ámbar */
+  --color-serie-1: #4880E6;
+  --color-serie-2: #0E8F7E;
+  --color-serie-3: #7440C9;
+  --color-serie-4: #C77700;
+}
+:root[data-tema="oscuro"],
+:root:not([data-tema="claro"]) {
+  --color-serie-1: #6E9BF0;
+  --color-serie-2: #2FB8A2;
+  --color-serie-3: #A585E0;
+  --color-serie-4: #E5A03C;
+}
+:root[data-tema="claro"] {
+  --color-serie-1: #4880E6;
+  --color-serie-2: #0E8F7E;
+  --color-serie-3: #7440C9;
+  --color-serie-4: #C77700;
 }
 
 html {
@@ -116,13 +276,14 @@ body {
 
 h1, h2, h3, h4 {
   color: var(--color-tinta);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
 }
 
 :focus-visible {
   outline: 2px solid var(--color-azul-hondo);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 /* Los números en columna se leen alineados o no se leen. */
@@ -132,61 +293,65 @@ h1, h2, h3, h4 {
 }
 
 /* ------------------------------------------------------------------
-   Entrada. El contenido aparece de abajo, escalonado, para que el ojo
-   siga un orden en vez de recibir la pantalla entera de golpe.
+   Superficies.
 
-   `both` deja el estado final aplicado: si la animación no llega a
-   correr, lo que se ve es el contenido, nunca el vacío.
+   La tarjeta se apoya sobre el lienzo con una sombra de contacto y un
+   borde apenas visible. La sombra hace el trabajo; el borde solo evita
+   que se desvanezca contra fondos claros.
    ------------------------------------------------------------------ */
 
-@keyframes surgir {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-linea);
+  border-radius: var(--radius-tarjeta);
+  box-shadow: var(--sombra-apoyada);
 }
 
-@keyframes aparecer {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.tarjeta-flota {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-linea);
+  border-radius: var(--radius-contenedor);
+  box-shadow: var(--sombra-flotante);
+  transition:
+    box-shadow 0.25s var(--ease-suave),
+    border-color 0.2s var(--ease-suave),
+    transform 0.25s var(--ease-salida);
 }
 
-.surge {
-  animation: surgir 0.34s var(--ease-salida) both;
+.tarjeta-flota:hover {
+  box-shadow: var(--sombra-alzada);
+  border-color: var(--color-linea-fuerte);
+  transform: translateY(-1px);
 }
 
-/* El escalonado se corta a los diez: más que eso deja de leerse como
-   ritmo y empieza a leerse como espera. */
-.escalona > * { animation: surgir 0.34s var(--ease-salida) both; }
-.escalona > *:nth-child(1)  { animation-delay: 0ms; }
-.escalona > *:nth-child(2)  { animation-delay: 28ms; }
-.escalona > *:nth-child(3)  { animation-delay: 56ms; }
-.escalona > *:nth-child(4)  { animation-delay: 84ms; }
-.escalona > *:nth-child(5)  { animation-delay: 112ms; }
-.escalona > *:nth-child(6)  { animation-delay: 140ms; }
-.escalona > *:nth-child(7)  { animation-delay: 168ms; }
-.escalona > *:nth-child(8)  { animation-delay: 196ms; }
-.escalona > *:nth-child(9)  { animation-delay: 224ms; }
-.escalona > *:nth-child(n+10) { animation-delay: 250ms; }
+/* El vidrio va donde Apple lo usa y donde tiene una razón: barras fijas
+   y desplegables que se apoyan sobre contenido que sigue ahí abajo.
+   No en las tarjetas: ahí sería decoración, y le quita legibilidad al
+   texto sin dar nada a cambio. */
+.vidrio {
+  background: var(--vidrio);
+  border-color: var(--vidrio-borde);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .vidrio { background: var(--color-superficie); }
+}
 
 /* ------------------------------------------------------------------
    Botones.
 
-   Antes cada botón se escribía a mano y terminaron pareciéndose todos:
-   "Sumar a alguien", "Registrar cobro" y "Borrar" tenían el mismo peso
-   visual, así que la pantalla no decía cuál era la acción importante.
-
-   Cuatro niveles y uno solo por bloque:
-     principal   lo que se viene a hacer acá. Uno por pantalla
-     secundario  alternativas legítimas
-     sutil       lo de siempre, que no debe competir
-     peligro     lo que no se puede deshacer
+   Cuatro niveles y uno principal por bloque. El hundido al presionar es
+   lo que da la sensación de material: sin eso el click no se siente.
    ------------------------------------------------------------------ */
 
 .boton {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  border-radius: 0.375rem;
-  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-control);
+  padding: 0.4375rem 0.9375rem;
   font-size: var(--text-sm);
   font-weight: 500;
   line-height: 1.4;
@@ -195,20 +360,23 @@ h1, h2, h3, h4 {
   transition:
     background-color 0.15s var(--ease-suave),
     border-color 0.15s var(--ease-suave),
-    color 0.15s var(--ease-suave);
+    color 0.15s var(--ease-suave),
+    transform 0.12s var(--ease-salida),
+    opacity 0.15s var(--ease-suave);
 }
 
-.boton:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
+.boton:active:not(:disabled) { transform: scale(0.97); }
+.boton:disabled { opacity: 0.4; cursor: default; }
 
-/* Relleno azul hondo, no el azul exacto de marca: blanco sobre el azul
-   institucional da 3,43:1 y no alcanza para texto. El azul de marca
-   queda intacto donde se ve como color, no como fondo de letras. */
 .boton-principal {
   background: var(--color-azul-hondo);
-  color: white;
+  color: var(--color-superficie);
+  box-shadow: var(--sombra-apoyada);
+}
+:root[data-tema="oscuro"] .boton-principal,
+:root:not([data-tema="claro"]) .boton-principal { color: #0B1526; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="oscuro"]) .boton-principal { color: #FFFFFF; }
 }
 .boton-principal:hover:not(:disabled) { background: var(--color-azul); }
 
@@ -216,6 +384,7 @@ h1, h2, h3, h4 {
   background: var(--color-superficie);
   border-color: var(--color-linea-fuerte);
   color: var(--color-gris);
+  box-shadow: var(--sombra-apoyada);
 }
 .boton-secundario:hover:not(:disabled) {
   border-color: var(--color-azul-hondo);
@@ -240,12 +409,48 @@ h1, h2, h3, h4 {
 }
 
 .boton-chico {
-  padding: 0.25rem 0.625rem;
+  padding: 0.25rem 0.6875rem;
   font-size: var(--text-2xs);
 }
 
-/* Riel horizontal del tablero: la barra no debe robarle presencia a
-   las tarjetas. */
+/* ------------------------------------------------------------------
+   Entrada. El contenido aparece de abajo, escalonado, para que el ojo
+   siga un orden en vez de recibir la pantalla entera de golpe.
+
+   `both` deja el estado final aplicado: si la animación no llega a
+   correr, lo que se ve es el contenido, nunca el vacío.
+   ------------------------------------------------------------------ */
+
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes aparecer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes latir {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+.surge { animation: surgir 0.38s var(--ease-salida) both; }
+
+.escalona > * { animation: surgir 0.38s var(--ease-salida) both; }
+.escalona > *:nth-child(1)  { animation-delay: 0ms; }
+.escalona > *:nth-child(2)  { animation-delay: 28ms; }
+.escalona > *:nth-child(3)  { animation-delay: 56ms; }
+.escalona > *:nth-child(4)  { animation-delay: 84ms; }
+.escalona > *:nth-child(5)  { animation-delay: 112ms; }
+.escalona > *:nth-child(6)  { animation-delay: 140ms; }
+.escalona > *:nth-child(7)  { animation-delay: 168ms; }
+.escalona > *:nth-child(8)  { animation-delay: 196ms; }
+.escalona > *:nth-child(9)  { animation-delay: 224ms; }
+.escalona > *:nth-child(n+10) { animation-delay: 250ms; }
+
+/* Riel horizontal: la barra no debe robarle presencia al contenido. */
 .riel {
   scrollbar-width: thin;
   scrollbar-color: var(--color-linea-fuerte) transparent;
@@ -262,7 +467,10 @@ h1, h2, h3, h4 {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .tarjeta-flota:hover { transform: none; }
+  .boton:active:not(:disabled) { transform: none; }
 }
