@@ -75,6 +75,7 @@ export default function Permisos({
   proyectos,
   puedeConfigurar,
   esDireccion,
+  yoSoy,
 }: {
   equipo: Miembro[]
   permisos: Permiso[]
@@ -82,6 +83,7 @@ export default function Permisos({
   proyectos: { id: string; nombre: string; codigo: string }[]
   puedeConfigurar: boolean
   esDireccion: boolean
+  yoSoy: string | null
 }) {
   const [editando, setEditando] = useState<string | null>(null)
   const [alta, setAlta] = useState(false)
@@ -234,6 +236,7 @@ export default function Permisos({
                   permisos={generales.filter((g) => g.persona_id === m.id)}
                   puedeEditar={puedeConfigurar}
                   esDireccion={esDireccion}
+                  soyYo={m.id === yoSoy}
                   alCerrar={() => setEditando(null)}
                 />
               )}

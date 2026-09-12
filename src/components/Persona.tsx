@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Invitar from '@/components/Invitar'
+import BajaPersona from '@/components/BajaPersona'
 import {
   ajustarPermiso,
   cambiarRoles,
@@ -60,6 +61,7 @@ export default function Persona({
   permisos,
   puedeEditar,
   esDireccion,
+  soyYo,
   alCerrar,
 }: {
   id: string
@@ -73,6 +75,7 @@ export default function Persona({
   permisos: Permiso[]
   puedeEditar: boolean
   esDireccion: boolean
+  soyYo: boolean
   alCerrar: () => void
 }) {
   const router = useRouter()
@@ -311,6 +314,24 @@ export default function Persona({
           la regla maestra del sistema y no se apaga desde acá.
         </p>
       </div>
+
+      {puedeEditar && (
+        <div className="flex flex-col gap-1.5 border-t border-azul pt-4">
+          <span className={rotulo}>Sacarla del sistema</span>
+          <span className="max-w-[65ch] text-2xs text-gris-50">
+            Quitarle el acceso es lo de casi siempre: deja de entrar, pero su nombre sigue donde
+            participó. Borrarla solo sirve para lo que nunca pasó.
+          </span>
+          <span className="mt-1">
+            <BajaPersona
+              personaId={id}
+              nombre={n}
+              tieneCuenta={tieneCuenta}
+              soyYo={soyYo}
+            />
+          </span>
+        </div>
+      )}
     </div>
   )
 }

@@ -1773,3 +1773,67 @@ export async function invitarPersona(personaId: string): Promise<Invitacion> {
   revalidatePath('/equipo')
   return { ok: true, enlace: data.properties.action_link, nueva: !existe }
 }
+
+/* ------------------------------------------------------------------
+   Dar de baja a una persona.
+
+   Son dos cosas distintas y confundirlas es cómo se pierde historia sin
+   querer. Quitarle el acceso deja de poder entrar pero su nombre sigue
+   en los proyectos donde participó: eso es lo que se necesita cuando
+   alguien deja el equipo. Borrarla solo tiene sentido si nunca hizo
+   nada — una carga de prueba, un duplicado.
+   ------------------------------------------------------------------ */
+
+async function soyQuienPuede(): Promise<string | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: yo } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', user?.id ?? '')
+    .maybeSingle()
+
+  const roles = (yo?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+  return roles.includes('direccion') || roles.includes('administracion')
+    ? null
+    : 'Solo dirección o administración pueden hacer esto.'
+}
+
+export async function quitarAcceso(personaId: string): Promise<Resultado> {
+  const noPuede = await soyQuienPuede()
+  if (noPuede) return { ok: false, error: noPuede }
+
+  const supabase = await createClient()
+  const { data: usuarioId, error } = await supabase.rpc('soltar_usuario', { p_persona: personaId })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  // La cuenta de Supabase la borra el cliente de administración: si
+  // quedara viva, la persona podría volver a entrar sin ficha.
+  try {
+    const admin = (await import('@/lib/supabase/admin')).clienteAdmin()
+    await admin.auth.admin.deleteUser(usuarioId as string)
+  } catch {
+    revalidatePath('/equipo')
+    return {
+      ok: false,
+      error:
+        'Se desvinculó la ficha, pero la cuenta sigue viva en Supabase: falta la clave de servicio. ' +
+        'Borrala a mano desde Authentication → Users.',
+    }
+  }
+
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function borrarPersona(personaId: string): Promise<Resultado> {
+  const noPuede = await soyQuienPuede()
+  if (noPuede) return { ok: false, error: noPuede }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('borrar_persona', { p_persona: personaId })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

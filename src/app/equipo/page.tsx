@@ -9,7 +9,7 @@ export default async function Equipo() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: cuenta } = await supabase
     .from('usuarios')
-    .select('personas(roles)')
+    .select('persona_id, personas(roles)')
     .eq('id', user?.id ?? '')
     .maybeSingle()
 
@@ -66,6 +66,7 @@ export default async function Equipo() {
         proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
         puedeConfigurar={puedeConfigurar}
         esDireccion={esDireccion}
+        yoSoy={(cuenta?.persona_id as string) ?? null}
       />
 
     </Shell>
