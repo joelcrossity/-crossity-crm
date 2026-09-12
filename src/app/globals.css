@@ -431,6 +431,10 @@ h1, h2, h3, h4 {
   to   { opacity: 1; }
 }
 
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes latir {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }

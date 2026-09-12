@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Portada, { Campo, Nota } from '@/components/Portada'
 
 /* ------------------------------------------------------------------
    Poner o cambiar la propia contraseña.
@@ -143,97 +143,83 @@ export default function Clave() {
   }
 
   return (
-    <main className="grid min-h-dvh place-items-center px-6">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <Image
-            src="/marca/crossity.png"
-            alt="Crossity"
-            width={1060}
-            height={300}
-            priority
-            className="h-8 w-auto self-start"
+    <Portada
+      titulo={esAlta ? 'Elegí tu contraseña' : 'Cambiar la contraseña'}
+      bajada={
+        estado === 'listo' && esAlta
+          ? 'Es tu primera vez acá. Poné una contraseña y entrás.'
+          : undefined
+      }
+    >
+      {estado === 'abriendo' && (
+        <div className="flex items-center gap-2.5 py-4 text-sm text-gris-50">
+          <span
+            className="size-3.5 rounded-full border-2 border-linea border-t-azul-hondo"
+            style={{ animation: 'girar 0.7s linear infinite' }}
+            aria-hidden
           />
-          <h1 className="text-2xl font-bold tracking-tight text-tinta">
-            {esAlta ? 'Elegí tu contraseña' : 'Cambiar la contraseña'}
-          </h1>
-          {esAlta && estado === 'listo' && (
-            <p className="text-sm text-gris">Es tu primera vez acá. Poné una contraseña y entrás.</p>
-          )}
+          Abriendo el enlace…
         </div>
+      )}
 
-        {estado === 'abriendo' && <p className="text-sm text-gris">Abriendo…</p>}
+      {estado === 'sin_sesion' && (
+        <div className="flex flex-col gap-4">
+          <Nota tono="aviso">
+            Este enlace ya se usó o venció. Pedile uno nuevo a quien te lo mandó: duran un día.
+          </Nota>
+          <Link href="/login" className="boton boton-secundario w-full justify-center">
+            Ir a entrar
+          </Link>
+        </div>
+      )}
 
-        {estado === 'sin_sesion' && (
-          <div className="flex flex-col gap-3">
-            <p className="rounded-lg border border-amarillo bg-amarillo-aire px-3.5 py-3 text-sm text-tinta">
-              Este enlace ya se usó o venció. Pedile uno nuevo a quien te lo mandó: duran un día.
-            </p>
-            <Link href="/login" className="boton boton-secundario w-fit">
-              Ir a entrar
-            </Link>
+      {estado === 'listo' && hecho && (
+        <Nota tono="bien">
+          {esAlta ? 'Listo. Bienvenido, te llevo al sistema.' : 'Listo, quedó cambiada.'}
+        </Nota>
+      )}
+
+      {estado === 'listo' && !hecho && (
+        <form onSubmit={guardar} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3.5">
+            <Campo
+              etiqueta={esAlta ? 'Tu contraseña' : 'La nueva'}
+              ayuda="Al menos ocho caracteres."
+              type="password"
+              value={clave}
+              onChange={(e) => setClave(e.target.value)}
+              autoComplete="new-password"
+              required
+              autoFocus
+            />
+            <Campo
+              etiqueta="Otra vez, para estar seguros"
+              type="password"
+              value={otraVez}
+              onChange={(e) => setOtraVez(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
           </div>
-        )}
 
-        {estado === 'listo' && hecho && (
-          <p className="rounded-lg border border-verde bg-verde-aire px-3.5 py-3 text-sm text-tinta">
-            {esAlta ? 'Listo. Bienvenido, te llevo al sistema.' : 'Listo, quedó cambiada.'}
-          </p>
-        )}
+          {error && <Nota tono="mal">{error}</Nota>}
 
-        {estado === 'listo' && !hecho && (
-          <form onSubmit={guardar} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
-                  {esAlta ? 'Tu contraseña' : 'La nueva'}
-                </span>
-                <input
-                  type="password"
-                  value={clave}
-                  onChange={(e) => setClave(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                  autoFocus
-                  className="rounded-md border border-linea bg-superficie px-3 py-2 text-base
-                             text-tinta transition-colors duration-150 hover:border-linea-fuerte
-                             focus:border-azul"
-                />
-                <span className="text-2xs text-gris-50">Al menos ocho caracteres.</span>
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
-                  Otra vez, para estar seguros
-                </span>
-                <input
-                  type="password"
-                  value={otraVez}
-                  onChange={(e) => setOtraVez(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                  className="rounded-md border border-linea bg-superficie px-3 py-2 text-base
-                             text-tinta transition-colors duration-150 hover:border-linea-fuerte
-                             focus:border-azul"
-                />
-              </label>
-            </div>
-
-            {error && <p className="text-sm font-medium text-rojo">{error}</p>}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="submit" disabled={yendo} className="boton boton-principal">
-                {yendo ? 'Guardando…' : esAlta ? 'Entrar' : 'Cambiarla'}
-              </button>
-              {!esAlta && (
-                <Link href="/hoy" className="boton boton-sutil">
-                  Volver
-                </Link>
-              )}
-            </div>
-          </form>
-        )}
-      </div>
-    </main>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={yendo}
+              className="boton boton-principal flex-1 justify-center"
+            >
+              {yendo ? 'Guardando…' : esAlta ? 'Entrar' : 'Cambiarla'}
+            </button>
+            {!esAlta && (
+              <Link href="/hoy" className="boton boton-sutil">
+                Volver
+              </Link>
+            )}
+          </div>
+        </form>
+      )}
+    </Portada>
   )
 }

@@ -5,9 +5,11 @@ import { useSyncExternalStore } from 'react'
 /* ------------------------------------------------------------------
    Claro, oscuro, o lo que diga el sistema.
 
-   Las tres opciones importan y la tercera es la que la mayoría quiere:
-   que la pantalla siga a la Mac, que a la noche se pone oscura sola.
-   Por eso "Automático" es el valor por defecto y no una opción más.
+   Arranca en claro, no en automático. Es una herramienta de trabajo que
+   se mira de día y junto a planillas y facturas que son blancas: entrar
+   y encontrarla oscura porque la Mac está en oscuro sorprende más de lo
+   que ayuda. El oscuro queda a un click para quien lo quiera, y una vez
+   elegido se recuerda.
 
    La elección vive en el navegador de cada uno: es una preferencia de
    cómo mirar, no un dato de la empresa.
@@ -25,9 +27,9 @@ function suscribir(avisar: () => void) {
 
 function leer(): string {
   try {
-    return localStorage.getItem(CLAVE) ?? 'auto'
+    return localStorage.getItem(CLAVE) ?? 'claro'
   } catch {
-    return 'auto'
+    return 'claro'
   }
 }
 
@@ -78,7 +80,7 @@ const OPCIONES: [string, string, React.ReactNode][] = [
 ]
 
 export default function Tema() {
-  const tema = useSyncExternalStore(suscribir, leer, () => 'auto')
+  const tema = useSyncExternalStore(suscribir, leer, () => 'claro')
 
   return (
     <div
@@ -111,9 +113,12 @@ export default function Tema() {
 /* El tema se aplica antes de pintar para que no haya un parpadeo blanco
    en quien eligió oscuro. Va como script en el head, sin esperar a que
    React arranque. */
+/* Sin elección guardada se fija claro explícitamente, no se deja al
+   sistema decidir. Y va antes de pintar, así nadie ve un destello del
+   tema equivocado mientras React arranca. */
 export const guionTema = `
 try {
-  var t = localStorage.getItem('${CLAVE}');
-  if (t && t !== 'auto') document.documentElement.setAttribute('data-tema', t);
-} catch (e) {}
+  var t = localStorage.getItem('${CLAVE}') || 'claro';
+  if (t !== 'auto') document.documentElement.setAttribute('data-tema', t);
+} catch (e) { document.documentElement.setAttribute('data-tema', 'claro'); }
 `
