@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import Shell, { Titulo } from '@/components/Shell'
 import { createClient } from '@/lib/supabase/server'
 import { plata, fechaCorta } from '@/lib/estados'
@@ -41,6 +43,21 @@ const NOMBRE: Record<string, { texto: string; punto: string }> = {
 
 export default async function Mantenimientos() {
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/mantenimientos', misRoles))
+    return (
+      <Shell activo="/mantenimientos">
+        <SinAcceso que="Mantenimiento" />
+      </Shell>
+    )
 
   const [
     { data: abonos },

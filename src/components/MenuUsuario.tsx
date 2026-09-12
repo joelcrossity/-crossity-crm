@@ -19,10 +19,14 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function MenuUsuario({
   nombre,
+  rol,
   roles,
   iniciales,
 }: {
   nombre: string
+  /* Solo el principal. La lista entera en la barra es ruido: lo que
+     ubica es saber con qué sombrero estás entrando, no el inventario. */
+  rol: string
   roles: string[]
   iniciales: string
 }) {
@@ -30,6 +34,7 @@ export default function MenuUsuario({
   const [abierto, setAbierto] = useState(false)
   const [saliendo, setSaliendo] = useState(false)
   const caja = useRef<HTMLDivElement>(null)
+  const otros = roles.length - 1
 
   useEffect(() => {
     if (!abierto) return
@@ -66,9 +71,7 @@ export default function MenuUsuario({
       >
         <span className="hidden min-w-0 text-right leading-tight sm:block">
           <span className="block truncate text-sm font-medium text-tinta">{nombre}</span>
-          <span className="block truncate text-2xs text-gris-50">
-            {roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
-          </span>
+          <span className="block truncate text-2xs text-gris-50">{rol}</span>
         </span>
         <span
           className="grid size-7 shrink-0 place-items-center rounded-full bg-azul-hondo
@@ -87,10 +90,14 @@ export default function MenuUsuario({
         >
           <span className="flex flex-col gap-0.5 border-b border-linea px-3.5 py-2.5 sm:hidden">
             <span className="text-sm font-medium text-tinta">{nombre}</span>
-            <span className="text-2xs text-gris-50">
-              {roles.map((r) => r.replace(/_/g, ' ')).join(' · ') || 'sin rol'}
-            </span>
+            <span className="text-2xs text-gris-50">{rol}</span>
           </span>
+
+          {otros > 0 && (
+            <span className="border-b border-linea px-3.5 py-2 text-2xs text-gris-50">
+              También {otros === 1 ? 'tenés otro rol' : `tenés otros ${otros} roles`}
+            </span>
+          )}
 
           <Link
             href="/clave"

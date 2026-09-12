@@ -1,4 +1,6 @@
 import Shell, { Titulo } from '@/components/Shell'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import FilaCarga, { type Proyecto } from '@/components/FilaCarga'
 import { Marco, Barras } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
@@ -24,6 +26,21 @@ export default async function Admin(props: {
   const { ver } = await props.searchParams
   const soloIncompletos = ver !== 'todos'
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/admin', misRoles))
+    return (
+      <Shell activo="/admin">
+        <SinAcceso que="Administración" />
+      </Shell>
+    )
 
   const [
     { data: proyectos },

@@ -1,4 +1,6 @@
 import Shell, { Titulo } from '@/components/Shell'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import { NuevoCliente } from '@/components/Alta'
 import { createClient } from '@/lib/supabase/server'
 import { type Cuenta, type Chip } from '@/components/GrillaClientes'
@@ -6,6 +8,21 @@ import VistaClientes from '@/components/VistaClientes'
 
 export default async function Cuentas() {
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/cuentas', misRoles))
+    return (
+      <Shell activo="/cuentas">
+        <SinAcceso que="Clientes" />
+      </Shell>
+    )
   const [{ data }, { data: proyectos }] = await Promise.all([
     supabase.from('v_cuenta').select('*').order('cuenta'),
     supabase

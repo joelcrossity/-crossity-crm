@@ -5,6 +5,7 @@ import Campanita, { type Aviso } from '@/components/Campanita'
 import MenuUsuario from '@/components/MenuUsuario'
 import Tema from '@/components/Tema'
 import Buscador from '@/components/Buscador'
+import { GRUPOS, NOMBRE_ROL, SECCIONES, puedeVer, rolPrincipal } from '@/lib/permisos'
 import { plata } from '@/lib/estados'
 import { ICONOS } from '@/components/Iconos'
 
@@ -18,40 +19,8 @@ type Pulso = {
   abonos: number
 }
 
-/* Agrupada por área, no por lista plana: cuando sean quince pantallas
-   la diferencia entre "encontrarla" y "recorrerlas todas" es esto. */
-const NAVEGACION: { grupo: string | null; items: { href: string; nombre: string; detalle: string }[] }[] = [
-  {
-    grupo: null,
-    items: [{ href: '/hoy', nombre: 'Hoy', detalle: 'lo que necesita atención' }],
-  },
-  {
-    grupo: 'Trabajo',
-    items: [
-      { href: '/pipeline', nombre: 'Pipeline',  detalle: 'lo enviado y por seguir' },
-      { href: '/tablero',  nombre: 'Proyectos', detalle: 'todo lo que está en curso' },
-      { href: '/mantenimientos', nombre: 'Mantenimiento', detalle: 'los abonos que ya están andando' },
-      { href: '/cuentas',  nombre: 'Clientes',  detalle: 'las cuentas y sus marcas' },
-    ],
-  },
-  {
-    grupo: 'Financiero',
-    items: [
-      { href: '/agenda',      nombre: 'Agenda',         detalle: 'todo lo que tiene fecha' },
-      { href: '/admin',       nombre: 'Administración', detalle: 'carga y cobranza' },
-      { href: '/mi-posicion', nombre: 'Mi posición',    detalle: 'lo que me toca cobrar' },
-    ],
-  },
-  {
-    grupo: 'Sistema',
-    items: [
-      { href: '/equipo', nombre: 'Usuarios y roles', detalle: 'quién es quién y qué ve cada uno' },
-      { href: '/etapas', nombre: 'Etapas y estados', detalle: 'cómo vende la agencia' },
-    ],
-  },
-]
-
-const TODAS = NAVEGACION.flatMap((g) => g.items)
+/* La navegación sale del mapa de permisos, no de una lista fija: así
+   la pantalla y el menú no pueden discrepar sobre quién ve qué. */
 
 export default async function Shell({
   children,
@@ -72,6 +41,14 @@ export default async function Shell({
     .maybeSingle()
 
   const yo = data?.personas as unknown as { nombre: string; roles: string[] } | undefined
+  const misRoles = yo?.roles ?? []
+
+  const navegacion = GRUPOS.map((grupo) => ({
+    grupo,
+    items: Object.entries(SECCIONES)
+      .filter(([ruta, s]) => s.grupo === grupo && puedeVer(ruta, misRoles))
+      .map(([ruta, s]) => ({ href: ruta, ...s })),
+  })).filter((g) => g.items.length > 0)
   const iniciales = yo?.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('') ?? '?'
 
   const [{ data: crudos }, { data: lectura }, { data: pulso }] = await Promise.all([
@@ -118,7 +95,7 @@ export default async function Shell({
         </Link>
 
         <nav className="flex flex-1 flex-wrap gap-x-4 gap-y-3 lg:flex-col lg:flex-nowrap lg:gap-4">
-          {NAVEGACION.map((g) => (
+          {navegacion.map((g) => (
             <div key={g.grupo ?? 'raiz'} className="flex flex-col gap-0.5">
               {g.grupo && (
                 <span className="hidden px-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-gris-50 lg:block">
@@ -159,9 +136,12 @@ export default async function Shell({
             la barra lateral el desplegable quedaba apretado contra el
             borde y encima había que ir a buscarlo a un lugar raro. */}
         <div className="vidrio sticky top-0 z-(--z-fijo) flex flex-col border-b">
-          <div className="flex items-center justify-between gap-3 px-5 py-2 lg:px-10">
+          {/* Grilla y no flex: con justify-between, una vista donde
+              falta el nombre de la sección corre los controles de lugar,
+              y la barra deja de verse igual en todas las pantallas. */}
+          <div className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-2.5 lg:px-10">
             <span className="min-w-0 truncate text-base font-medium text-tinta">
-              {titulo ?? TODAS.find((i) => i.href === activo)?.nombre ?? 'Crossity'}
+              {titulo ?? SECCIONES[activo]?.nombre ?? 'Crossity'}
             </span>
 
             <span className="flex items-center gap-2.5">
@@ -169,9 +149,14 @@ export default async function Shell({
               <Tema />
               <Campanita avisos={avisos} />
 
-          {yo && (
-            <MenuUsuario nombre={yo.nombre} roles={yo.roles} iniciales={iniciales} />
-          )}
+              {yo && (
+                <MenuUsuario
+                  nombre={yo.nombre}
+                  rol={NOMBRE_ROL[rolPrincipal(misRoles) ?? ''] ?? 'sin rol'}
+                  roles={misRoles}
+                  iniciales={iniciales}
+                />
+              )}
             </span>
           </div>
 

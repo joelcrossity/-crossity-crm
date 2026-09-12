@@ -1,4 +1,6 @@
 import Shell, { Titulo } from '@/components/Shell'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import Asistente from '@/components/Asistente'
 import Charla from '@/components/Charla'
 import { createClient } from '@/lib/supabase/server'
@@ -28,6 +30,21 @@ type Op = {
 
 export default async function Pipeline() {
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/pipeline', misRoles))
+    return (
+      <Shell activo="/pipeline">
+        <SinAcceso que="El pipeline" />
+      </Shell>
+    )
   const { data: cuentas } = await supabase
     .from('v_cuenta')
     .select('id, cuenta, proyectos_totales, en_vivo')

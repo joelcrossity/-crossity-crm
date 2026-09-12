@@ -1,4 +1,6 @@
 import Shell, { Titulo } from '@/components/Shell'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import Permisos, { type Miembro, type Permiso } from '@/components/Permisos'
 import { type Permiso as PermisoGeneral } from '@/components/Persona'
 import Accesos from '@/components/Accesos'
@@ -7,6 +9,21 @@ import { createClient } from '@/lib/supabase/server'
 
 export default async function Equipo() {
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/equipo', misRoles))
+    return (
+      <Shell activo="/equipo">
+        <SinAcceso que="Usuarios y roles" />
+      </Shell>
+    )
 
   const { data: { user } } = await supabase.auth.getUser()
   const { data: cuenta } = await supabase

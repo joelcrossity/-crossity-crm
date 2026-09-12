@@ -1,9 +1,26 @@
 import Shell, { Titulo } from '@/components/Shell'
+import SinAcceso from '@/components/SinAcceso'
+import { puedeVer } from '@/lib/permisos'
 import Etapas, { type Etapa, type Estado } from '@/components/Etapas'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Configuracion() {
   const supabase = await createClient()
+
+  const { data: { user: quien } } = await supabase.auth.getUser()
+  const { data: miFicha } = await supabase
+    .from('usuarios')
+    .select('personas(roles)')
+    .eq('id', quien?.id ?? '')
+    .maybeSingle()
+  const misRoles = (miFicha?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
+
+  if (!puedeVer('/etapas', misRoles))
+    return (
+      <Shell activo="/etapas">
+        <SinAcceso que="Etapas y estados" />
+      </Shell>
+    )
 
   const { data: { user } } = await supabase.auth.getUser()
   const { data: cuenta } = await supabase
