@@ -31,6 +31,7 @@ export type Miembro = {
   participa_en: number
   permisos_dados: number
   telefono: string | null
+  puede_entrar: boolean
 }
 
 export type Permiso = {
@@ -198,7 +199,11 @@ export default function Permisos({
                   </span>
                   <span className="cifra block truncate text-2xs text-gris-50">
                     {m.email ?? 'sin correo'}
-                    {m.tiene_cuenta ? ' · entra al sistema' : ' · sin cuenta, igual cobra'}
+                    {m.tiene_cuenta
+                      ? m.puede_entrar
+                        ? ' · entra al sistema'
+                        : ' · acceso apagado'
+                      : ' · sin cuenta, igual cobra'}
                     {m.en_equipos > 0 && ` · en ${m.en_equipos} equipos`}
                   </span>
                 </span>
@@ -232,6 +237,7 @@ export default function Permisos({
                   activa={m.activa}
                   esExterna={m.es_externa}
                   tieneCuenta={m.tiene_cuenta}
+                  puedeEntrar={m.puede_entrar}
                   roles={m.roles}
                   permisos={generales.filter((g) => g.persona_id === m.id)}
                   puedeEditar={puedeConfigurar}

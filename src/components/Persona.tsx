@@ -6,6 +6,7 @@ import Invitar from '@/components/Invitar'
 import BajaPersona from '@/components/BajaPersona'
 import {
   ajustarPermiso,
+  cambiarAcceso,
   cambiarRoles,
   guardarPersona,
   soltarPermiso,
@@ -57,6 +58,7 @@ export default function Persona({
   activa,
   esExterna,
   tieneCuenta,
+  puedeEntrar,
   roles,
   permisos,
   puedeEditar,
@@ -71,6 +73,7 @@ export default function Persona({
   activa: boolean
   esExterna: boolean
   tieneCuenta: boolean
+  puedeEntrar: boolean
   roles: string[]
   permisos: Permiso[]
   puedeEditar: boolean
@@ -192,11 +195,43 @@ export default function Persona({
 
       <div className="flex flex-col gap-1.5 border-t border-azul pt-4">
         <span className={rotulo}>Acceso al sistema</span>
-        <span className="text-2xs text-gris-50">
-          {tieneCuenta
-            ? 'Ya tiene cuenta y puede entrar.'
-            : 'Todavía no puede entrar. El enlace la deja poner su propia contraseña.'}
-        </span>
+
+        {tieneCuenta ? (
+          <span className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={puedeEntrar}
+              aria-label="Puede entrar al sistema"
+              disabled={!puedeEditar || pendiente}
+              onClick={() => correr(() => cambiarAcceso(id, !puedeEntrar))}
+              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200
+                          disabled:opacity-50 ${puedeEntrar ? 'bg-verde' : 'bg-linea-fuerte'}`}
+            >
+              <span
+                className={`absolute top-0.5 size-5 rounded-full bg-white transition-[left]
+                            duration-200 ease-(--ease-salida) ${
+                              puedeEntrar ? 'left-[1.375rem]' : 'left-0.5'
+                            }`}
+                aria-hidden
+              />
+            </button>
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-tinta">
+                {puedeEntrar ? 'Puede entrar' : 'No puede entrar'}
+              </span>
+              <span className="block text-2xs text-gris-50">
+                {puedeEntrar
+                  ? 'Apagarlo no borra nada ni toca su contraseña: la cuenta sigue ahí.'
+                  : 'Su cuenta existe pero está apagada. Se prende de nuevo cuando quieras.'}
+              </span>
+            </span>
+          </span>
+        ) : (
+          <span className="text-2xs text-gris-50">
+            Todavía no tiene cuenta. El enlace la deja poner su propia contraseña.
+          </span>
+        )}
         {puedeEditar && (
           <span className="mt-1">
             <Invitar

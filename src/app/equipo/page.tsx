@@ -1,6 +1,8 @@
 import Shell, { Titulo } from '@/components/Shell'
 import Permisos, { type Miembro, type Permiso } from '@/components/Permisos'
 import { type Permiso as PermisoGeneral } from '@/components/Persona'
+import Accesos from '@/components/Accesos'
+import Pestanas from '@/components/Pestanas'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Equipo() {
@@ -51,22 +53,45 @@ export default async function Equipo() {
         {sinCuenta > 0 && `, ${sinCuenta} sin cuenta`}
       </Titulo>
 
-      {sinCuenta > 0 && (
-        <p className="surge mb-6 rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
-          Hay <span className="font-medium text-tinta">{sinCuenta}</span> sin cuenta en el sistema.
-          No es un problema: participar y cobrar no exige entrar. Las cuentas se crean en Supabase
-          con el mismo correo y se enlazan solas.
-        </p>
-      )}
+      <Pestanas
+        solapas={[
+          {
+            clave: 'gente',
+            texto: 'Personas y permisos',
+            contenido: (
+              <div className="flex flex-col gap-6">
+                {sinCuenta > 0 && (
+                  <p className="rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
+                    Hay <span className="font-medium text-tinta">{sinCuenta}</span> sin cuenta. No
+                    siempre es un problema: participar y cobrar no exige entrar. Para las que sí
+                    tienen que entrar, el enlace se genera en su ficha.
+                  </p>
+                )}
 
-      <Permisos
-        equipo={gente}
-        permisos={(permisos ?? []) as Permiso[]}
-        generales={(generales ?? []) as unknown as (PermisoGeneral & { persona_id: string })[]}
-        proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
-        puedeConfigurar={puedeConfigurar}
-        esDireccion={esDireccion}
-        yoSoy={(cuenta?.persona_id as string) ?? null}
+                <Permisos
+                  equipo={gente}
+                  permisos={(permisos ?? []) as Permiso[]}
+                  generales={(generales ?? []) as unknown as (PermisoGeneral & { persona_id: string })[]}
+                  proyectos={(proyectos ?? []) as { id: string; nombre: string; codigo: string }[]}
+                  puedeConfigurar={puedeConfigurar}
+                  esDireccion={esDireccion}
+                  yoSoy={(cuenta?.persona_id as string) ?? null}
+                />
+              </div>
+            ),
+          },
+          {
+            clave: 'accesos',
+            texto: 'Accesos',
+            señal: sinCuenta,
+            contenido: (
+              <Accesos
+                personas={gente.map((g) => ({ id: g.id, nombre: g.nombre }))}
+                yoSoy={user?.id ?? null}
+              />
+            ),
+          },
+        ]}
       />
 
     </Shell>

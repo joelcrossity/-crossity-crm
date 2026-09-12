@@ -1837,3 +1837,129 @@ export async function borrarPersona(personaId: string): Promise<Resultado> {
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Los accesos.
+
+   Hay dos padrones: las cuentas de Supabase, que solo sirven para
+   entrar, y las personas del CRM, que son quienes participan y cobran.
+   Se vinculan por correo y eso falla calladito cuando el orden no es el
+   esperado o cuando una letra del correo no coincide. El resultado es
+   alguien que entra y no ve nada, sin ningún lugar donde enterarse.
+
+   Esto es ese lugar.
+   ------------------------------------------------------------------ */
+
+export type Cuenta = {
+  id: string
+  email: string
+  creada: string
+  confirmada: boolean
+  ultimoIngreso: string | null
+  persona: { id: string; nombre: string } | null
+}
+
+export type Accesos =
+  | { ok: true; cuentas: Cuenta[]; sinCuenta: { id: string; nombre: string; email: string }[] }
+  | { ok: false; error: string }
+
+export async function revisarAccesos(): Promise<Accesos> {
+  const noPuede = await soyQuienPuede()
+  if (noPuede) return { ok: false, error: noPuede }
+
+  let admin
+  try {
+    admin = (await import('@/lib/supabase/admin')).clienteAdmin()
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Falta la clave de servicio.' }
+  }
+
+  const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  const supabase = await createClient()
+  const [{ data: vinculos }, { data: personas }] = await Promise.all([
+    supabase.from('usuarios').select('id, personas(id, nombre)'),
+    supabase.from('personas').select('id, nombre, email').eq('activa', true).order('nombre'),
+  ])
+
+  const porCuenta = new Map(
+    ((vinculos ?? []) as Record<string, unknown>[]).map((v) => [
+      v.id as string,
+      v.personas as unknown as { id: string; nombre: string } | null,
+    ]),
+  )
+
+  const cuentas: Cuenta[] = data.users.map((u) => ({
+    id: u.id,
+    email: u.email ?? '(sin correo)',
+    creada: u.created_at,
+    confirmada: !!u.email_confirmed_at,
+    ultimoIngreso: u.last_sign_in_at ?? null,
+    persona: porCuenta.get(u.id) ?? null,
+  }))
+
+  const conCuenta = new Set([...porCuenta.values()].filter(Boolean).map((p) => p!.id))
+  const sinCuenta = ((personas ?? []) as { id: string; nombre: string; email: string | null }[])
+    .filter((p) => !conCuenta.has(p.id))
+    .map((p) => ({ id: p.id, nombre: p.nombre, email: p.email ?? '' }))
+
+  return { ok: true, cuentas, sinCuenta }
+}
+
+export async function vincularCuenta(usuarioId: string, personaId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('vincular_cuenta', {
+    p_usuario: usuarioId,
+    p_persona: personaId,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function repararVinculos(): Promise<Resultado> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('reparar_vinculos')
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  const cuantos = typeof data === 'number' ? data : 0
+  return cuantos > 0
+    ? { ok: true }
+    : { ok: false, error: 'No había ninguna cuenta suelta que coincidiera por correo.' }
+}
+
+export async function borrarCuentaSuelta(usuarioId: string): Promise<Resultado> {
+  const noPuede = await soyQuienPuede()
+  if (noPuede) return { ok: false, error: noPuede }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user?.id === usuarioId) return { ok: false, error: 'Esa es tu propia cuenta.' }
+
+  const { data: vinculada } = await supabase.from('usuarios').select('id').eq('id', usuarioId).maybeSingle()
+  if (vinculada)
+    return { ok: false, error: 'Esa cuenta está vinculada a una persona. Quitale el acceso desde su ficha.' }
+
+  try {
+    const admin = (await import('@/lib/supabase/admin')).clienteAdmin()
+    const { error } = await admin.auth.admin.deleteUser(usuarioId)
+    if (error) return { ok: false, error: traducir(error.message) }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Falta la clave de servicio.' }
+  }
+
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function cambiarAcceso(personaId: string, activo: boolean): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('cambiar_acceso', {
+    p_persona: personaId,
+    p_activo: activo,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
