@@ -73,6 +73,16 @@ export const SECCIONES: Record<
     grupo: 'Trabajo',
   },
 
+  '/archivados': {
+    /* Todos entran: cada uno ve solo su propio historial, igual que en
+       el tablero. Cerrarlo por rol escondería a alguien su propio
+       trabajo pasado, que es justo lo que un historial no debe hacer. */
+    ve: 'todos',
+    nombre: 'Historial',
+    detalle: 'lo archivado, con su cierre',
+    grupo: 'Trabajo',
+  },
+
   '/agenda': { ve: 'todos', nombre: 'Agenda', detalle: 'todo lo que tiene fecha', grupo: 'Financiero' },
   '/admin': {
     ve: ['direccion', 'administracion'],

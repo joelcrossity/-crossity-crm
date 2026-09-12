@@ -18,6 +18,7 @@ import AbrirMantenimiento from '@/components/Mantenimiento'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
+import Archivar from '@/components/Archivar'
 import AsignarCliente from '@/components/AsignarCliente'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Plata from '@/components/Plata'
@@ -58,7 +59,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       es_producto_propio, monto_mensual, vigencia_desde, vigencia_hasta, responsable_id,
       origen_id, carpeta_url, modalidad, unidad_consumo, precio_unitario, incluido_en_base,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
-      servicio_id,
+      servicio_id, archivado_at,
       organizaciones ( codigo, nombre_canonico, es_provisoria )
     `)
     .eq('codigo', codigo)
@@ -220,6 +221,20 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       </header>
 
       <div className="flex flex-col gap-9">
+        {p.archivado_at && (
+          <p className="surge tarjeta flex flex-wrap items-center justify-between gap-3 px-4 py-3
+                        text-sm text-gris">
+            <span>
+              Está archivado desde el{' '}
+              <span className="cifra text-tinta">{fechaCorta(p.archivado_at.slice(0, 10))}</span>: no
+              aparece en las listas del día, pero sigue entero.
+            </span>
+            <Link href="/archivados" className="shrink-0 text-2xs text-azul-hondo">
+              Ver el historial →
+            </Link>
+          </p>
+        )}
+
         {cliente.es_provisoria && (
           <AsignarCliente
             proyectoId={p.id}
@@ -698,7 +713,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     duenoTabla="proyectos"
                     duenoId={p.id}
                   />
-                  <div className="border-t border-linea pt-6">
+                  <div className="flex flex-col gap-5 border-t border-linea pt-6">
+                    <Archivar
+                      proyectoId={p.id}
+                      archivado={!!p.archivado_at}
+                      sugerido={p.color === 'naranja' || p.color === 'rojo'}
+                    />
                     <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />
                   </div>
                 </div>

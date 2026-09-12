@@ -54,6 +54,13 @@ export const ICONOS: Record<string, React.ReactNode> = {
       <path d="M11 3.5a2.3 2.3 0 0 1 0 4.4M12.2 9.9c1.2.5 1.9 1.6 1.9 3.1" />
     </svg>
   ),
+  // Historial: una caja cerrada
+  '/archivados': (
+    <svg {...base}>
+      <path d="M1.9 5.4h12.2v7.2a1.4 1.4 0 0 1-1.4 1.4H3.3a1.4 1.4 0 0 1-1.4-1.4V5.4Z" />
+      <path d="M1.4 2.8h13.2v2.6H1.4zM6.3 8.4h3.4" />
+    </svg>
+  ),
   // Agenda: un calendario
   '/agenda': (
     <svg {...base}>

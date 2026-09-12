@@ -1963,3 +1963,38 @@ export async function cambiarAcceso(personaId: string, activo: boolean): Promise
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
+/* ------------------------------------------------------------------
+   Archivar.
+
+   Archivar no es un estado: el estado dice cómo cerró algo, el
+   archivado dice si sigue en el escritorio. Son independientes y por
+   eso viven separados.
+   ------------------------------------------------------------------ */
+
+export async function archivarProyecto(proyectoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('archivar', { p_proyecto: proyectoId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function desarchivarProyecto(proyectoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('desarchivar', { p_proyecto: proyectoId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function archivarLoCerrado(): Promise<Resultado> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('archivar_lo_cerrado')
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  const cuantos = typeof data === 'number' ? data : 0
+  return cuantos > 0
+    ? { ok: true }
+    : { ok: false, error: 'No había nada cerrado hace más de un mes.' }
+}
