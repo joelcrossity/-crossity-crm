@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { borrarCheque, cambiarEstadoCheque, registrarCheque } from '@/app/acciones'
 import { plata, fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Cheques.
@@ -77,16 +78,12 @@ export default function Cheques({
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Cheques</h2>
-          <p className="max-w-[65ch] text-sm text-gris">
-            Plata que existe y todavía no está. Cada uno entra en la agenda el día que se cobra.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+    <Seccion
+      titulo="Cheques"
+      cuantos={visibles.length}
+      ayuda="Plata que existe y todavía no está. Cada uno entra en la agenda el día que se cobra."
+      acciones={
+        <>
           <button
             type="button"
             onClick={() => setSoloAbiertos((v) => !v)}
@@ -95,17 +92,13 @@ export default function Cheques({
             {soloAbiertos ? 'Ver todos' : 'Solo los abiertos'}
           </button>
           {!abierto && (
-            <button
-              type="button"
-              onClick={() => setAbierto(true)}
-              className="rounded-md bg-azul-hondo px-3 py-1.5 text-sm font-medium text-white
-                         transition-colors duration-150 hover:bg-azul"
-            >
+            <button type="button" onClick={() => setAbierto(true)} className="boton boton-principal">
               Registrar cheque
             </button>
           )}
-        </div>
-      </div>
+        </>
+      }
+    >
 
       {abierto && (
         <form
@@ -220,6 +213,6 @@ export default function Cheques({
           ))}
         </ul>
       )}
-    </section>
+    </Seccion>
   )
 }

@@ -9,6 +9,7 @@ import {
   sumarDocumento,
 } from '@/app/acciones'
 import { fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Documentación.
@@ -87,33 +88,29 @@ export default function Documentos({
   ).length
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Documentación</h2>
-          <p className="max-w-[65ch] text-sm text-gris">
-            Se guarda el link, no una copia: el archivo sigue viviendo en Drive y se edita ahí. Lo
-            que se anota acá es qué se mandó y cuándo.
-            {sinEnviar > 0 && (
-              <span className="font-medium text-amarillo">
-                {' '}
-                {sinEnviar} armado{sinEnviar > 1 ? 's' : ''} y sin mandar.
-              </span>
-            )}
-          </p>
-        </div>
-
-        {!abierto && (
-          <button
-            type="button"
-            onClick={() => setAbierto(true)}
-            className="boton boton-secundario shrink-0"
-          >
+    <Seccion
+      titulo="Documentación"
+      cuantos={documentos.length}
+      ayuda={
+        <>
+          Se guarda el link, no una copia: el archivo sigue viviendo en Drive y se edita ahí. Lo que
+          se anota acá es qué se mandó y cuándo.
+          {sinEnviar > 0 && (
+            <span className="font-medium text-amarillo">
+              {' '}
+              {sinEnviar} armado{sinEnviar > 1 ? 's' : ''} y sin mandar.
+            </span>
+          )}
+        </>
+      }
+      acciones={
+        !abierto ? (
+          <button type="button" onClick={() => setAbierto(true)} className="boton boton-secundario boton-chico">
             Sumar documento
           </button>
-        )}
-      </div>
-
+        ) : null
+      }
+    >
       {/* La carpeta canónica: "andá acá y está todo", que es lo que uno
           quiere el noventa por ciento de las veces. */}
       <label className="flex flex-col gap-0.5">
@@ -256,6 +253,6 @@ export default function Documentos({
           ))}
         </ul>
       )}
-    </section>
+    </Seccion>
   )
 }

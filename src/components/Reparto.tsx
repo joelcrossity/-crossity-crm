@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { guardarReparto, quitarReparto } from '@/app/acciones'
 import { plata } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Cómo se reparte la plata de este trabajo.
@@ -83,25 +84,18 @@ export default function Reparto({
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Cómo se reparte</h2>
-          <p className="max-w-[70ch] text-sm text-gris">
-            El porcentaje se aplica sobre lo que queda después de gastos e impuestos, no sobre el
-            precio al cliente. De acá salen las liquidaciones de cada uno.
-          </p>
-        </div>
-        {puedeEditar && !abierto && (
-          <button
-            type="button"
-            onClick={() => setAbierto(true)}
-            className="boton boton-secundario shrink-0"
-          >
+    <Seccion
+      titulo="Cómo se reparte"
+      cuantos={partes.length}
+      ayuda="El porcentaje se aplica sobre lo que queda después de gastos e impuestos, no sobre el precio al cliente. De acá salen las liquidaciones de cada uno."
+      acciones={
+        puedeEditar && !abierto ? (
+          <button type="button" onClick={() => setAbierto(true)} className="boton boton-secundario">
             Sumar una parte
           </button>
-        )}
-      </div>
+        ) : null
+      }
+    >
 
       {error && <p className="text-sm font-medium text-rojo">{error}</p>}
 
@@ -260,6 +254,6 @@ export default function Reparto({
           </p>
         </>
       )}
-    </section>
+    </Seccion>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { anotarGasto, anotarImpuesto, borrarDescuento } from '@/app/acciones'
 import { plata, fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Lo que se va antes de repartir.
@@ -92,27 +93,23 @@ export default function Descuentos({
   const base = hito ? (hitos.find((h) => h.id === hito)?.monto ?? 0) : bruto
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Qué se descuenta antes de repartir</h2>
-          <p className="max-w-[70ch] text-sm text-gris">
-            Retenciones, impuesto al cheque, comisiones y gastos del proyecto. Todo esto se resta
-            del total antes de calcular la parte de cada uno.
-          </p>
-        </div>
-        {puedeEditar && !abierto && (
-          <span className="flex shrink-0 gap-1.5">
+    <Seccion
+      titulo="Qué se descuenta antes de repartir"
+      cuantos={descuentos.length}
+      ayuda="Retenciones, impuesto al cheque, comisiones y gastos del proyecto. Todo esto se resta del total antes de calcular la parte de cada uno."
+      acciones={
+        puedeEditar && !abierto ? (
+          <>
             <button type="button" onClick={() => setAbierto('impuesto')} className="boton boton-secundario boton-chico">
               Retención o impuesto
             </button>
             <button type="button" onClick={() => setAbierto('gasto')} className="boton boton-secundario boton-chico">
               Gasto
             </button>
-          </span>
-        )}
-      </div>
-
+          </>
+        ) : null
+      }
+    >
       {error && <p className="text-sm font-medium text-rojo">{error}</p>}
 
       {abierto === 'impuesto' && (
@@ -312,6 +309,6 @@ export default function Descuentos({
           </div>
         </>
       )}
-    </section>
+    </Seccion>
   )
 }

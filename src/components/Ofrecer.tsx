@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { anotarParaOfrecer, descartarNota, ofrecerServicio } from '@/app/acciones'
 import { fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Qué más le podemos ofrecer.
@@ -75,27 +76,18 @@ export default function Ofrecer({
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Qué más le podemos ofrecer</h2>
-          <p className="max-w-[65ch] text-sm text-gris">
-            Lo de arriba sale solo de lo que ya le entregamos. Lo de abajo es lo que anotaste vos.
-            Ofrecer algo abre una oportunidad en el pipeline, no otra lista.
-          </p>
-        </div>
-        {!abierto && (
-          <button
-            type="button"
-            onClick={() => setAbierto(true)}
-            className="boton boton-secundario shrink-0"
-          >
+    <Seccion
+      titulo="Qué más le podemos ofrecer"
+      ayuda="Lo de arriba sale solo de lo que ya le entregamos. Lo de abajo es lo que anotaste vos. Ofrecer algo abre una oportunidad en el pipeline, no otra lista."
+      acciones={
+        !abierto ? (
+          <button type="button" onClick={() => setAbierto(true)} className="boton boton-secundario boton-chico">
             Anotar una idea
           </button>
-        )}
-      </div>
-
-      {error && <p className="text-sm text-rojo">{error}</p>}
+        ) : null
+      }
+    >
+      {error && <p className="text-sm font-medium text-rojo">{error}</p>}
 
       {abierto && (
         <div className="surge flex flex-wrap items-end gap-2 rounded-lg border border-azul bg-azul-aire p-3">
@@ -255,6 +247,6 @@ export default function Ofrecer({
           a sus proyectos terminados y aparecen solas.
         </p>
       )}
-    </section>
+    </Seccion>
   )
 }

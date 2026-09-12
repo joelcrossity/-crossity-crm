@@ -9,6 +9,7 @@ import {
   type Cuenta,
 } from '@/app/acciones'
 import { fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Quién puede entrar, y si su cuenta encontró su ficha.
@@ -70,18 +71,22 @@ export default function Accesos({
   const unidas = datos?.cuentas.filter((c) => c.persona) ?? []
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-[70ch] text-sm text-gris">
+    <Seccion
+      titulo="Cuentas y fichas"
+      ayuda={
+        <>
           Hay dos padrones: las <span className="font-medium text-tinta">cuentas</span>, que solo
           sirven para entrar, y las <span className="font-medium text-tinta">personas</span>, que son
           quienes participan y cobran. Se vinculan por correo. Cuando eso falla, alguien entra y no
           ve nada — y acá se ve por qué.
-        </p>
-        <button type="button" disabled={pendiente} onClick={revisar} className="boton boton-secundario shrink-0">
+        </>
+      }
+      acciones={
+        <button type="button" disabled={pendiente} onClick={revisar} className="boton boton-secundario">
           {pendiente ? 'Mirando…' : datos ? 'Volver a mirar' : 'Revisar los accesos'}
         </button>
-      </div>
+      }
+    >
 
       {error && (
         <p className="surge rounded-md border border-rojo bg-rojo-aire px-3 py-2 text-sm text-rojo">
@@ -233,6 +238,6 @@ export default function Accesos({
           </div>
         </>
       )}
-    </section>
+    </Seccion>
   )
 }
