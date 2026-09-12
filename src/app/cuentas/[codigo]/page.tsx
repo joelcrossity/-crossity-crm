@@ -1,32 +1,24 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
 import Documentos, { type Documento } from '@/components/Documentos'
+import Pestanas from '@/components/Pestanas'
+import ProyectosDelCliente, {
+  type Proyecto,
+  type Avance,
+  type Archivado,
+} from '@/components/ProyectosDelCliente'
+import Interacciones, { type Interaccion } from '@/components/Interacciones'
+import { Cifra } from '@/components/Grafico'
+import { Chip } from '@/components/ui'
 import Calendario, { type Evento } from '@/components/Calendario'
 import Ofrecer, { type Sugerencia, type Nota } from '@/components/Ofrecer'
 import CuentaCorriente, { type Saldo, type Movimiento } from '@/components/CuentaCorriente'
-import { Marco, Barras, Cifra } from '@/components/Grafico'
 import { AliasCliente, DatoCliente, Lista } from '@/components/FichaCliente'
 import { createClient } from '@/lib/supabase/server'
-import { plata, fechaCorta, SUBESTADO } from '@/lib/estados'
+import { plata } from '@/lib/estados'
 
-const PUNTO: Record<string, string> = {
-  verde: 'bg-verde',
-  amarillo: 'bg-amarillo',
-  gris: 'bg-gris-50',
-  naranja: 'bg-naranja',
-  rojo: 'bg-rojo',
-}
 
-const GRUPO: Record<string, string> = {
-  verde: 'En vivo',
-  amarillo: 'A seguir',
-  gris: 'Standby',
-  naranja: 'Terminados',
-  rojo: 'Perdidos',
-}
 
-const ORDEN = ['verde', 'amarillo', 'gris', 'naranja', 'rojo']
 
 export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
   const { codigo } = await props.params
@@ -42,6 +34,9 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
 
   const [
     { data: proyectos },
+    { data: avances },
+    { data: interacciones },
+    { data: archivados },
     { data: razones },
     { data: marcas },
     { data: contactos },
@@ -61,6 +56,14 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         )
         .eq('organizacion_id', org.id)
         .order('color'),
+      supabase.from('v_avance').select('*').eq('organizacion_id', org.id),
+      supabase
+        .from('v_interacciones')
+        .select('*')
+        .eq('organizacion_id', org.id)
+        .order('ocurrido_at', { ascending: false })
+        .limit(40),
+      supabase.from('v_archivados').select('*').eq('cliente_codigo', org.codigo),
       supabase
         .from('razones_sociales')
         .select('id, razon_social, cuit, es_principal')
@@ -118,238 +121,206 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
   const regalado = bonificados.reduce((s, p) => s + (p.monto_neto ?? 0), 0)
   const mensual = abonos.reduce((s, p) => s + (p.monto_mensual ?? 0), 0)
 
-  const porProyecto = ps
-    .filter((p) => (p.monto_neto ?? 0) > 0 && p.moneda === 'ARS')
-    .map((p) => ({ nombre: p.nombre, valor: p.monto_neto ?? 0 }))
-    .sort((a, b) => b.valor - a.valor)
+  const principal = ((contactos ?? []) as { nombre: string; rol: string | null; email: string | null; telefono: string | null }[])[0]
+  const ejecutivo = ps.find((x) => x.personas?.nombre)?.personas?.nombre
 
   return (
-    <Shell activo="/cuentas">
+    <Shell activo="/cuentas" titulo={org.nombre_canonico}>
       <Rastro pasos={[{ texto: 'Clientes', href: '/cuentas' }, { texto: org.nombre_canonico }]} />
-      <header className="mb-7 flex flex-col gap-3 border-b border-linea pb-5">
-        <span className="cifra text-2xs text-gris-50">{org.codigo}</span>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">{org.nombre_canonico}</h1>
 
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <DatoCliente id={org.id} campo="nombre_canonico" etiqueta="Nombre" valor={org.nombre_canonico} />
-          <DatoCliente id={org.id} campo="cuit" etiqueta="CUIT" valor={org.cuit} marcador="30-…" ancho="w-40" />
-          <DatoCliente
-            id={org.id}
-            campo="notas"
-            etiqueta="Notas"
-            valor={org.notas}
-            marcador="Cómo llegó, con quién hablar…"
-            ancho="w-72"
-          />
+      <header className="mb-7 flex flex-wrap items-start justify-between gap-x-6 gap-y-4
+                         border-b border-linea pb-6">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span className="cifra text-2xs text-gris-50">{org.codigo}</span>
+          <h1 className="text-2xl font-bold tracking-tight text-balance">{org.nombre_canonico}</h1>
+
+          <span className="flex flex-wrap items-center gap-2">
+            {vivos.length > 0 && <Chip tono="verde">{vivos.length} en vivo</Chip>}
+            {abonos.length > 0 && <Chip tono="azul">{abonos.length} con abono</Chip>}
+            {bonificados.length > 0 && <Chip>{bonificados.length} bonificado</Chip>}
+            {(razones ?? []).length > 1 && (
+              <Chip tono="amarillo">{(razones ?? []).length} razones sociales</Chip>
+            )}
+          </span>
+
+          {/* Los datos que uno busca justo antes de llamar, sin entrar a
+              ninguna pestaña. */}
+          <span className="flex flex-wrap gap-x-5 gap-y-1 pt-1 text-2xs text-gris-50">
+            {principal && (
+              <span className="text-gris">
+                {principal.nombre}
+                {principal.rol && ` · ${principal.rol}`}
+              </span>
+            )}
+            {principal?.telefono && <span className="cifra">{principal.telefono}</span>}
+            {principal?.email && <span className="cifra">{principal.email}</span>}
+            {ejecutivo && <span>a cargo: {ejecutivo}</span>}
+          </span>
         </div>
-        <AliasCliente id={org.id} alias={org.alias ?? []} />
+
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <span className="cifra text-2xl font-bold text-tinta">{plata(facturable)}</span>
+          <span className="text-2xs text-gris-50">facturable en toda la relación</span>
+        </div>
       </header>
 
-      <div className="flex flex-col gap-9">
-        <section className="grid gap-6 sm:grid-cols-4">
-          <Cifra valor={String(ps.length)} titulo="proyectos" nota="en toda la relación" />
-          <Cifra
-            valor={String(vivos.length)}
-            titulo="en vivo"
-            nota="se está trabajando ahora"
-            tono={vivos.length > 0 ? 'verde' : 'tinta'}
-          />
-          <Cifra
-            valor={plata(facturable)}
-            titulo="facturable"
-            nota="sin contar lo perdido ni lo bonificado"
-          />
-          <Cifra
-            valor={mensual > 0 ? plata(mensual) : '—'}
-            titulo="por mes"
-            nota={abonos.length > 0 ? `${abonos.length} abono${abonos.length > 1 ? 's' : ''} vigente${abonos.length > 1 ? 's' : ''}` : 'sin mantenimiento'}
-            tono={mensual > 0 ? 'verde' : 'tinta'}
-          />
-        </section>
+      <Pestanas
+        solapas={[
+          {
+            clave: 'proyectos',
+            texto: 'Proyectos',
+            señal: vivos.length,
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <section className="escalona grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <Cifra valor={String(ps.length)} titulo="proyectos" nota="en toda la relación" />
+                  <Cifra
+                    valor={plata(mensual)}
+                    titulo="por mes"
+                    nota={abonos.length > 0 ? `${abonos.length} abonos vigentes` : 'sin abonos'}
+                    tono={mensual > 0 ? 'verde' : 'tinta'}
+                  />
+                  <Cifra
+                    valor={plata(regalado)}
+                    titulo="bonificado"
+                    nota="lo que se regaló"
+                    tono={regalado > 0 ? 'amarillo' : 'tinta'}
+                  />
+                  <Cifra
+                    valor={String((archivados ?? []).length)}
+                    titulo="archivados"
+                    nota="fuera del escritorio"
+                  />
+                </section>
 
-        {regalado > 0 && (
-          <p className="rounded-lg border border-linea bg-panel px-3.5 py-2.5 text-sm text-gris">
-            <span className="font-bold text-tinta">{plata(regalado)} bonificados</span> en{' '}
-            {bonificados.length} {bonificados.length === 1 ? 'proyecto' : 'proyectos'}. Aislado es
-            una pérdida; dentro de la cuenta es el costo de haber ganado el resto.
-          </p>
-        )}
-
-        <section className="flex flex-col gap-6">
-          {ORDEN.map((color) => {
-            const delGrupo = ps.filter((p) => p.color === color)
-            if (delGrupo.length === 0) return null
-
-            return (
-              <div key={color} className="flex flex-col gap-2">
-                <div className="flex items-baseline gap-2.5">
-                  <span className={`size-2 shrink-0 rounded-full ${PUNTO[color]}`} aria-hidden />
-                  <h2 className="text-md font-bold tracking-tight">{GRUPO[color]}</h2>
-                  <span className="cifra text-2xs text-gris-50">{delGrupo.length}</span>
+                <ProyectosDelCliente
+                  proyectos={ps as unknown as Proyecto[]}
+                  avances={(avances ?? []) as Avance[]}
+                  archivados={(archivados ?? []) as unknown as Archivado[]}
+                />
+              </div>
+            ),
+          },
+          {
+            clave: 'plata',
+            texto: 'Cuenta corriente',
+            contenido: (
+              <CuentaCorriente
+                saldos={(saldos ?? []) as Saldo[]}
+                movimientos={(movimientos ?? []) as Movimiento[]}
+              />
+            ),
+          },
+          {
+            clave: 'calendario',
+            texto: 'Calendario',
+            contenido:
+              ((agenda ?? []) as Evento[]).length === 0 ? (
+                <p className="tarjeta px-4 py-8 text-center text-sm text-gris">
+                  No hay nada con fecha para esta cuenta.
+                </p>
+              ) : (
+                <Calendario eventos={(agenda ?? []) as Evento[]} hoy={(hoyRow as string) ?? ''} />
+              ),
+          },
+          {
+            clave: 'historia',
+            texto: 'Historia',
+            señal: (interacciones ?? []).length,
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <Interacciones filas={(interacciones ?? []) as unknown as Interaccion[]} />
+              </div>
+            ),
+          },
+          {
+            clave: 'ofrecer',
+            texto: 'Qué ofrecerle',
+            contenido: (
+              <Ofrecer
+                organizacionId={org.id}
+                sugerencias={(sugerencias ?? []) as Sugerencia[]}
+                notas={(notas ?? []) as unknown as Nota[]}
+                servicios={(servicios ?? []) as { id: string; nombre: string }[]}
+              />
+            ),
+          },
+          {
+            clave: 'datos',
+            texto: 'Datos y papeles',
+            contenido: (
+              <div className="flex flex-col gap-9">
+                <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+                  <DatoCliente
+                    id={org.id}
+                    campo="nombre_canonico"
+                    etiqueta="Nombre"
+                    valor={org.nombre_canonico}
+                  />
+                  <DatoCliente
+                    id={org.id}
+                    campo="cuit"
+                    etiqueta="CUIT"
+                    valor={org.cuit}
+                    marcador="30-…"
+                    ancho="w-40"
+                  />
                 </div>
 
-                <ul className="divide-y divide-linea overflow-hidden tarjeta">
-                  {delGrupo.map((p) => (
-                    <li key={p.id}>
-                      <Link
-                        href={`/proyecto/${p.codigo}`}
-                        className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1
-                                   px-3.5 py-2.5 transition-colors duration-150 hover:bg-panel"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-baseline gap-2">
-                            <span className="text-base font-medium text-tinta">{p.nombre}</span>
-                            {p.tipo === 'mantenimiento' && (
-                              <span className="rounded px-1 py-px text-2xs text-azul-hondo ring-1 ring-azul/40">
-                                abono
-                              </span>
-                            )}
-                            {p.condicion === 'bonificado' && (
-                              <span className="rounded px-1 py-px text-2xs text-amarillo ring-1 ring-amarillo/40">
-                                bonificado
-                              </span>
-                            )}
-                          </span>
-                          <span className="cifra block text-2xs text-gris-50">
-                            {p.codigo}
-                            {p.personas?.nombre ? ` · ${p.personas.nombre}` : ''}
-                            {p.etapa ? ` · ${p.etapa.replace(/_/g, ' ')}` : ''}
-                            {SUBESTADO[p.subestado ?? p.motivo_gris ?? '']
-                              ? ` · ${SUBESTADO[p.subestado ?? p.motivo_gris ?? '']}`
-                              : ''}
-                          </span>
-                        </span>
-                        <span className="cifra shrink-0 text-right text-sm">
-                          <span className="block text-tinta">
-                            {p.tipo === 'mantenimiento'
-                              ? `${plata(p.monto_mensual, p.moneda)} /mes`
-                              : plata(p.monto_neto, p.moneda)}
-                          </span>
-                          <span className="block text-2xs text-gris-50">
-                            {fechaCorta(p.fecha_comprometida) ?? 'sin fecha'}
-                          </span>
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <AliasCliente id={org.id} alias={org.alias ?? []} />
+
+                <Lista
+                  titulo="Razones sociales"
+                  ayuda="Con cuál o cuáles factura. La principal es la que se usa por defecto."
+                  tabla="razones_sociales"
+                  organizacionId={org.id}
+                  tipo="razon"
+                  items={((razones ?? []) as Record<string, unknown>[]).map((r) => ({
+                    id: r.id as string,
+                    principal: r.razon_social as string,
+                    secundario: (r.cuit as string) ?? null,
+                    esPrincipal: !!r.es_principal,
+                  }))}
+                />
+
+                <Lista
+                  titulo="Marcas"
+                  ayuda="Cómo se lo conoce. Sirve para que la captura por WhatsApp sepa de quién habla."
+                  tabla="marcas"
+                  organizacionId={org.id}
+                  tipo="marca"
+                  items={((marcas ?? []) as Record<string, unknown>[]).map((m) => ({
+                    id: m.id as string,
+                    principal: m.nombre as string,
+                    esPrincipal: !!m.es_principal,
+                  }))}
+                />
+
+                <Lista
+                  titulo="Contactos"
+                  ayuda="Quién es quién del lado del cliente."
+                  tabla="contactos"
+                  organizacionId={org.id}
+                  tipo="contacto"
+                  items={((contactos ?? []) as Record<string, unknown>[]).map((c) => ({
+                    id: c.id as string,
+                    principal: c.nombre as string,
+                    secundario: [c.rol, c.email, c.telefono].filter(Boolean).join(' · ') || null,
+                  }))}
+                />
+
+                <Documentos
+                  documentos={(documentos ?? []) as Documento[]}
+                  organizacionId={org.id}
+                  carpeta={org.carpeta_url}
+                  duenoTabla="organizaciones"
+                  duenoId={org.id}
+                />
               </div>
-            )
-          })}
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <Marco
-            titulo="Peso de cada proyecto"
-            detalle="Monto en pesos, de mayor a menor"
-            hayDatos={porProyecto.length > 0}
-            vacio="Todavía no hay montos cargados en esta cuenta."
-          >
-            <Barras datos={porProyecto} serie={1} />
-          </Marco>
-
-          <div className="flex flex-col gap-7">
-            <Lista
-              titulo="Contactos"
-              ayuda="Quién decide y quién paga del otro lado."
-              organizacionId={org.id}
-              tabla="contactos"
-              tipo="contacto"
-              items={(contactos ?? []).map(
-                (c: { id: string; nombre: string; rol: string | null; email: string | null }) => ({
-                  id: c.id,
-                  principal: c.nombre,
-                  secundario: [c.rol, c.email].filter(Boolean).join(' · ') || null,
-                })
-              )}
-            />
-
-            <Lista
-              titulo="Razones sociales"
-              ayuda="A quién se le factura. Un mismo cliente puede facturar por varias empresas."
-              organizacionId={org.id}
-              tabla="razones_sociales"
-              tipo="razon"
-              items={(razones ?? []).map(
-                (r: { id: string; razon_social: string; cuit: string | null; es_principal: boolean }) => ({
-                  id: r.id,
-                  principal: r.razon_social,
-                  secundario: r.cuit,
-                  esPrincipal: r.es_principal,
-                })
-              )}
-            />
-
-            <Lista
-              titulo="Marcas"
-              ayuda="Los nombres de fantasía con los que se lo conoce."
-              organizacionId={org.id}
-              tabla="marcas"
-              tipo="marca"
-              items={(marcas ?? []).map(
-                (m: { id: string; nombre: string; es_principal: boolean }) => ({
-                  id: m.id,
-                  principal: m.nombre,
-                  esPrincipal: m.es_principal,
-                })
-              )}
-            />
-          </div>
-        </section>
-      </div>
-
-      <div className="mt-9">
-        <CuentaCorriente
-          saldos={(saldos ?? []) as Saldo[]}
-          movimientos={(movimientos ?? []) as Movimiento[]}
-        />
-      </div>
-
-      <div className="mt-9">
-        <Ofrecer
-          organizacionId={org.id}
-          sugerencias={(sugerencias ?? []) as Sugerencia[]}
-          notas={(notas ?? []) as unknown as Nota[]}
-          servicios={(servicios ?? []) as { id: string; nombre: string }[]}
-        />
-      </div>
-
-      <div className="mt-9 flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-md font-bold tracking-tight">Su calendario</h2>
-            <p className="max-w-[65ch] text-sm text-gris">
-              Lo que le tenemos que entregar y lo que nos tiene que pagar. Es la agenda general
-              recortada a esta cuenta, no una lista aparte.
-            </p>
-          </div>
-          <Link
-            href="/agenda"
-            className="shrink-0 text-2xs text-gris-50 transition-colors duration-150 hover:text-azul-hondo"
-          >
-            Ver la agenda completa →
-          </Link>
-        </div>
-
-        {((agenda ?? []) as Evento[]).length === 0 ? (
-          <p className="tarjeta px-3.5 py-3 text-sm text-gris">
-            No hay nada con fecha para esta cuenta.
-          </p>
-        ) : (
-          <Calendario eventos={(agenda ?? []) as Evento[]} hoy={(hoyRow as string) ?? ''} />
-        )}
-      </div>
-
-      <div className="mt-9">
-        <Documentos
-          documentos={(documentos ?? []) as Documento[]}
-          organizacionId={org.id}
-          carpeta={org.carpeta_url}
-          duenoTabla="organizaciones"
-          duenoId={org.id}
-        />
-      </div>
-
+            ),
+          },
+        ]}
+      />
     </Shell>
   )
 }
