@@ -72,7 +72,7 @@ export default function Abono({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-linea bg-superficie p-4">
+    <section className="flex flex-col gap-4 tarjeta p-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>Vigente desde</span>

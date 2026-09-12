@@ -51,7 +51,7 @@ export function PorFacturar({ filas }: { filas: PorFacturar[] }) {
       </div>
 
       {filas.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           Nada pendiente: todo lo entregado está facturado.
         </p>
       ) : (
@@ -136,7 +136,7 @@ export function FacturasARecibir({ filas }: { filas: PorRecibir[] }) {
       {error && <p className="text-sm text-rojo">{error}</p>}
 
       {porPersona.size === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           No hay facturas pendientes de nadie.
         </p>
       ) : (
@@ -146,7 +146,7 @@ export function FacturasARecibir({ filas }: { filas: PorRecibir[] }) {
             return (
               <li
                 key={persona}
-                className="flex flex-col gap-2 rounded-lg border border-linea bg-superficie p-3.5"
+                className="flex flex-col gap-2 tarjeta p-3.5"
               >
                 <span className="flex flex-wrap items-baseline justify-between gap-x-4">
                   <span className="text-base font-bold tracking-tight text-tinta">{persona}</span>
@@ -283,7 +283,7 @@ export function Recurrentes({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+        <div className="flex flex-col gap-0.5 tarjeta p-3.5">
           <span className={rotulo}>Entra por mes</span>
           <span className="cifra flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-verde">
             {entraPorMoneda.length === 0
@@ -292,7 +292,7 @@ export function Recurrentes({
           </span>
           <span className="text-2xs text-gris-50">{entra.length} abonos vigentes</span>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+        <div className="flex flex-col gap-0.5 tarjeta p-3.5">
           <span className={rotulo}>Sale por mes</span>
           <span className="cifra flex flex-wrap items-baseline gap-x-3 text-xl font-bold text-tinta">
             {salePorMoneda.length === 0
@@ -381,7 +381,7 @@ export function Recurrentes({
         {error && <p className="text-sm text-rojo">{error}</p>}
 
         {costos.length === 0 ? (
-          <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+          <p className="tarjeta px-3.5 py-3 text-sm text-gris">
             No hay ninguno cargado. Sin esto el cashflow miente por optimista: muestra lo que entra
             y solo una parte de lo que sale.
           </p>

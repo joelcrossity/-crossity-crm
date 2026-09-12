@@ -260,7 +260,7 @@ export default function Descuentos({
       )}
 
       {descuentos.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           No hay nada descontado. Todo lo que entra se reparte tal cual.
         </p>
       ) : (

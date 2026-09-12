@@ -340,7 +340,7 @@ export default function Asistente({
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <div className="overflow-x-auto rounded-lg border border-linea bg-superficie">
+              <div className="overflow-x-auto tarjeta">
                 <table className="w-full min-w-[720px]">
                   <thead>
                     <tr className="border-b border-linea bg-panel">

@@ -73,7 +73,7 @@ export default function Estado({
       <div
         role="radiogroup"
         aria-label="Estado del proyecto"
-        className="inline-flex flex-wrap gap-1 rounded-lg border border-linea bg-superficie p-1"
+        className="inline-flex flex-wrap gap-1 tarjeta p-1"
       >
         {COLORES.map((c) => {
           const elegido = actual === c.valor

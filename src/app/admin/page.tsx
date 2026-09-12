@@ -188,11 +188,11 @@ export default async function Admin(props: {
           </div>
 
           {filas.length === 0 ? (
-            <p className="rounded-lg border border-linea bg-superficie px-4 py-6 text-center text-sm text-gris">
+            <p className="tarjeta px-4 py-6 text-center text-sm text-gris">
               No falta nada. Los {todos.length} proyectos tienen monto, fecha y responsable.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-linea bg-superficie">
+            <div className="overflow-x-auto tarjeta">
               <table className="w-full min-w-[860px]">
                 <thead>
                   <tr className="border-b border-linea bg-panel">

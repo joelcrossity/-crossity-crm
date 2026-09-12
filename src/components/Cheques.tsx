@@ -167,7 +167,7 @@ export default function Cheques({
       {error && <p className="text-sm text-rojo">{error}</p>}
 
       {visibles.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           {soloAbiertos ? 'No hay cheques en cartera ni depositados.' : 'Todavía no se cargó ninguno.'}
         </p>
       ) : (

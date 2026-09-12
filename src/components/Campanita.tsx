@@ -102,7 +102,7 @@ export default function Campanita({ avisos }: { avisos: Aviso[] }) {
       {abierta && (
         <div
           className="surge absolute right-0 z-(--z-desplegable) mt-2 flex max-h-[26rem] w-80 flex-col
-                     overflow-hidden rounded-lg border border-linea bg-superficie
+                     overflow-hidden tarjeta
                      shadow-[0_6px_24px_-8px_oklch(0.232_0.003_106/0.22)]"
         >
           <div className="flex items-baseline justify-between gap-3 border-b border-linea px-3.5 py-2.5">

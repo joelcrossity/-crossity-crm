@@ -450,6 +450,48 @@ h1, h2, h3, h4 {
 .escalona > *:nth-child(9)  { animation-delay: 224ms; }
 .escalona > *:nth-child(n+10) { animation-delay: 250ms; }
 
+/* ------------------------------------------------------------------
+   La tarjeta de sugerencias.
+
+   Lleva un borde degradado suave porque tiene que distinguirse de lo
+   que el sistema afirma: el resto de las pantallas dice hechos, esto
+   propone. Un borde distinto avisa "esto es una hipótesis" sin tener
+   que escribirlo en cada tarjeta.
+
+   El degradado se hace con dos fondos y `padding-box` / `border-box`,
+   que es la forma de tener un borde en gradiente sin una capa extra.
+   ------------------------------------------------------------------ */
+
+.sugerencia {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: var(--radius-contenedor);
+  background:
+    linear-gradient(var(--color-superficie), var(--color-superficie)) padding-box,
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-azul) 55%, transparent),
+      color-mix(in srgb, var(--color-violeta-50) 45%, transparent) 55%,
+      color-mix(in srgb, var(--color-azul) 25%, transparent)
+    ) border-box;
+  box-shadow: var(--sombra-flotante);
+}
+
+/* Un resplandor muy tenue detrás, que da la sensación de que la tarjeta
+   está encendida. Apenas se ve y es a propósito: si se nota, molesta. */
+.sugerencia::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-azul) 10%, transparent),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
 /* Riel horizontal: la barra no debe robarle presencia al contenido. */
 .riel {
   scrollbar-width: thin;

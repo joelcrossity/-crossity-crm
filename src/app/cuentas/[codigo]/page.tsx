@@ -188,7 +188,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
                   <span className="cifra text-2xs text-gris-50">{delGrupo.length}</span>
                 </div>
 
-                <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+                <ul className="divide-y divide-linea overflow-hidden tarjeta">
                   {delGrupo.map((p) => (
                     <li key={p.id}>
                       <Link
@@ -332,7 +332,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         </div>
 
         {((agenda ?? []) as Evento[]).length === 0 ? (
-          <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+          <p className="tarjeta px-3.5 py-3 text-sm text-gris">
             No hay nada con fecha para esta cuenta.
           </p>
         ) : (

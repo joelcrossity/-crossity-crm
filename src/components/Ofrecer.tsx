@@ -172,7 +172,7 @@ export default function Ofrecer({
           {sugerencias.map((s) => (
             <li
               key={s.servicio_id}
-              className="flex flex-col gap-2 rounded-lg border border-linea bg-superficie p-3.5"
+              className="flex flex-col gap-2 tarjeta p-3.5"
             >
               <span className="flex flex-col gap-0.5">
                 <span className="flex flex-wrap items-baseline gap-x-2">
@@ -253,7 +253,7 @@ export default function Ofrecer({
       )}
 
       {sugerencias.length === 0 && abiertas.length === 0 && (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           Nada sugerido todavía. Las sugerencias salen de lo que se le entregó: cargale el servicio
           a sus proyectos terminados y aparecen solas.
         </p>

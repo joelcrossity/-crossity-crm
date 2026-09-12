@@ -65,7 +65,7 @@ export default async function Cuentas() {
 
       <div className="flex flex-col gap-8">
         {dormidas > 0 && (
-          <p className="surge rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
+          <p className="surge tarjeta px-3.5 py-2.5 text-sm text-gris">
             <span className="font-medium text-tinta">{dormidas}</span> trabajaron con nosotros y hoy
             no tienen nada abierto ni en pipeline. Van al final de la grilla.
           </p>

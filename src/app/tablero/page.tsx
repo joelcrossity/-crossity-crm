@@ -43,7 +43,7 @@ export default async function Tablero() {
       </Titulo>
 
       {filas.length === 0 ? (
-        <div className="rounded-lg border border-linea bg-superficie px-4 py-8 text-center">
+        <div className="tarjeta px-4 py-8 text-center">
           <p className="text-base font-medium">Todavía no ves ningún proyecto</p>
           <p className="mx-auto mt-1 max-w-[50ch] text-sm text-gris">
             Vas a ver acá los proyectos donde estés asignado o tengas participación.

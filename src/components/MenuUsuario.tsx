@@ -85,7 +85,7 @@ export default function MenuUsuario({
       {abierto && (
         <div
           className="surge absolute right-0 z-(--z-desplegable) mt-2 flex w-60 flex-col
-                     overflow-hidden rounded-lg border border-linea bg-superficie
+                     overflow-hidden tarjeta
                      shadow-[0_6px_24px_-8px_oklch(0.232_0.003_106/0.22)]"
         >
           <span className="flex flex-col gap-0.5 border-b border-linea px-3.5 py-2.5 sm:hidden">

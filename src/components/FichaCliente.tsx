@@ -166,7 +166,7 @@ export function Lista({
       </div>
 
       {items.length > 0 && (
-        <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+        <ul className="divide-y divide-linea overflow-hidden tarjeta">
           {items.map((i) => (
             <li key={i.id} className="flex items-baseline justify-between gap-4 px-3.5 py-2.5">
               <span className="min-w-0">

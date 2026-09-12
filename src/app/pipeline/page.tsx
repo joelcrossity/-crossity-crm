@@ -164,7 +164,7 @@ function Dato({
 }) {
   const color = tono === 'rojo' ? 'text-rojo' : tono === 'verde' ? 'text-verde' : 'text-tinta'
   return (
-    <div className="surge flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
       <span className={`cifra text-xl font-bold ${color}`}>{valor}</span>
       <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</span>
     </div>

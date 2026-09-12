@@ -144,7 +144,7 @@ export default async function Mantenimientos() {
           <h2 className="text-md font-bold tracking-tight">Los abonos</h2>
 
           {filas.length === 0 ? (
-            <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+            <p className="tarjeta px-3.5 py-3 text-sm text-gris">
               Todavía no hay ninguno. Se abren desde la ficha de un proyecto terminado.
             </p>
           ) : (
@@ -222,7 +222,7 @@ function Dato({
   alarma?: boolean
 }) {
   return (
-    <div className="surge flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
       <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{rotulo}</span>
       <span className={`cifra text-xl font-bold ${alarma ? 'text-amarillo' : 'text-tinta'}`}>
         {valor}

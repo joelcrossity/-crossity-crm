@@ -290,7 +290,7 @@ export default function Persona({
           {grupos.map((g) => (
             <div
               key={g}
-              className="flex flex-col gap-2.5 rounded-lg border border-linea bg-superficie p-3"
+              className="flex flex-col gap-2.5 tarjeta p-3"
             >
               <span className={rotulo}>{g}</span>
               {permisos

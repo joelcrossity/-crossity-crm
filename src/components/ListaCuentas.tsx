@@ -17,7 +17,7 @@ export default function ListaCuentas({
         return (
           <li
             key={c.id}
-            className="flex flex-col gap-2 rounded-lg border border-linea bg-superficie p-3.5
+            className="flex flex-col gap-2 tarjeta p-3.5
                        transition-colors duration-150 hover:border-linea-fuerte"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">

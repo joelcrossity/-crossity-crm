@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Shell, { Titulo } from '@/components/Shell'
 import { Marco, Barras, Columnas, Embudo, Cifra } from '@/components/Grafico'
+import Sugerencias, { type Sugerencia } from '@/components/Sugerencias'
 import { createClient } from '@/lib/supabase/server'
 import { ETAPAS, plata } from '@/lib/estados'
 
@@ -40,12 +41,18 @@ export default async function Hoy() {
     { data: hitos },
     { data: cuentas },
     { data: filasEtapas },
+    { data: ofrecer },
+    { data: sinAbono },
+    { data: comisiones },
   ] = await Promise.all([
       supabase.from('v_tablero').select('*'),
       supabase.from('v_pipeline').select('etapa, monto_neto, moneda, sin_agendar, seguimiento_vencido'),
       supabase.from('hitos').select('monto_neto, moneda, facturado_at, cobrado_at'),
       supabase.from('v_cuenta').select('*'),
       supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
+      supabase.from('v_para_ofrecer').select('cliente, cliente_codigo, servicio, razon').limit(12),
+      supabase.from('v_sin_mantenimiento').select('codigo, nombre, cliente').limit(6),
+      supabase.from('v_comisiones_sin_acordar').select('codigo, nombre, referente').limit(6),
     ])
 
   const filas = (proyectos ?? []) as Fila[]
@@ -116,6 +123,34 @@ export default async function Hoy() {
     .sort((a, b) => b.valor - a.valor)
     .slice(0, 8)
 
+  /* Las sugerencias salen de reglas sobre lo que ya está cargado, no de
+     un modelo. Se arman acá y no en la base porque mezclan tres fuentes
+     y lo que importa es el orden: primero lo que vence, después lo que
+     se pierde por no preguntar, al final la venta. */
+  const sugerencias: Sugerencia[] = [
+    ...((sinAbono ?? []) as Record<string, unknown>[]).map((x) => ({
+      clave: `m${x.codigo}`,
+      titulo: `Abrirle el abono a ${x.cliente}`,
+      porque: `${x.nombre} se entregó y nadie le abrió el mantenimiento. Es plata que se repite y se pierde por no preguntar a tiempo.`,
+      adonde: `/proyecto/${x.codigo}`,
+      accion: 'Abrirlo',
+    })),
+    ...((comisiones ?? []) as Record<string, unknown>[]).map((x) => ({
+      clave: `c${x.codigo}`,
+      titulo: `Cerrar la comisión de ${x.referente}`,
+      porque: `${x.nombre} vino por ${x.referente} y nadie acordó cuánto se le paga. Si no se cierra, se paga cuando lo reclame.`,
+      adonde: `/proyecto/${x.codigo}`,
+      accion: 'Acordarla',
+    })),
+    ...((ofrecer ?? []) as Record<string, unknown>[]).slice(0, 3).map((x, i) => ({
+      clave: `o${i}`,
+      titulo: `Ofrecerle ${String(x.servicio).toLowerCase()} a ${x.cliente}`,
+      porque: String(x.razon),
+      adonde: `/cuentas/${x.cliente_codigo}`,
+      accion: 'Ver la cuenta',
+    })),
+  ].slice(0, 5)
+
   const nombre = yo?.nombre.split(' ')[0] ?? ''
 
   return (
@@ -150,9 +185,9 @@ export default async function Hoy() {
         {esDireccion ? 'Cómo viene la empresa' : esAdmin ? 'Qué hay para cobrar' : 'Qué necesita atención'}
       </Titulo>
 
-      <div className="flex flex-col gap-9">
+      <div className="flex flex-col gap-10">
         {(esDireccion || esAdmin) && (
-          <section className="grid gap-6 sm:grid-cols-4">
+          <section className="escalona grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Cifra valor={String(vivos.length)} titulo="en vivo" nota="se trabajan ahora" tono="verde" href="/tablero" />
             <Cifra
               valor={plata(porCobrar)}
@@ -176,6 +211,10 @@ export default async function Hoy() {
               href="/tablero"
             />
           </section>
+        )}
+
+        {(esDireccion || esComercial) && sugerencias.length > 0 && (
+          <Sugerencias lista={sugerencias} />
         )}
 
         {(esDireccion || esAdmin) && (
@@ -308,11 +347,11 @@ function Bloque({
       </div>
 
       {filas.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           {vacio}
         </p>
       ) : (
-        <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+        <ul className="divide-y divide-linea overflow-hidden tarjeta">
           {filas.map((f) => (
             <li key={f.id}>
               <Link

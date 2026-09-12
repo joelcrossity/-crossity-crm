@@ -71,7 +71,7 @@ export default function Plata({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-linea bg-superficie p-4">
+    <div className="flex flex-col gap-3 tarjeta p-4">
       <div className="flex flex-wrap items-end gap-4">
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>Moneda</span>
@@ -228,7 +228,7 @@ export function Cotizaciones({ monedas }: { monedas: Cotizacion[] }) {
           return (
             <li
               key={m.codigo}
-              className="flex flex-col gap-1.5 rounded-lg border border-linea bg-superficie p-3"
+              className="flex flex-col gap-1.5 tarjeta p-3"
             >
               <span className="flex items-baseline gap-2">
                 <span className="text-base font-bold text-tinta">{m.codigo}</span>

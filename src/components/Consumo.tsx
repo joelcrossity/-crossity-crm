@@ -103,7 +103,7 @@ export default function Consumo({
       : 0
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-linea bg-superficie p-4">
+    <section className="flex flex-col gap-4 tarjeta p-4">
       <div className="flex flex-col gap-0.5">
         <h2 className="text-md font-bold tracking-tight">Cómo se cobra</h2>
         <p className="max-w-[70ch] text-sm text-gris">

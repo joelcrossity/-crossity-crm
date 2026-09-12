@@ -38,7 +38,7 @@ export default function Antiguedad({ filas }: { filas: Tramo[] }) {
 
   if (orden.length === 0)
     return (
-      <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+      <p className="tarjeta px-3.5 py-3 text-sm text-gris">
         No hay facturas pendientes de cobro.
       </p>
     )
@@ -80,7 +80,7 @@ export default function Antiguedad({ filas }: { filas: Tramo[] }) {
         ))}
       </div>
 
-      <div className="riel overflow-x-auto rounded-lg border border-linea bg-superficie">
+      <div className="riel overflow-x-auto tarjeta">
         <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-linea">

@@ -210,7 +210,7 @@ export default function Accesos({
           <div className="flex flex-col gap-2.5">
             <h3 className={rotulo}>Cuentas en orden</h3>
             {unidas.length === 0 ? (
-              <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+              <p className="tarjeta px-3.5 py-3 text-sm text-gris">
                 Todavía ninguna.
               </p>
             ) : (
@@ -219,7 +219,7 @@ export default function Accesos({
                   <li
                     key={c.id}
                     className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1
-                               rounded-lg border border-linea bg-superficie px-3.5 py-2"
+                               tarjeta px-3.5 py-2"
                   >
                     <span className="text-base text-tinta">{c.persona!.nombre}</span>
                     <span className="cifra text-2xs text-gris-50">

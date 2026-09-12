@@ -44,7 +44,7 @@ export default function Posiciones({ filas }: { filas: Posicion[] }) {
       </div>
 
       {vivos.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           No hay proyectos en vivo con monto cargado.
         </p>
       ) : (
@@ -58,7 +58,7 @@ export default function Posiciones({ filas }: { filas: Posicion[] }) {
               <li key={f.id}>
                 <Link
                   href={`/proyecto/${f.codigo}`}
-                  className="flex flex-col gap-2 rounded-lg border border-linea bg-superficie p-3.5
+                  className="flex flex-col gap-2 tarjeta p-3.5
                              transition-colors duration-150 hover:border-azul"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">

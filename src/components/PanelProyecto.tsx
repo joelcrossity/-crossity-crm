@@ -76,7 +76,7 @@ export default function PanelProyecto({
     .sort((a, b) => b[1].a_liquidar - a[1].a_liquidar)
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-linea bg-superficie p-4">
+    <section className="flex flex-col gap-4 tarjeta p-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Casillero titulo="Estado">
           <span className="flex items-center gap-2">

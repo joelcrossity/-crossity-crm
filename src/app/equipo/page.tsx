@@ -78,7 +78,7 @@ export default async function Equipo() {
             contenido: (
               <div className="flex flex-col gap-6">
                 {sinCuenta > 0 && (
-                  <p className="rounded-lg border border-linea bg-superficie px-3.5 py-2.5 text-sm text-gris">
+                  <p className="tarjeta px-3.5 py-2.5 text-sm text-gris">
                     Hay <span className="font-medium text-tinta">{sinCuenta}</span> sin cuenta. No
                     siempre es un problema: participar y cobrar no exige entrar. Para las que sí
                     tienen que entrar, el enlace se genera en su ficha.

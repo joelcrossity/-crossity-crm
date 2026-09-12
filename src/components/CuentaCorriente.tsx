@@ -59,7 +59,7 @@ export function Saldos({ saldos }: { saldos: Saldo[] }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+        <div className="flex flex-col gap-0.5 tarjeta p-3.5">
           <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
             Nos deben
           </span>
@@ -70,7 +70,7 @@ export function Saldos({ saldos }: { saldos: Saldo[] }) {
             {conDeuda.length} cuenta{conDeuda.length === 1 ? '' : 's'} con saldo
           </span>
         </div>
-        <div className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+        <div className="flex flex-col gap-0.5 tarjeta p-3.5">
           <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
             Entregado y sin facturar
           </span>
@@ -80,7 +80,7 @@ export function Saldos({ saldos }: { saldos: Saldo[] }) {
       </div>
 
       {conDeuda.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           Ningún cliente tiene saldo pendiente.
         </p>
       ) : (
@@ -151,7 +151,7 @@ export default function CuentaCorriente({
       </div>
 
       {saldos.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           Todavía no hay movimientos.
         </p>
       ) : (
@@ -160,7 +160,7 @@ export default function CuentaCorriente({
             {saldos.map((s) => (
               <div
                 key={s.moneda}
-                className="flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5"
+                className="flex flex-col gap-0.5 tarjeta p-3.5"
               >
                 <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
                   Saldo {s.moneda !== 'ARS' && `en ${s.moneda}`}
@@ -185,7 +185,7 @@ export default function CuentaCorriente({
           </div>
 
           {orden.length > 0 && (
-            <ul className="flex flex-col divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+            <ul className="flex flex-col divide-y divide-linea overflow-hidden tarjeta">
               {orden.slice(0, 25).map((m) => (
                 <li
                   key={m.clave}

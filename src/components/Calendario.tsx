@@ -235,7 +235,7 @@ function Bloque({
       </div>
 
       {eventos.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           {vacio}
         </p>
       ) : (

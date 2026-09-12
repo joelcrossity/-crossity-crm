@@ -198,7 +198,7 @@ export default function Documentos({
       {error && <p className="text-sm text-rojo">{error}</p>}
 
       {documentos.length === 0 ? (
-        <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+        <p className="tarjeta px-3.5 py-3 text-sm text-gris">
           Todavía no hay nada cargado. Empezá por la propuesta y el contrato: son los que después
           nadie encuentra.
         </p>

@@ -45,7 +45,7 @@ export function Grupo({ color, filas }: { color: string; filas: Fila[] }) {
         <span className="text-2xs text-gris-50">· {t.ayuda}</span>
       </div>
 
-      <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+      <ul className="divide-y divide-linea overflow-hidden tarjeta">
         {filas.map((f) => (
           <li key={f.id}>
             <Link

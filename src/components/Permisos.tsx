@@ -187,7 +187,7 @@ export default function Permisos({
           return (
             <li
               key={m.id}
-              className="flex flex-col gap-3 rounded-lg border border-linea bg-superficie p-3.5"
+              className="flex flex-col gap-3 tarjeta p-3.5"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
                 <span className="min-w-0">

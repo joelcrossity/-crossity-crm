@@ -310,7 +310,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       hoy={(hoyRow as string) ?? ''}
                     />
                   )}
-                  <section className="flex flex-col gap-5 rounded-lg border border-linea bg-superficie p-4">
+                  <section className="flex flex-col gap-5 tarjeta p-4">
                     <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
 
                     <div className="grid gap-4 sm:grid-cols-3">
@@ -416,7 +416,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                   <section className="flex flex-col gap-3">
                     <h2 className="text-md font-bold tracking-tight">Qué viene pasando</h2>
                     {(linea?.length ?? 0) === 0 ? (
-                      <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+                      <p className="tarjeta px-3.5 py-3 text-sm text-gris">
                         Todavía no hay novedades. La primera que cargues arranca la historia del proyecto.
                       </p>
                     ) : (
@@ -462,7 +462,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       <h2 className="text-md font-bold tracking-tight">
                         {esAbono ? 'Cuotas' : 'Entregas'}
                       </h2>
-                      <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+                      <ul className="divide-y divide-linea overflow-hidden tarjeta">
                         {hitos!.map((h: Record<string, string | number | boolean | null>) => (
                           <li key={h.id as string} className="flex flex-wrap gap-x-6 gap-y-2 px-3.5 py-3">
                             <span className="min-w-0 flex-1">
@@ -550,11 +550,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       </p>
                     </div>
                     {(cobros?.length ?? 0) === 0 ? (
-                      <p className="rounded-lg border border-linea bg-superficie px-3.5 py-3 text-sm text-gris">
+                      <p className="tarjeta px-3.5 py-3 text-sm text-gris">
                         Todavía no se registró ningún pago. Se cargan desde cada entrega, más abajo.
                       </p>
                     ) : (
-                      <ul className="divide-y divide-linea overflow-hidden rounded-lg border border-linea bg-superficie">
+                      <ul className="divide-y divide-linea overflow-hidden tarjeta">
                         {cobros!.map((c: Record<string, unknown>) => (
                           <li key={c.id as string} className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1 px-3.5 py-2.5">
                             <span className="min-w-0">

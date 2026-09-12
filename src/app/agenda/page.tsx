@@ -87,7 +87,7 @@ function Dato({
   alarma?: boolean
 }) {
   return (
-    <div className="surge flex flex-col gap-0.5 rounded-lg border border-linea bg-superficie p-3.5">
+    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
       <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{rotulo}</span>
       <span className={`cifra text-xl font-bold ${alarma ? 'text-rojo' : 'text-tinta'}`}>
         {valor}
