@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -13,6 +13,20 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [entrando, setEntrando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+
+  /* Cuando un enlace de correo falla, Supabase manda de vuelta acá con
+     el motivo en el fragmento de la URL. Sin esto la persona ve la
+     pantalla de entrar como si nada y no entiende por qué su enlace no
+     hizo nada: el error estaba escrito en la barra de direcciones, que
+     es el último lugar donde alguien va a mirar.
+
+     Se lee como una propiedad del entorno, no como un estado, para que
+     el servidor y el cliente rindan lo mismo. */
+  const falloElEnlace = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.hash.slice(1)).get('error_code'),
+    () => null,
+  )
 
   async function recuperar() {
     if (!email.trim()) {
@@ -91,6 +105,14 @@ export default function Login() {
             />
           </label>
         </div>
+
+        {falloElEnlace && !error && (
+          <p className="rounded-md border border-amarillo bg-amarillo-aire px-3 py-2 text-sm text-tinta">
+            {falloElEnlace === 'otp_expired'
+              ? 'Ese enlace ya venció o se usó una vez. Pedí uno nuevo: duran poco a propósito.'
+              : 'Ese enlace no es válido. Pedí uno nuevo.'}
+          </p>
+        )}
 
         {aviso && (
           <p className="rounded-md border border-verde bg-verde-aire px-3 py-2 text-sm text-tinta">
