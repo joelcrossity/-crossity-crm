@@ -36,7 +36,7 @@ export default async function Shell({
 
   const { data } = await supabase
     .from('usuarios')
-    .select('personas(nombre, roles)')
+    .select('persona_id, personas(nombre, roles)')
     .eq('id', user?.id ?? '')
     .maybeSingle()
 
@@ -121,6 +121,7 @@ export default async function Shell({
                   rol={NOMBRE_ROL[rolPrincipal(misRoles) ?? ''] ?? 'sin rol'}
                   roles={misRoles}
                   iniciales={iniciales}
+                  personaId={(data?.persona_id as string) ?? null}
                 />
               )}
             </span>

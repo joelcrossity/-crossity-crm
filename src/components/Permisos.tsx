@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { crearPersona, otorgarPermiso, quitarPermiso } from '@/app/acciones'
@@ -189,12 +190,16 @@ export default function Permisos({
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
                 <span className="min-w-0">
-                  <span className="text-base font-bold tracking-tight text-tinta">
+                  <Link
+                    href={`/equipo/${m.id}`}
+                    className="text-base font-bold tracking-tight text-tinta transition-colors
+                               duration-150 hover:text-azul-hondo"
+                  >
                     {m.nombre}
                     {m.es_externa && (
                       <span className="ml-2 text-2xs font-normal text-gris-50">externa</span>
                     )}
-                  </span>
+                  </Link>
                   <span className="cifra block truncate text-2xs text-gris-50">
                     {m.email ?? 'sin correo'}
                     {m.tiene_cuenta

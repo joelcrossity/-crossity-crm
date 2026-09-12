@@ -22,6 +22,7 @@ export default function MenuUsuario({
   rol,
   roles,
   iniciales,
+  personaId,
 }: {
   nombre: string
   /* Solo el principal. La lista entera en la barra es ruido: lo que
@@ -29,6 +30,7 @@ export default function MenuUsuario({
   rol: string
   roles: string[]
   iniciales: string
+  personaId: string | null
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
@@ -97,6 +99,17 @@ export default function MenuUsuario({
             <span className="border-b border-linea px-3.5 py-2 text-2xs text-gris-50">
               También {otros === 1 ? 'tenés otro rol' : `tenés otros ${otros} roles`}
             </span>
+          )}
+
+          {personaId && (
+            <Link
+              href={`/equipo/${personaId}`}
+              onClick={() => setAbierto(false)}
+              className="border-b border-linea px-3.5 py-2.5 text-sm text-gris transition-colors
+                         duration-150 hover:bg-panel hover:text-tinta"
+            >
+              Mi día y mi cuenta
+            </Link>
           )}
 
           <Link
