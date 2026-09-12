@@ -21,67 +21,52 @@ import type { Fila } from '@/components/TablaProyectos'
    lugar donde se soltó, y recién después se guarda.
    ------------------------------------------------------------------ */
 
-const COLUMNAS: {
-  color: string
-  texto: string
+export type Columna = {
+  clave: string
+  etiqueta: string
   ayuda: string
-  punto: string
-  motivos?: { valor: string; texto: string }[]
-  porDefecto?: string
-}[] = [
-  {
-    color: 'verde',
-    texto: 'En vivo',
-    ayuda: 'se trabaja ahora',
-    punto: 'bg-verde',
-    porDefecto: 'en_curso',
-  },
-  {
-    /* Ya no es "standby": lo que nunca arrancó vive en Pipeline. Acá
-       solo queda un proyecto ganado que se frenó, y el motivo dice si
-       es culpa nuestra, del cliente, o de la plata que no entró. */
-    color: 'gris',
-    texto: 'Frenado',
-    ayuda: 'ganado y sin avanzar',
-    punto: 'bg-gris-50',
-    motivos: [
-      { valor: 'esperando_anticipo', texto: 'Esperando el anticipo' },
-      { valor: 'pausado_cliente', texto: 'Lo pausó el cliente' },
-      { valor: 'dormido', texto: 'Se durmió' },
-    ],
-  },
-  { color: 'naranja', texto: 'Terminado', ayuda: 'no hay más que hacer', punto: 'bg-naranja' },
-  {
-    color: 'rojo',
-    texto: 'Perdido',
-    ayuda: 'salió mal o se descartó',
-    punto: 'bg-rojo',
-    motivos: [
-      { valor: 'perdido', texto: 'Lo perdimos' },
-      { valor: 'descartado', texto: 'Lo descartamos' },
-      { valor: 'entregado', texto: 'Se entregó y se cerró' },
-    ],
-  },
-]
+  color: string
+  /* Cuando hay motivo, la columna es un recorte dentro del color: dos
+     proyectos grises pueden estar en columnas distintas según por qué
+     se detuvieron. */
+  motivo: string | null
+  zona: string
+  orden: number
+  motivo_al_soltar: string | null
+}
 
-export default function TableroEstados({
-  filas,
-  orden,
-}: {
-  filas: Fila[]
-  orden?: string[]
-}) {
-  // El orden lo decide Sistema; si no llegó, queda el de siempre.
-  const columnas =
-    orden && orden.length > 0
-      ? [...COLUMNAS].sort((a, b) => orden.indexOf(a.color) - orden.indexOf(b.color))
-      : COLUMNAS
+/* Los motivos que se ofrecen al soltar en una columna que no define el
+   suyo. La lista es de la base —son valores del enum— y el texto
+   humano vive acá porque es texto de pantalla. */
+const MOTIVOS: Record<string, { valor: string; texto: string }[]> = {
+  gris: [
+    { valor: 'pausado_cliente', texto: 'Lo pausó el cliente' },
+    { valor: 'esperando_anticipo', texto: 'Esperando el anticipo' },
+    { valor: 'dormido', texto: 'Se durmió' },
+  ],
+  rojo: [
+    { valor: 'perdido', texto: 'Lo perdimos' },
+    { valor: 'descartado', texto: 'Lo descartamos' },
+    { valor: 'entregado', texto: 'Se entregó y se cerró' },
+  ],
+}
+
+const PUNTO: Record<string, string> = {
+  verde: 'bg-verde',
+  amarillo: 'bg-amarillo',
+  gris: 'bg-gris-25',
+  naranja: 'bg-naranja',
+  rojo: 'bg-rojo',
+}
+
+
+export default function TableroEstados({ filas, columnas }: { filas: Fila[]; columnas: Columna[] }) {
 
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
   const [encima, setEncima] = useState<string | null>(null)
-  const [preguntando, setPreguntando] = useState<{ id: string; color: string } | null>(null)
+  const [preguntando, setPreguntando] = useState<{ id: string; clave: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [archivando, setArchivando] = useState<string | null>(null)
 
@@ -90,7 +75,20 @@ export default function TableroEstados({
      cantidad a la vista. Sigue siendo destino de arrastre —se puede
      soltar sobre el encabezado aunque esté cerrado— así que no se
      pierde nada de lo que se podía hacer. */
-  const ABIERTAS = ['verde', 'gris']
+  /* Qué filas caen en cada columna: el color, y si la columna define
+     un motivo, también ese motivo. Así "por arrancar" y "frenado" son
+     dos columnas distintas sobre el mismo gris. */
+  /* La columna sin motivo de un color se queda con lo que no entró en
+     ninguna de las que sí lo definen: si no, un proyecto gris sin
+     motivo conocido desaparecería del tablero. */
+  const sobrantes = (f: Fila, c: Columna) =>
+    !c.motivo &&
+    !columnas.some((o) => o.color === c.color && o.motivo && o.motivo === f.motivo_gris)
+
+  const enColumna = (c: Columna) =>
+    vista.filter(
+      (f) => f.color === c.color && (c.motivo ? f.motivo_gris === c.motivo : sobrantes(f, c)) && f.id !== archivando,
+    )
 
   const [vista, mover] = useOptimistic(
     filas,
@@ -113,7 +111,7 @@ export default function TableroEstados({
     })
   }
 
-  function soltar(columna: (typeof COLUMNAS)[number]) {
+  function soltar(columna: Columna) {
     const id = arrastrando
     setArrastrando(null)
     setEncima(null)
@@ -122,9 +120,11 @@ export default function TableroEstados({
     const f = vista.find((x) => x.id === id)
     if (!f || f.color === columna.color) return
 
-    // Donde hace falta un porqué, se pregunta antes de tocar nada.
-    if (columna.motivos) setPreguntando({ id, color: columna.color })
-    else guardar(id, columna.color, columna.porDefecto ?? null)
+    /* Si la columna ya define el motivo, no hay nada que preguntar:
+       soltar en "Por arrancar" ya dice que está esperando el anticipo. */
+    if (columna.motivo_al_soltar) guardar(id, columna.color, columna.motivo_al_soltar)
+    else if (MOTIVOS[columna.color]) setPreguntando({ id, clave: columna.clave })
+    else guardar(id, columna.color, null)
   }
 
   function archivar(id: string) {
@@ -215,14 +215,14 @@ export default function TableroEstados({
     columna,
     pregunta,
   }: {
-    columna: (typeof COLUMNAS)[number]
-    pregunta: { id: string; color: string }
+    columna: Columna
+    pregunta: { id: string; clave: string }
   }) {
     return (
       <div className="surge flex flex-col gap-2 rounded-md border border-azul bg-superficie p-2.5">
         <span className="text-2xs font-medium text-tinta">¿Por qué?</span>
         <div className="flex flex-col gap-1">
-          {columna.motivos!.map((m) => (
+          {(MOTIVOS[columna.color] ?? []).map((m) => (
             <button
               key={m.valor}
               type="button"
@@ -245,8 +245,8 @@ export default function TableroEstados({
     )
   }
 
-  const activas = columnas.filter((c) => ABIERTAS.includes(c.color))
-  const cerradas = columnas.filter((c) => !ABIERTAS.includes(c.color))
+  const activas = columnas.filter((c) => c.zona === 'arriba')
+  const cerradas = columnas.filter((c) => c.zona === 'abajo')
 
   return (
     <div className="flex flex-col gap-2">
@@ -258,19 +258,19 @@ export default function TableroEstados({
 
       <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
         {activas.map((c) => {
-          const suyas = vista.filter((f) => f.color === c.color && f.id !== archivando)
+          const suyas = enColumna(c)
           const frenados = suyas.filter((f) => f.dias_sin_novedades > 7).length
-          const objetivo = encima === c.color && arrastrando !== null
-          const pregunta = preguntando?.color === c.color ? preguntando : null
+          const objetivo = encima === c.clave && arrastrando !== null
+          const pregunta = preguntando?.clave === c.clave ? preguntando : null
 
           return (
             <section
-              key={c.color}
+              key={c.clave}
               onDragOver={(e) => {
                 e.preventDefault()
-                setEncima(c.color)
+                setEncima(c.clave)
               }}
-              onDragLeave={() => setEncima((v) => (v === c.color ? null : v))}
+              onDragLeave={() => setEncima((v) => (v === c.clave ? null : v))}
               onDrop={() => soltar(c)}
               className={`flex w-[16.5rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
                           border p-2.5 transition-colors duration-200 [scroll-snap-align:start] ${
@@ -279,8 +279,8 @@ export default function TableroEstados({
             >
               <header className="flex flex-col gap-0.5 px-1 pt-0.5">
                 <span className="flex items-baseline gap-2">
-                  <span className={`size-2 shrink-0 rounded-full ${c.punto}`} aria-hidden />
-                  <h2 className="text-sm font-bold tracking-tight text-tinta">{c.texto}</h2>
+                  <span className={`size-2 shrink-0 rounded-full ${PUNTO[c.color]}`} aria-hidden />
+                  <h2 className="text-sm font-bold tracking-tight text-tinta">{c.etiqueta}</h2>
                   <span className="cifra ml-auto text-2xs text-gris-50">{suyas.length}</span>
                 </span>
                 <span className="text-2xs text-gris-50">
@@ -322,23 +322,23 @@ export default function TableroEstados({
       {/* Lo cerrado, al pie y plegado. */}
       <div className="flex flex-col gap-2">
         {cerradas.map((c) => {
-          const suyas = vista.filter((f) => f.color === c.color && f.id !== archivando)
-          const objetivo = encima === c.color && arrastrando !== null
-          const pregunta = preguntando?.color === c.color ? preguntando : null
+          const suyas = enColumna(c)
+          const objetivo = encima === c.clave && arrastrando !== null
+          const pregunta = preguntando?.clave === c.clave ? preguntando : null
 
           return (
             <Plegable
-              key={c.color}
-              titulo={c.texto}
+              key={c.clave}
+              titulo={c.etiqueta}
               cuantos={suyas.length}
               ayuda={c.ayuda}
               resaltado={objetivo}
-              punto={<span className={`size-2 shrink-0 rounded-full ${c.punto}`} aria-hidden />}
+              punto={<span className={`size-2 shrink-0 rounded-full ${PUNTO[c.color]}`} aria-hidden />}
               alPasarEncima={(e) => {
                 e.preventDefault()
-                setEncima(c.color)
+                setEncima(c.clave)
               }}
-              alSalir={() => setEncima((v) => (v === c.color ? null : v))}
+              alSalir={() => setEncima((v) => (v === c.clave ? null : v))}
               alSoltar={() => soltar(c)}
             >
               {pregunta && <Motivo columna={c} pregunta={pregunta} />}

@@ -2,6 +2,8 @@ import Shell, { Titulo } from '@/components/Shell'
 import SinAcceso from '@/components/SinAcceso'
 import { puedeVer } from '@/lib/permisos'
 import Etapas, { type Etapa, type Estado } from '@/components/Etapas'
+import Columnas from '@/components/Columnas'
+import { type Columna } from '@/components/TableroEstados'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function Configuracion() {
@@ -32,9 +34,10 @@ export default async function Configuracion() {
   const roles = (cuenta?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
   const esDireccion = roles.includes('direccion')
 
-  const [{ data: etapas }, { data: estados }] = await Promise.all([
+  const [{ data: etapas }, { data: estados }, { data: columnas }] = await Promise.all([
     supabase.from('v_etapas').select('*'),
     supabase.from('estados_proyecto').select('*'),
+    supabase.from('columnas_tablero').select('*').order('orden'),
   ])
 
   return (
@@ -46,11 +49,17 @@ export default async function Configuracion() {
         Etapas y estados
       </Titulo>
 
-      <Etapas
-        etapas={(etapas ?? []) as Etapa[]}
-        estados={(estados ?? []) as Estado[]}
-        esDireccion={esDireccion}
-      />
+      <div className="flex flex-col gap-10">
+        <Etapas
+          etapas={(etapas ?? []) as Etapa[]}
+          estados={(estados ?? []) as Estado[]}
+          esDireccion={esDireccion}
+        />
+
+        <div className="border-t border-linea pt-8">
+          <Columnas columnas={(columnas ?? []) as Columna[]} esDireccion={esDireccion} />
+        </div>
+      </div>
     </Shell>
   )
 }

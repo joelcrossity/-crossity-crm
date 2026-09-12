@@ -32,16 +32,25 @@ const TITULO: Record<string, { texto: string; ayuda: string }> = {
   rojo:     { texto: 'Perdido',   ayuda: 'salió mal o se descartó' },
 }
 
-export function Grupo({ color, filas }: { color: string; filas: Fila[] }) {
+export function Grupo({
+  color,
+  filas,
+  titulo,
+  ayuda,
+}: {
+  color: string
+  filas: Fila[]
+  /* El nombre llega de la configuración, no de una constante: si en
+     Sistema le cambian el nombre a una columna, la lista tiene que
+     decir lo mismo que el tablero. */
+  titulo?: string
+  ayuda?: string
+}) {
   if (filas.length === 0) return null
   const t = TITULO[color]
 
   return (
-    <Seccion
-      titulo={t.texto}
-      cuantos={filas.length}
-      ayuda={t.ayuda}
-    >
+    <Seccion titulo={titulo ?? t?.texto ?? color} cuantos={filas.length} ayuda={ayuda ?? t?.ayuda}>
       <ListaUI>
         {filas.map((f) => (
           <FilaUI key={f.id} href={`/proyecto/${f.codigo}`}>

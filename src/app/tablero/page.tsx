@@ -2,6 +2,7 @@ import Shell, { Titulo } from '@/components/Shell'
 import Asistente from '@/components/Asistente'
 import { type Fila } from '@/components/TablaProyectos'
 import VistaProyectos from '@/components/VistaProyectos'
+import { type Columna } from '@/components/TableroEstados'
 import { createClient } from '@/lib/supabase/server'
 
 
@@ -20,8 +21,8 @@ export default async function Tablero() {
     enVivo: (c.en_vivo as number) ?? 0,
   }))
   const { data: columnas } = await supabase
-    .from('estados_proyecto')
-    .select('color')
+    .from('columnas_tablero')
+    .select('*')
     .order('orden')
 
   const { data } = await supabase
@@ -52,7 +53,7 @@ export default async function Tablero() {
       ) : (
         <VistaProyectos
           filas={filas}
-          orden={((columnas ?? []) as { color: string }[]).map((c) => c.color)}
+          columnas={(columnas ?? []) as Columna[]}
           responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
           alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
         />

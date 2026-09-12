@@ -1998,3 +1998,44 @@ export async function archivarLoCerrado(): Promise<Resultado> {
     ? { ok: true }
     : { ok: false, error: 'No había nada cerrado hace más de un mes.' }
 }
+
+/* ------------------------------------------------------------------
+   Las columnas del tablero.
+
+   No se crean ni se borran: cada una es un recorte de un color que la
+   base ya define, y un color nuevo rompería reglas que existen por
+   buenas razones. Lo que cambia es cómo se llaman, en qué orden se
+   miran, y si molestan todos los días o viven plegadas al pie.
+   ------------------------------------------------------------------ */
+
+export async function renombrarColumna(
+  clave: string,
+  etiqueta: string,
+  ayuda: string,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('renombrar_columna', {
+    p_clave: clave,
+    p_etiqueta: etiqueta,
+    p_ayuda: ayuda,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function moverColumna(clave: string, hacia: number): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('mover_columna', { p_clave: clave, p_hacia: hacia })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function cambiarZona(clave: string, zona: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('cambiar_zona', { p_clave: clave, p_zona: zona })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}

@@ -2,10 +2,8 @@
 
 import Filtro, { type Recorte } from '@/components/Filtro'
 import { Selector, useVista } from '@/components/Vistas'
-import TableroEstados from '@/components/TableroEstados'
+import TableroEstados, { type Columna } from '@/components/TableroEstados'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
-
-const ORDEN = ['verde', 'gris', 'naranja', 'rojo']
 
 const RECORTES: Recorte<Fila>[] = [
   {
@@ -40,12 +38,12 @@ export default function VistaProyectos({
   filas,
   alta,
   responsables,
-  orden,
+  columnas,
 }: {
   filas: Fila[]
   alta: React.ReactNode
   responsables: string[]
-  orden?: string[]
+  columnas: Columna[]
 }) {
   const vista = useVista('crossity.proyectos')
 
@@ -76,12 +74,20 @@ export default function VistaProyectos({
           <div key={vista} className="surge">
             {vista === 'lista' ? (
               <div className="flex flex-col gap-8">
-                {(orden && orden.length > 0 ? orden : ORDEN).map((color) => (
-                  <Grupo key={color} color={color} filas={vistos.filter((f) => f.color === color)} />
+                {columnas.map((c) => (
+                  <Grupo
+                    key={c.clave}
+                    color={c.color}
+                    titulo={c.etiqueta}
+                    ayuda={c.ayuda}
+                    filas={vistos.filter(
+                      (f) => f.color === c.color && (!c.motivo || f.motivo_gris === c.motivo),
+                    )}
+                  />
                 ))}
               </div>
             ) : (
-              <TableroEstados filas={vistos} orden={orden} />
+              <TableroEstados filas={vistos} columnas={columnas} />
             )}
           </div>
         </div>
