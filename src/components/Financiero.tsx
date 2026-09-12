@@ -13,12 +13,9 @@ import { plata, fechaCorta } from '@/lib/estados'
    ningún lado y por eso no se podían mostrar.
    ------------------------------------------------------------------ */
 
-const campo =
-  'rounded-md border border-linea bg-superficie px-2.5 py-1.5 text-sm text-tinta ' +
-  'transition-colors duration-150 placeholder:text-gris-50 ' +
-  'hover:border-linea-fuerte focus:border-azul'
+const campo = 'campo'
 
-const rotulo = 'text-2xs font-medium uppercase tracking-wider text-gris-50'
+const rotulo = 'rotulo'
 
 export type PorFacturar = {
   id: string

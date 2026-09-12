@@ -8,10 +8,7 @@ import { asignarCliente } from '@/app/acciones'
    de la sala de espera a su cuenta, y de ahí en adelante es un cliente
    como cualquier otro. */
 
-const campo =
-  'rounded-md border border-linea bg-superficie px-2.5 py-1.5 text-sm text-tinta ' +
-  'transition-colors duration-150 placeholder:text-gris-50 ' +
-  'hover:border-linea-fuerte focus:border-azul'
+const campo = 'campo'
 
 export default function AsignarCliente({
   proyectoId,

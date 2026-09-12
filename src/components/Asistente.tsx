@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation'
 import { crearProyectoCompleto, type HitoNuevo } from '@/app/acciones'
 import { plata } from '@/lib/estados'
 
-const campo =
-  'rounded-md border border-linea bg-superficie px-2.5 py-1.5 text-sm text-tinta ' +
-  'transition-colors duration-150 placeholder:text-gris-50 ' +
-  'hover:border-linea-fuerte focus:border-azul'
+const campo = 'campo'
 
 const PASOS = ['Cliente', 'El proyecto', 'Las entregas'] as const
 

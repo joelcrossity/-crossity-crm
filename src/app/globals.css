@@ -340,6 +340,41 @@ h1, h2, h3, h4 {
 }
 
 /* ------------------------------------------------------------------
+   Formularios.
+
+   Hasta ahora cada componente llevaba su propia copia de estas clases
+   —veinte copias de la misma cadena— y alcanzaba con que una quedara
+   desactualizada para que esa pantalla se viera distinta. Ahora hay una
+   sola definición y todas la consumen.
+   ------------------------------------------------------------------ */
+
+.campo {
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-linea);
+  background: var(--color-superficie);
+  padding: 0.4375rem 0.6875rem;
+  font-size: var(--text-sm);
+  color: var(--color-tinta);
+  transition:
+    border-color 0.15s var(--ease-suave),
+    background-color 0.15s var(--ease-suave);
+}
+.campo::placeholder { color: var(--color-gris-25); }
+.campo:hover:not(:disabled) { border-color: var(--color-linea-fuerte); }
+.campo:focus { border-color: var(--color-azul-hondo); outline: none; }
+.campo:disabled { opacity: 0.55; }
+
+/* El rótulo de cada dato. Chico, en versalitas y separado del valor:
+   lo que se lee es el número, no su nombre. */
+.rotulo {
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-gris-50);
+}
+
+/* ------------------------------------------------------------------
    Botones.
 
    Cuatro niveles y uno principal por bloque. El hundido al presionar es

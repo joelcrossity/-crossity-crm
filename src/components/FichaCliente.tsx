@@ -11,10 +11,7 @@ import {
 } from '@/app/acciones'
 import type { Resultado } from '@/app/acciones'
 
-const campo =
-  'rounded-md border border-linea bg-superficie px-2.5 py-1.5 text-sm text-tinta ' +
-  'transition-colors duration-150 placeholder:text-gris-50 ' +
-  'hover:border-linea-fuerte focus:border-azul'
+const campo = 'campo'
 
 function useGuardado() {
   const [pendiente, empezar] = useTransition()

@@ -1,4 +1,5 @@
 import Shell, { Titulo } from '@/components/Shell'
+import { Cifra } from '@/components/Grafico'
 import SinAcceso from '@/components/SinAcceso'
 import { puedeVer } from '@/lib/permisos'
 import Asistente from '@/components/Asistente'
@@ -125,15 +126,18 @@ export default async function Pipeline() {
       </Titulo>
 
       <div className="flex flex-col gap-8">
-        <section className="grid gap-4 sm:grid-cols-3">
-          <Dato valor={plata(enPesos, 'ARS')} titulo="cotizado en pesos" />
-          {total > 0 && <Dato valor={plata(total, 'USD')} titulo="cotizado en dólares" />}
-          <Dato
+        <section className="escalona grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Cifra valor={plata(enPesos, 'ARS')} titulo="cotizado en pesos" nota="lo abierto, sin las enfriadas" />
+          {total > 0 && <Cifra valor={plata(total, 'USD')} titulo="cotizado en dólares" />}
+          <Cifra
             valor={String(vencidos)}
             titulo="con seguimiento vencido"
+            nota="se caen solas si nadie las toca"
             tono={vencidos > 0 ? 'rojo' : 'verde'}
           />
-          {frias > 0 && <Dato valor={String(frias)} titulo="enfriadas, para reflotar" />}
+          {frias > 0 && (
+            <Cifra valor={String(frias)} titulo="enfriadas" nota="siguen ahí, para reflotar" />
+          )}
         </section>
 
         <VistaPipeline
@@ -150,23 +154,5 @@ export default async function Pipeline() {
 
       </div>
     </Shell>
-  )
-}
-
-function Dato({
-  valor,
-  titulo,
-  tono = 'tinta',
-}: {
-  valor: string
-  titulo: string
-  tono?: 'tinta' | 'rojo' | 'verde'
-}) {
-  const color = tono === 'rojo' ? 'text-rojo' : tono === 'verde' ? 'text-verde' : 'text-tinta'
-  return (
-    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
-      <span className={`cifra text-xl font-bold ${color}`}>{valor}</span>
-      <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{titulo}</span>
-    </div>
   )
 }
