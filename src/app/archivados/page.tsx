@@ -18,7 +18,7 @@ export default async function Archivados() {
     misRoles.includes('coordinacion')
 
   const [{ data }, { data: candidatos }] = await Promise.all([
-    supabase.from('v_archivados').select('*').order('archivado_at', { ascending: false }),
+    supabase.from('v_archivados').select('*')  /* el orden lo pone Historial: por cuándo cerró */,
     supabase.from('v_para_archivar').select('id'),
   ])
 

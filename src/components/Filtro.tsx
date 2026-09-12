@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { CampoBusqueda } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Buscar y filtrar, arriba de cualquier lista.
@@ -57,27 +58,9 @@ export default function Filtro<T>({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="relative min-w-56 flex-1">
-          <svg
-            viewBox="0 0 16 16"
-            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-gris-50"
-            fill="none"
-            aria-hidden
-          >
-            <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <input
-            type="search"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={marcador}
-            aria-label={marcador}
-            className="w-full rounded-md border border-linea bg-superficie py-1.5 pr-2.5 pl-8
-                       text-sm text-tinta transition-colors duration-150
-                       placeholder:text-gris-50 hover:border-linea-fuerte focus:border-azul"
-          />
-        </label>
+        <span className="flex min-w-56 flex-1">
+          <CampoBusqueda valor={texto} alCambiar={setTexto} marcador={marcador} />
+        </span>
 
         {recortes.map((r) => (
           <select

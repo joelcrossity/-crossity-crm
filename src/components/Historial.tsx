@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { archivarLoCerrado, desarchivarProyecto } from '@/app/acciones'
 import Filtro, { type Recorte } from '@/components/Filtro'
 import { BarraSolapas, Aviso } from '@/components/ui'
-import { plata, fechaCorta } from '@/lib/estados'
+import { plata, fechaCierre, fechaCorta, porCierre } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
    El historial.
@@ -35,6 +35,7 @@ export type Archivado = {
   monto_neto: number | null
   moneda: string
   archivado_at: string
+  cerrado_at: string | null
   archivado_por: string | null
   responsable: string | null
   servicio: string | null
@@ -74,8 +75,12 @@ export default function Historial({
   const [error, setError] = useState<string | null>(null)
   const [solapa, setSolapa] = useState<'proyectos' | 'oportunidades'>('proyectos')
 
-  const proyectos = filas.filter((f) => !f.era_oportunidad)
-  const oportunidades = filas.filter((f) => f.era_oportunidad)
+  /* Lo último que cerró, primero. Si no se sabe cuándo cerró se usa
+     cuándo se archivó, que es lo más cerca que hay: son dos hechos
+     distintos, pero archivar pasa poco después de cerrar. */
+  const ordenadas = [...filas].sort(porCierre((f) => f.cerrado_at ?? f.archivado_at))
+  const proyectos = ordenadas.filter((f) => !f.era_oportunidad)
+  const oportunidades = ordenadas.filter((f) => f.era_oportunidad)
   const visibles = solapa === 'proyectos' ? proyectos : oportunidades
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string }>) {
@@ -207,15 +212,17 @@ export default function Historial({
                         )}
                       </span>
 
-                      <span className="w-28 shrink-0 text-right">
-                        <span className="cifra block text-2xs text-gris-50">
-                          {fechaCorta(f.archivado_at.slice(0, 10))}
+                      {/* Cerró y se archivó son dos fechas, y sin rótulo
+                          la de al lado se lee como la que no es. */}
+                      <span className="w-32 shrink-0 text-right">
+                        <span className="cifra block text-2xs text-gris">
+                          {fechaCierre(f.cerrado_at) ?? fechaCorta(f.archivado_at.slice(0, 10))}
                         </span>
-                        {f.archivado_por && (
-                          <span className="block truncate text-2xs text-gris-25">
-                            {f.archivado_por.split(' ')[0]}
-                          </span>
-                        )}
+                        <span className="block truncate text-2xs text-gris-25">
+                          {f.cerrado_at
+                            ? `${c.texto.toLowerCase()}${f.archivado_por ? ` · ${f.archivado_por.split(' ')[0]}` : ''}`
+                            : `archivado${f.archivado_por ? ` · ${f.archivado_por.split(' ')[0]}` : ''}`}
+                        </span>
                       </span>
 
                       <button

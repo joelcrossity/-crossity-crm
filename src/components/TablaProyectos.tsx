@@ -18,6 +18,7 @@ export type Fila = {
   motivo_gris: string | null
   prioridad: number | null
   fecha_comprometida: string | null
+  cerrado_at: string | null
   es_producto_propio: boolean
   responsable: string | null
   dias_sin_novedades: number

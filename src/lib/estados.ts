@@ -55,3 +55,38 @@ export function fechaCorta(f: string | null) {
   if (!f) return null
   return new Date(f + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
 }
+
+/* La fecha de cierre lleva año y las demás no: en una lista de
+   terminados conviven cosas de este año y del anterior, y "10 sep" a
+   secas obliga a adivinar cuál.
+
+   La zona horaria va fija y no la del navegador. Sin fijarla, el
+   servidor formatea en UTC y el navegador en la de acá, y un cierre de
+   las nueve de la noche sale con un día de diferencia entre el HTML
+   que llega y el que React vuelve a dibujar. */
+export function fechaCierre(f: string | null) {
+  if (!f) return null
+  return new Date(f).toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+}
+
+/* Lo cerrado se lee al revés que lo abierto: lo último que cerró es lo
+   que uno todavía tiene fresco y lo que sale a buscar.
+
+   Sin fecha va al fondo y no al frente: no saber cuándo cerró algo no
+   lo vuelve reciente. Compara las cadenas ISO directamente, que ya
+   ordenan bien, en vez de construir una fecha por comparación. */
+export function porCierre<T>(cuando: (x: T) => string | null) {
+  return (a: T, b: T) => {
+    const x = cuando(a)
+    const y = cuando(b)
+    if (!x && !y) return 0
+    if (!x) return 1
+    if (!y) return -1
+    return y.localeCompare(x)
+  }
+}

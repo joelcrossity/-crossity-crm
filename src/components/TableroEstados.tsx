@@ -1,10 +1,10 @@
 'use client'
 
-import { useOptimistic, useState, useTransition } from 'react'
+import { useMemo, useOptimistic, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { archivarProyecto, cambiarEstado } from '@/app/acciones'
-import { Plegable } from '@/components/ui'
-import { SUBESTADO, fechaCorta } from '@/lib/estados'
+import { CampoBusqueda, Plegable } from '@/components/ui'
+import { SUBESTADO, fechaCierre, fechaCorta, porCierre } from '@/lib/estados'
 import type { Fila } from '@/components/TablaProyectos'
 
 /* ------------------------------------------------------------------
@@ -77,6 +77,7 @@ const PUNTO: Record<string, string> = {
 function Tarjeta({
   f,
   color,
+  cerrado = false,
   arrastrando,
   yendose,
   alEmpezar,
@@ -85,6 +86,7 @@ function Tarjeta({
 }: {
   f: Fila
   color: string
+  cerrado?: boolean
   arrastrando: string | null
   yendose: boolean
   alEmpezar: (id: string) => void
@@ -143,8 +145,16 @@ function Tarjeta({
 
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-2xs">
             {f.subestado && <span className="text-gris">{SUBESTADO[f.subestado] ?? f.subestado}</span>}
-            {f.fecha_comprometida && (
-              <span className="cifra text-gris-50">{fechaCorta(f.fecha_comprometida)}</span>
+            {/* En lo cerrado la fecha que importa es cuándo cerró, no
+                cuándo se había comprometido entregarlo. */}
+            {cerrado ? (
+              <span className="cifra text-gris-50">
+                {fechaCierre(f.cerrado_at) ?? 'sin fecha de cierre'}
+              </span>
+            ) : (
+              f.fecha_comprometida && (
+                <span className="cifra text-gris-50">{fechaCorta(f.fecha_comprometida)}</span>
+              )
             )}
           </span>
 
@@ -159,6 +169,129 @@ function Tarjeta({
         </Link>
       </div>
     </li>
+  )
+}
+
+/* ------------------------------------------------------------------
+   Un plegado de lo cerrado.
+
+   Va aparte y no dentro del tablero porque tiene estado propio: lo que
+   se escribió en su buscador es suyo, no del tablero. Con el estado
+   arriba, escribir en "Terminado" volvía a dibujar las columnas vivas
+   en cada tecla.
+
+   El buscador aparece recién a partir de cinco: con dos tarjetas a la
+   vista es un campo que ocupa lugar y no resuelve nada.
+   ------------------------------------------------------------------ */
+
+const MINIMO_PARA_BUSCAR = 5
+
+function ZonaCerrada({
+  columna,
+  filas,
+  yendose,
+  objetivo,
+  pregunta,
+  propiasDeTarjeta,
+  alElegirMotivo,
+  alCancelarMotivo,
+  alPasarEncima,
+  alSalir,
+  alSoltar,
+}: {
+  columna: Columna
+  filas: Fila[]
+  yendose: Set<string>
+  objetivo: boolean
+  pregunta: { id: string; clave: string } | null
+  propiasDeTarjeta: {
+    arrastrando: string | null
+    alEmpezar: (id: string) => void
+    alTerminar: () => void
+    alArchivar: (id: string) => void
+  }
+  alElegirMotivo: (id: string, color: string, motivo: string) => void
+  alCancelarMotivo: () => void
+  alPasarEncima: (e: React.DragEvent) => void
+  alSalir: () => void
+  alSoltar: () => void
+}) {
+  const [busca, setBusca] = useState('')
+
+  /* Lo último que cerró, primero. Es el orden en que uno lo busca:
+     "el que terminamos la semana pasada", nunca "el más viejo". */
+  const ordenadas = useMemo(
+    () => [...filas].sort(porCierre((f) => f.cerrado_at)),
+    [filas],
+  )
+
+  const q = busca.trim().toLowerCase()
+  const halladas = q
+    ? ordenadas.filter((f) =>
+        `${f.nombre} ${f.cliente} ${f.codigo}`.toLowerCase().includes(q),
+      )
+    : ordenadas
+
+  const visibles = halladas.filter((f) => !yendose.has(f.id))
+  const total = filas.filter((f) => !yendose.has(f.id)).length
+
+  return (
+    <Plegable
+      titulo={columna.etiqueta}
+      cuantos={total}
+      ayuda={columna.ayuda}
+      resaltado={objetivo}
+      punto={<span className={`size-2 shrink-0 rounded-full ${PUNTO[columna.color]}`} aria-hidden />}
+      alPasarEncima={alPasarEncima}
+      alSalir={alSalir}
+      alSoltar={alSoltar}
+    >
+      {pregunta && (
+        <Motivo
+          columna={columna}
+          pregunta={pregunta}
+          alElegir={alElegirMotivo}
+          alCancelar={alCancelarMotivo}
+        />
+      )}
+
+      {total >= MINIMO_PARA_BUSCAR && (
+        <div className="mb-2.5 flex items-center gap-2">
+          <CampoBusqueda
+            valor={busca}
+            alCambiar={setBusca}
+            marcador="Buscar por nombre, cliente o código…"
+            chico
+          />
+          {q && (
+            <span className="shrink-0 text-2xs text-gris-50">
+              {visibles.length} de {total}
+            </span>
+          )}
+        </div>
+      )}
+
+      {total === 0 ? (
+        <p className="px-1 py-2 text-2xs text-gris-50">Ninguno.</p>
+      ) : visibles.length === 0 ? (
+        <p className="px-1 py-2 text-2xs text-gris-50">
+          Ninguno coincide con «{busca.trim()}».
+        </p>
+      ) : (
+        <ul className="escalona grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {halladas.map((f) => (
+            <Tarjeta
+              key={f.id}
+              f={f}
+              color={columna.color}
+              cerrado
+              yendose={yendose.has(f.id)}
+              {...propiasDeTarjeta}
+            />
+          ))}
+        </ul>
+      )}
+    </Plegable>
   )
 }
 
@@ -402,54 +535,25 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
 
       {/* Lo cerrado, al pie y plegado. */}
       <div className="flex flex-col gap-2">
-        {cerradas.map((c) => {
-          const suyas = enColumna(c)
-          const visibles = suyas.filter((f) => !yendose.has(f.id))
-          const objetivo = encima === c.clave && arrastrando !== null
-          const pregunta = preguntando?.clave === c.clave ? preguntando : null
-
-          return (
-            <Plegable
-              key={c.clave}
-              titulo={c.etiqueta}
-              cuantos={visibles.length}
-              ayuda={c.ayuda}
-              resaltado={objetivo}
-              punto={<span className={`size-2 shrink-0 rounded-full ${PUNTO[c.color]}`} aria-hidden />}
-              alPasarEncima={(e) => {
-                e.preventDefault()
-                setEncima(c.clave)
-              }}
-              alSalir={() => setEncima((v) => (v === c.clave ? null : v))}
-              alSoltar={() => soltar(c)}
-            >
-              {pregunta && (
-                <Motivo
-                  columna={c}
-                  pregunta={pregunta}
-                  alElegir={guardar}
-                  alCancelar={() => setPreguntando(null)}
-                />
-              )}
-
-              {visibles.length === 0 ? (
-                <p className="px-1 py-2 text-2xs text-gris-50">Ninguno.</p>
-              ) : (
-                <ul className="escalona grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {suyas.map((f) => (
-                    <Tarjeta
-                      key={f.id}
-                      f={f}
-                      color={c.color}
-                      yendose={yendose.has(f.id)}
-                      {...propiasDeTarjeta}
-                    />
-                  ))}
-                </ul>
-              )}
-            </Plegable>
-          )
-        })}
+        {cerradas.map((c) => (
+          <ZonaCerrada
+            key={c.clave}
+            columna={c}
+            filas={enColumna(c)}
+            yendose={yendose}
+            objetivo={encima === c.clave && arrastrando !== null}
+            pregunta={preguntando?.clave === c.clave ? preguntando : null}
+            propiasDeTarjeta={propiasDeTarjeta}
+            alElegirMotivo={guardar}
+            alCancelarMotivo={() => setPreguntando(null)}
+            alPasarEncima={(e) => {
+              e.preventDefault()
+              setEncima(c.clave)
+            }}
+            alSalir={() => setEncima((v) => (v === c.clave ? null : v))}
+            alSoltar={() => soltar(c)}
+          />
+        ))}
       </div>
 
       <p className="text-2xs text-gris-50">

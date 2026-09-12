@@ -465,3 +465,53 @@ export function Formulario({
     </form>
   )
 }
+
+
+/* ------------------------------------------------------------------
+   El campo de buscar.
+
+   Vive acá y no adentro de Filtro porque hay listas que necesitan
+   buscar sin necesitar recortes: el plegado de terminados del tablero
+   es una. Dos inputs escritos a mano en dos lugares se despegan solos
+   a la tercera vez que alguien toca uno.
+   ------------------------------------------------------------------ */
+
+export function CampoBusqueda({
+  valor,
+  alCambiar,
+  marcador,
+  chico = false,
+}: {
+  valor: string
+  alCambiar: (v: string) => void
+  marcador: string
+  chico?: boolean
+}) {
+  return (
+    <label className="relative block min-w-0 flex-1">
+      <svg
+        viewBox="0 0 16 16"
+        className={`pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-gris-50 ${
+          chico ? 'size-3' : 'size-3.5'
+        }`}
+        fill="none"
+        aria-hidden
+      >
+        <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="m10.5 10.5 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <input
+        type="search"
+        value={valor}
+        onChange={(e) => alCambiar(e.target.value)}
+        placeholder={marcador}
+        aria-label={marcador}
+        className={`w-full rounded-md border border-linea bg-superficie pl-8 text-tinta
+                    transition-colors duration-150 placeholder:text-gris-50
+                    hover:border-linea-fuerte focus:border-azul ${
+                      chico ? 'py-1 pr-2 text-2xs' : 'py-1.5 pr-2.5 text-sm'
+                    }`}
+      />
+    </label>
+  )
+}
