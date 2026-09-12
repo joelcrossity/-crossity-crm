@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 
 /* ==================================================================
@@ -280,6 +283,104 @@ export function BarraSolapas<T extends string>({
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------
+   El plegable.
+
+   Para lo que ya cerró: ocupa lugar en el escritorio y casi nunca se
+   mira, pero tiene que seguir a mano. Arranca cerrado y muestra cuántos
+   hay, que es lo único que hace falta saber sin abrirlo.
+
+   La animación usa `grid-template-rows` de 0fr a 1fr en vez de una
+   altura fija: así se abre suave sin tener que medir el contenido, y
+   funciona igual con tres tarjetas que con treinta.
+   ------------------------------------------------------------------ */
+
+export function Plegable({
+  titulo,
+  cuantos,
+  ayuda,
+  punto,
+  resaltado,
+  children,
+  alSoltar,
+  alPasarEncima,
+  alSalir,
+}: {
+  titulo: string
+  cuantos: number
+  ayuda?: string
+  punto?: React.ReactNode
+  /* Cuando algo se está arrastrando encima: el plegable sigue siendo un
+     destino válido aunque esté cerrado. */
+  resaltado?: boolean
+  children: React.ReactNode
+  alSoltar?: () => void
+  alPasarEncima?: (e: React.DragEvent) => void
+  alSalir?: () => void
+}) {
+  const [abierto, setAbierto] = useState(false)
+
+  return (
+    <div
+      onDragOver={alPasarEncima}
+      onDragLeave={alSalir}
+      onDrop={alSoltar}
+      className={`overflow-hidden rounded-[var(--radius-tarjeta)] border transition-colors
+                  duration-200 ${
+                    resaltado ? 'border-azul bg-azul-aire' : 'border-linea bg-panel'
+                  }`}
+    >
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left transition-colors
+                   duration-150 hover:bg-superficie"
+      >
+        <svg
+          viewBox="0 0 16 16"
+          className={`size-3.5 shrink-0 text-gris-50 transition-transform duration-200
+                      ease-(--ease-salida) ${abierto ? 'rotate-0' : '-rotate-90'}`}
+          fill="none"
+          aria-hidden
+        >
+          <path
+            d="M4 6.2 8 10l4-3.8"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+
+        {punto}
+
+        <span className="text-sm font-medium text-tinta">{titulo}</span>
+        <span className="cifra rounded-full bg-superficie px-1.5 py-0.5 text-2xs text-gris-50">
+          {cuantos}
+        </span>
+
+        {ayuda && !abierto && (
+          <span className="hidden truncate text-2xs text-gris-50 sm:inline">{ayuda}</span>
+        )}
+
+        {resaltado && (
+          <span className="ml-auto text-2xs font-medium text-azul-hondo">Soltalo acá</span>
+        )}
+      </button>
+
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-(--ease-salida)"
+        style={{ gridTemplateRows: abierto ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-linea p-3">{children}</div>
+        </div>
+      </div>
     </div>
   )
 }

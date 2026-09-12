@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { archivarProyecto, cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
 import { plata, type EtapaViva } from '@/lib/estados'
+import { Plegable } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -92,56 +93,9 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
       router.refresh()
     })
   }
-
-  return (
-    <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
-      {[...etapas, { valor: FRIA, etiqueta: 'Sin respuesta' }].map((etapa) => {
-        const fria = etapa.valor === FRIA
-        const suyas = (fria
-          ? vista.filter((o) => o.enfriada)
-          : vista.filter((o) => o.etapa === etapa.valor && !o.enfriada)
-        ).filter((o) => o.id !== archivando)
-        const enPesos = suyas.reduce(
-          (s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0),
-          0,
-        )
-        const objetivo = encima === etapa.valor && arrastrando !== null
-
-        return (
-          <section
-            key={etapa.valor}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setEncima(etapa.valor)
-            }}
-            onDragLeave={() => setEncima((v) => (v === etapa.valor ? null : v))}
-            onDrop={() => soltar(etapa.valor)}
-            className={`flex w-[16.5rem] shrink-0 flex-col gap-2.5 rounded-lg border p-2.5
-                        transition-colors duration-200 [scroll-snap-align:start] ${
-                          objetivo
-                            ? 'border-azul bg-azul-aire'
-                            : fria
-                              ? 'border-dashed border-linea-fuerte bg-panel/60'
-                              : 'border-linea bg-panel'
-                        }`}
-          >
-            <header className="flex flex-col gap-0.5 px-1 pt-0.5">
-              <span className="flex items-baseline justify-between gap-2">
-                <h2 className="text-sm font-bold tracking-tight text-tinta">{etapa.etiqueta}</h2>
-                <span className="cifra text-2xs text-gris-50">{suyas.length}</span>
-              </span>
-              <span className="cifra text-2xs text-gris-50">
-                {fria
-                  ? 'se enfriaron, no se perdieron'
-                  : enPesos > 0
-                    ? plata(enPesos, 'ARS')
-                    : '—'}
-              </span>
-            </header>
-
-            <ul className="escalona flex flex-col gap-2">
-              {suyas.map((o) => (
-                <li key={o.id} className="group/tarjeta relative">
+  function Tarjeta({ o }: { o: Op }) {
+    return (
+      <li className="group/tarjeta relative">
                   {/* Aparece al pasar el cursor para no competir con el
                       contenido, pero en pantalla táctil queda siempre
                       visible: sin cursor no hay hover que revele nada. */}
@@ -231,24 +185,95 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
                     )}
                   </Link>
                 </li>
-              ))}
+    )
+  }
 
-              {suyas.length === 0 && (
-                <li
-                  className={`rounded-md border border-dashed px-3 py-6 text-center text-2xs
-                              transition-colors duration-200 ${
-                                objetivo
-                                  ? 'border-azul text-azul-hondo'
-                                  : 'border-linea-fuerte text-gris-50'
-                              }`}
-                >
-                  {objetivo ? 'Soltala acá' : fria ? 'Ninguna enfriada' : 'Vacía'}
-                </li>
-              )}
-            </ul>
-          </section>
-        )
-      })}
+  const frias = vista.filter((o) => o.enfriada && o.id !== archivando)
+  const friaObjetivo = encima === FRIA && arrastrando !== null
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
+        {etapas.map((etapa) => {
+          const suyas = vista.filter(
+            (o) => o.etapa === etapa.valor && !o.enfriada && o.id !== archivando,
+          )
+          const enPesos = suyas.reduce((s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0), 0)
+          const objetivo = encima === etapa.valor && arrastrando !== null
+
+          return (
+            <section
+              key={etapa.valor}
+              onDragOver={(e) => {
+                e.preventDefault()
+                setEncima(etapa.valor)
+              }}
+              onDragLeave={() => setEncima((v) => (v === etapa.valor ? null : v))}
+              onDrop={() => soltar(etapa.valor)}
+              className={`flex w-[16.5rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
+                          border p-2.5 transition-colors duration-200 [scroll-snap-align:start] ${
+                            objetivo ? 'border-azul bg-azul-aire' : 'border-linea bg-panel'
+                          }`}
+            >
+              <header className="flex flex-col gap-0.5 px-1 pt-0.5">
+                <span className="flex items-baseline justify-between gap-2">
+                  <h2 className="text-sm font-bold tracking-tight text-tinta">{etapa.etiqueta}</h2>
+                  <span className="cifra text-2xs text-gris-50">{suyas.length}</span>
+                </span>
+                <span className="cifra text-2xs text-gris-50">
+                  {enPesos > 0 ? plata(enPesos, 'ARS') : '—'}
+                </span>
+              </header>
+
+              <ul className="escalona flex flex-col gap-2">
+                {suyas.map((o) => (
+                  <Tarjeta key={o.id} o={o} />
+                ))}
+
+                {suyas.length === 0 && (
+                  <li
+                    className={`rounded-md border border-dashed px-3 py-6 text-center text-2xs
+                                transition-colors duration-200 ${
+                                  objetivo
+                                    ? 'border-azul text-azul-hondo'
+                                    : 'border-linea-fuerte text-gris-50'
+                                }`}
+                  >
+                    {objetivo ? 'Soltala acá' : 'Vacía'}
+                  </li>
+                )}
+              </ul>
+            </section>
+          )
+        })}
+      </div>
+
+      {/* Las enfriadas al pie: no se perdieron, pero tampoco tienen que
+          ocupar una columna del ancho de las que se están trabajando. */}
+      <Plegable
+        titulo="Sin respuesta"
+        cuantos={frias.length}
+        ayuda="se enfriaron, no se perdieron"
+        resaltado={friaObjetivo}
+        alPasarEncima={(e) => {
+          e.preventDefault()
+          setEncima(FRIA)
+        }}
+        alSalir={() => setEncima((v) => (v === FRIA ? null : v))}
+        alSoltar={() => soltar(FRIA)}
+      >
+        {frias.length === 0 ? (
+          <p className="px-1 py-2 text-2xs text-gris-50">
+            Ninguna enfriada. Arrastrá acá una oportunidad que dejó de contestar.
+          </p>
+        ) : (
+          <ul className="escalona grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {frias.map((o) => (
+              <Tarjeta key={o.id} o={o} />
+            ))}
+          </ul>
+        )}
+      </Plegable>
     </div>
   )
 }
