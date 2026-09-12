@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { plata } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Antigüedad de deuda.
@@ -44,20 +45,18 @@ export default function Antiguedad({ filas }: { filas: Tramo[] }) {
     )
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Antigüedad de la deuda</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
+    <Seccion
+      titulo="Antigüedad de la deuda"
+      ayuda={
+        <>
           Cuánto hace que está sin cobrar cada peso. Un millón en facturas de esta semana es una
           empresa sana; el mismo millón con noventa días encima es un problema.
           {viejo > 0 && (
-            <span className="font-medium text-rojo">
-              {' '}
-              {plata(viejo)} lleva más de sesenta días.
-            </span>
+            <span className="font-medium text-rojo"> {plata(viejo)} lleva más de sesenta días.</span>
           )}
-        </p>
-      </div>
+        </>
+      }
+    >
 
       {/* La barra total primero: la proporción se lee antes que los
           números, y es la proporción lo que dice si hay que preocuparse. */}
@@ -133,6 +132,6 @@ export default function Antiguedad({ filas }: { filas: Tramo[] }) {
           </tbody>
         </table>
       </div>
-    </section>
+    </Seccion>
   )
 }

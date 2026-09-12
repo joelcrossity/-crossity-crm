@@ -1,4 +1,5 @@
 import { plata } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    El cashflow.
@@ -42,14 +43,10 @@ export default function Cashflow({ meses }: { meses: Mes[] }) {
   )
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Cómo viene la caja</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Seis meses hacia adelante. Entra lo comprometido —cobros que vencen, cheques y abonos— y
-          sale lo que hay que transferir más los costos fijos. Todo en pesos a la cotización de hoy.
-        </p>
-      </div>
+    <Seccion
+      titulo="Cómo viene la caja"
+      ayuda="Seis meses hacia adelante. Entra lo comprometido —cobros que vencen, cheques y abonos— y sale lo que hay que transferir más los costos fijos. Todo en pesos a la cotización de hoy."
+    >
 
       <ul className="flex flex-col gap-0">
         {conAcumulado.map((f, i) => {
@@ -116,6 +113,6 @@ export default function Cashflow({ meses }: { meses: Mes[] }) {
           Los cobros sin fecha de vencimiento no aparecen: cargales el “vence” en la entrega.
         </span>
       </p>
-    </section>
+    </Seccion>
   )
 }

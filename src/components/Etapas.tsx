@@ -9,6 +9,7 @@ import {
   moverEtapa,
   renombrarEstado,
 } from '@/app/acciones'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Las etapas y los estados.
@@ -92,25 +93,22 @@ export default function Etapas({
         </p>
       )}
 
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <h2 className="text-md font-bold tracking-tight">Etapas del pipeline</h2>
-            <p className="max-w-[70ch] text-sm text-gris">
-              El orden es el recorrido: de arriba hacia abajo es como avanza una oportunidad.
-              {!esDireccion && ' Solo dirección puede cambiarlas.'}
-            </p>
-          </div>
-          {esDireccion && !abierto && (
-            <button
-              type="button"
-              onClick={() => setAbierto(true)}
-              className="boton boton-secundario shrink-0"
-            >
+      <Seccion
+        titulo="Etapas del pipeline"
+        ayuda={
+          <>
+            El orden es el recorrido: de arriba hacia abajo es como avanza una oportunidad.
+            {!esDireccion && ' Solo dirección puede cambiarlas.'}
+          </>
+        }
+        acciones={
+          esDireccion && !abierto ? (
+            <button type="button" onClick={() => setAbierto(true)} className="boton boton-secundario">
               Sumar una etapa
             </button>
-          )}
-        </div>
+          ) : null
+        }
+      >
 
         {abierto && (
           <div className="surge flex flex-wrap items-end gap-2 rounded-lg border border-azul bg-azul-aire p-3">
@@ -232,19 +230,13 @@ export default function Etapas({
             dependen de ella.
           </p>
         ))}
-      </section>
+      </Seccion>
 
-      <section className="flex flex-col gap-3 border-t border-linea pt-8">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-md font-bold tracking-tight">Estados de proyecto</h2>
-          <p className="max-w-[70ch] text-sm text-gris">
-            El orden se cambia como en el pipeline: es cómo se miran las columnas del tablero y
-            hay meses en que lo primero que querés ver es lo frenado. El texto también. Lo que no
-            se toca es el comportamiento: frenado exige un motivo, en vivo exige un detalle,
-            terminado cierra el trabajo. Un sexto color rompería reglas que existen por buenas
-            razones.
-          </p>
-        </div>
+      <div className="border-t border-linea pt-8">
+        <Seccion
+          titulo="Estados de proyecto"
+          ayuda="El orden se cambia como en el pipeline: es cómo se miran las columnas del tablero y hay meses en que lo primero que querés ver es lo frenado. El texto también. Lo que no se toca es el comportamiento: frenado exige un motivo, en vivo exige un detalle, terminado cierra el trabajo. Un sexto color rompería reglas que existen por buenas razones."
+        >
 
         <ul className="flex flex-col gap-1.5">
           {[...estados]
@@ -288,7 +280,8 @@ export default function Etapas({
               </li>
             ))}
         </ul>
-      </section>
+        </Seccion>
+      </div>
     </div>
   )
 }

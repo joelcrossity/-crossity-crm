@@ -9,6 +9,7 @@ import {
   fecharConsumo,
 } from '@/app/acciones'
 import { plata } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Cómo se cobra este abono.
@@ -100,15 +101,10 @@ export default function Consumo({
       : 0
 
   return (
-    <section className="flex flex-col gap-4 tarjeta p-4">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Cómo se cobra</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Un abono por consumo no se sabe hasta que el mes terminó. Cargar acá lo que se usó es lo
-          que hace que la factura salga a tiempo y que el cashflow no proyecte un número inventado.
-        </p>
-      </div>
-
+    <Seccion
+      titulo="Cómo se cobra"
+      ayuda="Un abono por consumo no se sabe hasta que el mes terminó. Cargar acá lo que se usó es lo que hace que la factura salga a tiempo y que el cashflow no proyecte un número inventado."
+    >
       <div className="flex flex-wrap gap-1.5">
         {MODALIDADES.map(([v, t, ayuda]) => (
           <button
@@ -326,6 +322,6 @@ export default function Consumo({
           por mes. El IVA y la conversión a pesos están abajo, con el resto de la plata.
         </p>
       )}
-    </section>
+    </Seccion>
   )
 }
