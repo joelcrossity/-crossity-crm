@@ -45,14 +45,44 @@ export default function Clave() {
     const codigo = parametros.get('code')
     const token = parametros.get('token_hash')
 
+    const acceso = parametros.get('access_token')
+    const refresco = parametros.get('refresh_token')
+
     async function abrir() {
       if (tipo === 'invite' || tipo === 'signup') setEsAlta(true)
 
-      if (codigo) {
-        const { error } = await supabase.auth.exchangeCodeForSession(codigo)
+      /* Tres formas de llegar, y hay que aceptar las tres.
+
+         La primera es la que me faltaba y la que se estaba usando: un
+         enlace generado desde el servidor no arranca un intercambio en
+         este navegador, así que Supabase devuelve el token hecho en el
+         fragmento de la URL. No hay nada que canjear, hay que tomarlo.
+
+         La segunda es el código, que sí requiere que el intercambio
+         haya empezado acá —por ejemplo, pidiendo el enlace desde la
+         pantalla de entrar—.
+
+         La tercera es el token de un solo uso, según cómo esté armada
+         la plantilla del correo. */
+      if (acceso && refresco) {
+        const { error } = await supabase.auth.setSession({
+          access_token: acceso,
+          refresh_token: refresco,
+        })
         if (error) {
           setEstado('sin_sesion')
           return
+        }
+      } else if (codigo) {
+        const { error } = await supabase.auth.exchangeCodeForSession(codigo)
+        if (error) {
+          // Puede fallar legítimamente si el enlace no nació acá; lo que
+          // decide es si quedó sesión, no si este canje puntual anduvo.
+          const { data } = await supabase.auth.getSession()
+          if (!data.session) {
+            setEstado('sin_sesion')
+            return
+          }
         }
       } else if (token && tipo) {
         const { error } = await supabase.auth.verifyOtp({
@@ -67,7 +97,7 @@ export default function Clave() {
 
       // Con el enlace consumido, la URL se limpia: dejar el token a la
       // vista invita a copiarlo o a que quede en el historial.
-      if (codigo || token) {
+      if (codigo || token || acceso) {
         window.history.replaceState({}, '', '/clave')
       }
 
