@@ -1019,7 +1019,10 @@ export async function enfriar(proyectoId: string, motivo: string): Promise<Resul
     p_motivo: motivo.trim() || null,
   })
   if (error) return { ok: false, error: traducir(error.message) }
-  revalidatePath('/', 'layout')
+  // Solo donde se ve una oportunidad fría.
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/hoy')
   return { ok: true }
 }
 
@@ -1027,7 +1030,10 @@ export async function reflotar(proyectoId: string): Promise<Resultado> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('reflotar', { p_proyecto: proyectoId })
   if (error) return { ok: false, error: traducir(error.message) }
-  revalidatePath('/', 'layout')
+  // Solo donde se ve una oportunidad fría.
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/hoy')
   return { ok: true }
 }
 
@@ -1976,7 +1982,14 @@ export async function archivarProyecto(proyectoId: string): Promise<Resultado> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('archivar', { p_proyecto: proyectoId })
   if (error) return { ok: false, error: traducir(error.message) }
-  revalidatePath('/', 'layout')
+  /* Las rutas que cambian, no el árbol entero. Con ('/', 'layout') se
+     tiraba la caché del router completa y la siguiente navegación a
+     cualquier pantalla volvía a pedir todo al servidor. */
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/archivados')
+  revalidatePath('/hoy')
+  revalidatePath('/clientes')
   return { ok: true }
 }
 

@@ -456,6 +456,35 @@ h1, h2, h3, h4 {
    correr, lo que se ve es el contenido, nunca el vacío.
    ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------
+   Salida. Archivar saca la tarjeta de la pantalla antes de que el
+   servidor conteste, y el hueco se cierra solo.
+
+   El alto se anima con grid-template-rows de 1fr a 0fr: es la única
+   forma de colapsar algo de alto desconocido sin medirlo en JavaScript.
+   El overflow se recorta recién al salir, para no cortar la sombra de
+   la tarjeta cuando está quieta.
+   ------------------------------------------------------------------ */
+
+.sale {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.26s var(--ease-salida),
+    opacity 0.18s ease-out;
+}
+.sale > * { min-height: 0; }
+.sale[data-yendo='si'] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+.sale[data-yendo='si'] > * { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sale { transition: opacity 0.12s linear; }
+}
+
 @keyframes surgir {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
