@@ -216,7 +216,16 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             </span>
           )}
         </span>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">{p.nombre}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <h1 className="text-2xl font-bold tracking-tight text-balance">{p.nombre}</h1>
+          <div className="shrink-0 pt-1">
+            <Archivar
+              proyectoId={p.id}
+              archivado={!!p.archivado_at}
+              sugerido={p.color === 'naranja' || p.color === 'rojo'}
+            />
+          </div>
+        </div>
         {p.motivo_condicion && <p className="max-w-[65ch] text-sm text-gris">{p.motivo_condicion}</p>}
       </header>
 
@@ -713,12 +722,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     duenoTabla="proyectos"
                     duenoId={p.id}
                   />
-                  <div className="flex flex-col gap-5 border-t border-linea pt-6">
-                    <Archivar
-                      proyectoId={p.id}
-                      archivado={!!p.archivado_at}
-                      sugerido={p.color === 'naranja' || p.color === 'rojo'}
-                    />
+                  <div className="border-t border-linea pt-6">
                     <BorrarProyecto proyectoId={p.id} nombre={p.nombre} />
                   </div>
                 </div>

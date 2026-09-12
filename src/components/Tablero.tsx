@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
+import { archivarProyecto, cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
 import { plata, type EtapaViva } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
@@ -46,11 +46,16 @@ const FRIA = '__fria'
 export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[] }) {
   const ETIQUETA = new Map<string, string>(etapas.map((e) => [e.valor, e.etiqueta]))
   const router = useRouter()
-  const [, empezar] = useTransition()
+  const [pendiente, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
   const [encima, setEncima] = useState<string | null>(null)
 
   // La tarjeta se mueve al soltarla, no cuando contesta el servidor.
+  /* La tarjeta desaparece apenas se toca archivar, sin esperar al
+     servidor ni recargar. Si el servidor rechaza, vuelve sola en el
+     refresco: React descarta el estado optimista. */
+  const [archivando, setArchivando] = useState<string | null>(null)
+
   const [vista, mover] = useOptimistic(
     ops,
     (actual: Op[], c: { id: string; etapa?: string; fria?: boolean }) =>
@@ -92,9 +97,10 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
     <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
       {[...etapas, { valor: FRIA, etiqueta: 'Sin respuesta' }].map((etapa) => {
         const fria = etapa.valor === FRIA
-        const suyas = fria
+        const suyas = (fria
           ? vista.filter((o) => o.enfriada)
           : vista.filter((o) => o.etapa === etapa.valor && !o.enfriada)
+        ).filter((o) => o.id !== archivando)
         const enPesos = suyas.reduce(
           (s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0),
           0,
@@ -135,7 +141,44 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
 
             <ul className="escalona flex flex-col gap-2">
               {suyas.map((o) => (
-                <li key={o.id}>
+                <li key={o.id} className="group/tarjeta relative">
+                  {/* Aparece al pasar el cursor para no competir con el
+                      contenido, pero en pantalla táctil queda siempre
+                      visible: sin cursor no hay hover que revele nada. */}
+                  <button
+                    type="button"
+                    aria-label={`Archivar ${o.nombre}`}
+                    title="Archivar: sale del tablero y queda en el historial"
+                    disabled={pendiente}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setArchivando(o.id)
+                      empezar(async () => {
+                        const r = await archivarProyecto(o.id)
+                        if (!r.ok) setArchivando(null)
+                        router.refresh()
+                      })
+                    }}
+                    className="absolute top-2 right-2 z-10 grid size-6 place-items-center rounded-md
+                               bg-superficie text-gris-25 opacity-100 transition-colors duration-150
+                               hover:text-azul-hondo lg:opacity-0 lg:group-hover/tarjeta:opacity-100"
+                  >
+                    <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
+                      <path
+                        d="M2.4 5.6h11.2v6.6a1.3 1.3 0 0 1-1.3 1.3H3.7a1.3 1.3 0 0 1-1.3-1.3V5.6Z"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                      />
+                      <path
+                        d="M1.6 3.2h12.8v2.4H1.6zM6.5 8.4h3"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+
                   <Link
                     href={`/proyecto/${o.codigo}`}
                     draggable
