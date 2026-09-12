@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { plata, fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    La cuenta corriente.
@@ -49,14 +50,10 @@ export function Saldos({ saldos }: { saldos: Saldo[] }) {
     .reduce((s, x) => s + Number(x.sin_facturar), 0)
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Cuentas corrientes</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Lo facturado y sin cobrar es deuda. Lo entregado y sin facturar todavía no lo es, pero se
-          va a reclamar. Verlas separadas evita reclamar lo que no se facturó.
-        </p>
-      </div>
+    <Seccion
+      titulo="Cuentas corrientes"
+      ayuda="Lo facturado y sin cobrar es deuda. Lo entregado y sin facturar todavía no lo es, pero se va a reclamar. Verlas separadas evita reclamar lo que no se facturó."
+    >
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5 tarjeta p-3.5">
@@ -127,7 +124,7 @@ export function Saldos({ saldos }: { saldos: Saldo[] }) {
           ))}
         </ul>
       )}
-    </section>
+    </Seccion>
   )
 }
 
@@ -142,13 +139,10 @@ export default function CuentaCorriente({
   const orden = [...movimientos].sort((a, b) => (b.fecha ?? '').localeCompare(a.fecha ?? ''))
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Cuenta corriente</h2>
-        <p className="max-w-[65ch] text-sm text-gris">
-          Se arma sola de lo que ya está cargado: cada factura suma y cada cobro resta.
-        </p>
-      </div>
+    <Seccion
+      titulo="Cuenta corriente"
+      ayuda="Se arma sola de lo que ya está cargado: cada factura suma y cada cobro resta."
+    >
 
       {saldos.length === 0 ? (
         <p className="tarjeta px-3.5 py-3 text-sm text-gris">
@@ -211,6 +205,6 @@ export default function CuentaCorriente({
           )}
         </>
       )}
-    </section>
+    </Seccion>
   )
 }

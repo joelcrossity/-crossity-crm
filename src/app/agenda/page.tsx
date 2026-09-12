@@ -1,4 +1,5 @@
 import Shell, { Titulo } from '@/components/Shell'
+import { Cifra } from '@/components/Grafico'
 import Calendario, { type Evento } from '@/components/Calendario'
 import Cheques, { type Cheque } from '@/components/Cheques'
 import { createClient } from '@/lib/supabase/server'
@@ -45,19 +46,19 @@ export default async function Agenda() {
 
       <div className="flex flex-col gap-9">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Dato
-            rotulo="Vencidos"
+          <Cifra
+            titulo="Vencidos"
             valor={String(vencidos.length)}
             nota="pasaron y siguen abiertos"
-            alarma={vencidos.length > 0}
+            tono={vencidos.length > 0 ? 'rojo' : 'tinta'}
           />
-          <Dato rotulo="Por cobrar" valor={plata(porCobrar)} nota="entregado y sin pagar" />
-          <Dato rotulo="En cheques" valor={plata(enCheques)} nota="en cartera, sin depositar" />
-          <Dato
-            rotulo="Para transferir"
+          <Cifra titulo="Por cobrar" valor={plata(porCobrar)} nota="entregado y sin pagar" />
+          <Cifra titulo="En cheques" valor={plata(enCheques)} nota="en cartera, sin depositar" />
+          <Cifra
+            titulo="Para transferir"
             valor={plata(aTransferir)}
             nota="la plata ya entró"
-            alarma={aTransferir > 0}
+            tono={aTransferir > 0 ? 'rojo' : 'tinta'}
           />
         </section>
 
@@ -72,27 +73,5 @@ export default async function Agenda() {
         />
       </div>
     </Shell>
-  )
-}
-
-function Dato({
-  rotulo,
-  valor,
-  nota,
-  alarma,
-}: {
-  rotulo: string
-  valor: string
-  nota: string
-  alarma?: boolean
-}) {
-  return (
-    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
-      <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{rotulo}</span>
-      <span className={`cifra text-xl font-bold ${alarma ? 'text-rojo' : 'text-tinta'}`}>
-        {valor}
-      </span>
-      <span className="text-2xs text-gris-50">{nota}</span>
-    </div>
   )
 }

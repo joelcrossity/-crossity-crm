@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { marcarFacturaRecibida, sumarCostoFijo, borrarCostoFijo } from '@/app/acciones'
 import { plata, fechaCorta } from '@/lib/estados'
+import { Seccion } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    Las cuatro caras de la administración que faltaban.
@@ -35,17 +36,19 @@ export function PorFacturar({ filas }: { filas: PorFacturar[] }) {
   const viejas = filas.filter((f) => f.dias_desde_la_entrega > 15)
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Hay que facturarle al cliente</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Se entregó y todavía no salió la factura. Cada día acá es un día que la plata no empieza
-          a correr.
+    <Seccion
+      titulo="Hay que facturarle al cliente"
+      cuantos={filas.length}
+      ayuda={
+        <>
+          Se entregó y todavía no salió la factura. Cada día acá es un día que la plata no empieza a
+          correr.
           {viejas.length > 0 && (
             <span className="font-medium text-rojo"> {viejas.length} llevan más de 15 días.</span>
           )}
-        </p>
-      </div>
+        </>
+      }
+    >
 
       {filas.length === 0 ? (
         <p className="tarjeta px-3.5 py-3 text-sm text-gris">
@@ -92,7 +95,7 @@ export function PorFacturar({ filas }: { filas: PorFacturar[] }) {
           ))}
         </ul>
       )}
-    </section>
+    </Seccion>
   )
 }
 
@@ -121,14 +124,11 @@ export function FacturasARecibir({ filas }: { filas: PorRecibir[] }) {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Nos tienen que facturar</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          La plata del cliente ya entró y no se puede transferir hasta que facturen. Es el paso que
-          nadie se acuerda de pedir, y el que después demora el pago.
-        </p>
-      </div>
+    <Seccion
+      titulo="Nos tienen que facturar"
+      cuantos={porPersona.size}
+      ayuda="La plata del cliente ya entró y no se puede transferir hasta que facturen. Es el paso que nadie se acuerda de pedir, y el que después demora el pago."
+    >
 
       {error && <p className="text-sm text-rojo">{error}</p>}
 
@@ -195,7 +195,7 @@ export function FacturasARecibir({ filas }: { filas: PorRecibir[] }) {
           })}
         </ul>
       )}
-    </section>
+    </Seccion>
   )
 }
 
@@ -270,14 +270,10 @@ export function Recurrentes({
   }
 
   return (
-    <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Todos los meses</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Lo que pasa sin que nadie haga nada. Es el piso sobre el que se apoya todo lo demás: si
-          los abonos cubren los costos fijos, un mes flojo de proyectos no duele.
-        </p>
-      </div>
+    <Seccion
+      titulo="Todos los meses"
+      ayuda="Lo que pasa sin que nadie haga nada. Es el piso sobre el que se apoya todo lo demás: si los abonos cubren los costos fijos, un mes flojo de proyectos no duele."
+    >
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5 tarjeta p-3.5">
@@ -420,6 +416,6 @@ export function Recurrentes({
           </ul>
         )}
       </div>
-    </section>
+    </Seccion>
   )
 }

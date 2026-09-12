@@ -161,6 +161,36 @@ export function Dato({
   )
 }
 
+/* Un par rótulo-valor apretado, para las tiras de cifras dentro de una
+   fila. Distinto de `Dato`: ése alinea a la derecha en una columna,
+   éste se apila y fluye. */
+export function Par({
+  titulo,
+  valor,
+  tono = 'tinta',
+}: {
+  titulo: string
+  valor: React.ReactNode
+  tono?: 'tinta' | 'verde' | 'rojo' | 'amarillo' | 'naranja' | 'gris' | 'azul'
+}) {
+  const color = {
+    tinta: 'text-tinta',
+    verde: 'text-verde',
+    rojo: 'text-rojo',
+    amarillo: 'text-amarillo',
+    naranja: 'text-naranja',
+    gris: 'text-gris',
+    azul: 'text-azul-hondo',
+  }[tono]
+
+  return (
+    <span className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-wider text-gris-50">{titulo}</span>
+      <span className={`cifra font-medium ${color}`}>{valor}</span>
+    </span>
+  )
+}
+
 /* ------------------------------------------------------------------
    Marcas chicas.
    ------------------------------------------------------------------ */

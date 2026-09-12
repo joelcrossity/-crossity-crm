@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { plata } from '@/lib/estados'
+import { Seccion, Par } from '@/components/ui'
 
 /* ------------------------------------------------------------------
    El estado de resultado de cada proyecto.
@@ -33,15 +34,10 @@ export default function Posiciones({ filas }: { filas: Posicion[] }) {
   const vivos = filas.filter((f) => f.color === 'verde' && Number(f.acordado) > 0)
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-md font-bold tracking-tight">Cómo está parado cada proyecto</h2>
-        <p className="max-w-[70ch] text-sm text-gris">
-          Si lo entregado va muy por delante de lo facturado, el problema es nuestro. Si lo
-          facturado va por delante de lo cobrado, el problema es del cliente. Son dos conversaciones
-          distintas.
-        </p>
-      </div>
+    <Seccion
+      titulo="Cómo está parado cada proyecto"
+      ayuda="Si lo entregado va muy por delante de lo facturado, el problema es nuestro. Si lo facturado va por delante de lo cobrado, el problema es del cliente. Son dos conversaciones distintas."
+    >
 
       {vivos.length === 0 ? (
         <p className="tarjeta px-3.5 py-3 text-sm text-gris">
@@ -91,19 +87,19 @@ export default function Posiciones({ filas }: { filas: Posicion[] }) {
                   </span>
 
                   <span className="cifra flex flex-wrap gap-x-4 gap-y-0.5 text-2xs">
-                    <Dato titulo="entregado" valor={plata(f.entregado, f.moneda)} tono="text-azul-50" />
-                    <Dato titulo="facturado" valor={plata(f.facturado, f.moneda)} tono="text-azul-hondo" />
-                    <Dato titulo="cobrado" valor={plata(f.cobrado, f.moneda)} tono="text-verde" />
+                    <Par titulo="entregado" valor={plata(f.entregado, f.moneda)} tono="azul" />
+                    <Par titulo="facturado" valor={plata(f.facturado, f.moneda)} tono="azul" />
+                    <Par titulo="cobrado" valor={plata(f.cobrado, f.moneda)} tono="verde" />
                     {Number(f.gastos) > 0 && (
-                      <Dato titulo="gastos" valor={plata(f.gastos, f.moneda)} tono="text-naranja" />
+                      <Par titulo="gastos" valor={plata(f.gastos, f.moneda)} tono="naranja" />
                     )}
                     {Number(f.para_terceros) > 0 && (
-                      <Dato titulo="a terceros" valor={plata(f.para_terceros, f.moneda)} tono="text-gris" />
+                      <Par titulo="a terceros" valor={plata(f.para_terceros, f.moneda)} tono="gris" />
                     )}
-                    <Dato
+                    <Par
                       titulo="queda para Crossity"
                       valor={plata(queda, f.moneda)}
-                      tono={queda < 0 ? 'text-rojo' : 'text-tinta'}
+                      tono={queda < 0 ? 'rojo' : 'tinta'}
                     />
                   </span>
 
@@ -118,15 +114,6 @@ export default function Posiciones({ filas }: { filas: Posicion[] }) {
           })}
         </ul>
       )}
-    </section>
-  )
-}
-
-function Dato({ titulo, valor, tono }: { titulo: string; valor: string; tono: string }) {
-  return (
-    <span className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-wider text-gris-50">{titulo}</span>
-      <span className={`font-medium ${tono}`}>{valor}</span>
-    </span>
+    </Seccion>
   )
 }

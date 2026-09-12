@@ -2,6 +2,7 @@ import Link from 'next/link'
 import SinAcceso from '@/components/SinAcceso'
 import { puedeVer } from '@/lib/permisos'
 import Shell, { Titulo } from '@/components/Shell'
+import { Cifra } from '@/components/Grafico'
 import { createClient } from '@/lib/supabase/server'
 import { plata, fechaCorta } from '@/lib/estados'
 import NuevoAbono from '@/components/NuevoAbono'
@@ -121,22 +122,22 @@ export default async function Mantenimientos() {
       <div className="flex flex-col gap-9">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {monedas.length === 0 ? (
-            <Dato rotulo="Por mes" valor={plata(0)} nota="todavía sin abonos vigentes" />
+            <Cifra titulo="Por mes" valor={plata(0)} nota="todavía sin abonos vigentes" />
           ) : (
             monedas.map(([moneda, total]) => (
-              <Dato
+              <Cifra
                 key={moneda}
-                rotulo={`Por mes en ${moneda}`}
+                titulo={`Por mes en ${moneda}`}
                 valor={plata(total, moneda)}
                 nota={`${plata(total * 12, moneda)} al año si ninguno se cae`}
               />
             ))
           )}
-          <Dato
-            rotulo="Vencen pronto"
+          <Cifra
+            titulo="Vencen pronto"
             valor={String(vencen.length)}
             nota="en los próximos 60 días"
-            alarma={vencen.length > 0}
+            tono={vencen.length > 0 ? 'rojo' : 'tinta'}
           />
         </section>
 
@@ -207,27 +208,5 @@ export default async function Mantenimientos() {
 
       </div>
     </Shell>
-  )
-}
-
-function Dato({
-  rotulo,
-  valor,
-  nota,
-  alarma,
-}: {
-  rotulo: string
-  valor: string
-  nota: string
-  alarma?: boolean
-}) {
-  return (
-    <div className="surge flex flex-col gap-0.5 tarjeta p-3.5">
-      <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">{rotulo}</span>
-      <span className={`cifra text-xl font-bold ${alarma ? 'text-amarillo' : 'text-tinta'}`}>
-        {valor}
-      </span>
-      <span className="text-2xs text-gris-50">{nota}</span>
-    </div>
   )
 }
