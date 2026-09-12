@@ -5,9 +5,9 @@ import Campanita, { type Aviso } from '@/components/Campanita'
 import MenuUsuario from '@/components/MenuUsuario'
 import Tema from '@/components/Tema'
 import Buscador from '@/components/Buscador'
+import Navegacion from '@/components/Navegacion'
 import { GRUPOS, NOMBRE_ROL, SECCIONES, puedeVer, rolPrincipal } from '@/lib/permisos'
 import { plata } from '@/lib/estados'
-import { ICONOS } from '@/components/Iconos'
 
 type Pulso = {
   en_vivo: number
@@ -76,8 +76,8 @@ export default async function Shell({
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <aside
-        className="vidrio flex shrink-0 flex-col gap-7 border-b px-4 py-4
-                   lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:border-r lg:border-b-0 lg:py-6"
+        className="vidrio flex shrink-0 flex-col gap-4 border-b px-4 py-3
+                   lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:gap-7 lg:border-r lg:border-b-0 lg:py-6"
       >
         {/* El logotipo, no la palabra escrita con otra tipografía. El
             manual fija el mínimo sin eslogan en 23 px de alto y una zona
@@ -94,41 +94,7 @@ export default async function Shell({
           />
         </Link>
 
-        <nav className="flex flex-1 flex-wrap gap-x-4 gap-y-3 lg:flex-col lg:flex-nowrap lg:gap-4">
-          {navegacion.map((g) => (
-            <div key={g.grupo ?? 'raiz'} className="flex flex-col gap-0.5">
-              {g.grupo && (
-                <span className="hidden px-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-gris-50 lg:block">
-                  {g.grupo}
-                </span>
-              )}
-              <span className="flex flex-wrap gap-1 lg:flex-col lg:gap-0.5">
-                {g.items.map((item) => {
-                  const aca = activo === item.href
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      title={item.detalle}
-                      aria-current={aca ? 'page' : undefined}
-                      className={`flex items-center gap-2.5 rounded-[var(--radius-control)] px-2.5
-                                  py-2 text-base transition-colors duration-150 ${
-                                    aca
-                                      ? 'bg-azul-aire font-semibold text-azul-hondo'
-                                      : 'text-gris hover:bg-superficie hover:text-tinta'
-                                  }`}
-                    >
-                      <span className={aca ? 'text-azul-hondo' : 'text-gris-50'}>
-                        {ICONOS[item.href]}
-                      </span>
-                      {item.nombre}
-                    </Link>
-                  )
-                })}
-              </span>
-            </div>
-          ))}
-        </nav>
+        <Navegacion grupos={navegacion} activo={activo} />
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
