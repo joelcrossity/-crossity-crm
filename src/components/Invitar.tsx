@@ -91,8 +91,7 @@ export default function Invitar({
             readOnly
             value={enlace}
             onFocus={(e) => e.currentTarget.select()}
-            className="w-full rounded-md border border-linea bg-superficie px-2.5 py-1.5
-                       text-2xs text-gris"
+            className="campo w-full text-2xs"
           />
 
           <div className="flex flex-wrap items-center gap-2">

@@ -198,7 +198,7 @@ export default function Accesos({
                 {datos.sinCuenta.map((p) => (
                   <li
                     key={p.id}
-                    className="rounded-md border border-linea bg-superficie px-2.5 py-1.5 text-sm text-gris"
+                    className="campo"
                   >
                     {p.nombre}
                     <span className="cifra ml-2 text-2xs text-gris-50">

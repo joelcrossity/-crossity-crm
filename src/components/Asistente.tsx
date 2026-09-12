@@ -407,8 +407,7 @@ export default function Asistente({
                 <button
                   type="button"
                   onClick={() => setHitos((p) => [...p, vacio()])}
-                  className="rounded-md border border-linea bg-superficie px-2.5 py-1 text-sm text-gris
-                             transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
+                  className="boton boton-secundario boton-chico transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
                 >
                   Sumar una entrega
                 </button>

@@ -233,6 +233,58 @@ export function Punto({ color }: { color: string }) {
 }
 
 /* ------------------------------------------------------------------
+   La barra de pestañas.
+
+   Estaba escrita dos veces —en el componente de pestañas y a mano en el
+   historial— con subrayados de distinto grosor. Es la pieza, no el
+   comportamiento: quién guarda cuál está activa lo decide cada pantalla.
+   ------------------------------------------------------------------ */
+
+export function BarraSolapas<T extends string>({
+  solapas,
+  activa,
+  alElegir,
+}: {
+  solapas: { clave: T; texto: string; señal?: number }[]
+  activa: T
+  alElegir: (clave: T) => void
+}) {
+  return (
+    <div role="tablist" className="riel flex gap-1 overflow-x-auto border-b border-linea">
+      {solapas.map((s) => {
+        const aca = s.clave === activa
+        return (
+          <button
+            key={s.clave}
+            type="button"
+            role="tab"
+            aria-selected={aca}
+            onClick={() => alElegir(s.clave)}
+            className={`-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm
+                        transition-colors duration-150 ${
+                          aca
+                            ? 'border-azul-hondo font-medium text-tinta'
+                            : 'border-transparent text-gris hover:text-tinta'
+                        }`}
+          >
+            {s.texto}
+            {s.señal !== undefined && s.señal > 0 && (
+              <span
+                className={`cifra rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  aca ? 'bg-azul-aire text-azul-hondo' : 'bg-panel text-gris-50'
+                }`}
+              >
+                {s.señal}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------
    Avisos. Tres tonos y ninguno tapa la pantalla: un mensaje que hay que
    cerrar para seguir trabajando interrumpe más de lo que informa.
    ------------------------------------------------------------------ */

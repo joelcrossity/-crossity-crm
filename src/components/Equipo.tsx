@@ -47,7 +47,7 @@ export function Equipo({
           {miembros.map((m) => (
             <li
               key={m.id}
-              className="flex items-center gap-2 rounded-md border border-linea bg-superficie px-2.5 py-1.5"
+              className="flex items-center gap-2 rounded-[var(--radius-control)] border border-linea bg-superficie px-2.5 py-1.5"
             >
               <span className="flex flex-col leading-tight">
                 <span className="text-sm font-medium text-tinta">{m.personas?.nombre}</span>

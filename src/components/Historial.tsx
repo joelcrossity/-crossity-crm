@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { archivarLoCerrado, desarchivarProyecto } from '@/app/acciones'
 import Filtro, { type Recorte } from '@/components/Filtro'
+import { BarraSolapas, Aviso } from '@/components/ui'
 import { plata, fechaCorta } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
@@ -115,58 +116,36 @@ export default function Historial({
   return (
     <div className="flex flex-col gap-5">
       {candidatos > 0 && puedeBarrer && (
-        <div className="surge flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-tarjeta)]
-                        border border-azul bg-azul-aire px-4 py-3">
-          <p className="max-w-[60ch] text-sm text-tinta">
-            Hay <span className="font-medium">{candidatos}</span> cerrados hace más de un mes que
-            siguen en las listas del día. Sacarlos no borra nada.
-          </p>
-          <button
-            type="button"
-            disabled={pendiente}
-            onClick={() => correr(() => archivarLoCerrado())}
-            className="boton boton-principal boton-chico shrink-0"
-          >
-            {pendiente ? 'Archivando…' : `Archivar los ${candidatos}`}
-          </button>
-        </div>
+        <Aviso
+          tono="dato"
+          accion={
+            <button
+              type="button"
+              disabled={pendiente}
+              onClick={() => correr(() => archivarLoCerrado())}
+              className="boton boton-principal boton-chico shrink-0"
+            >
+              {pendiente ? 'Archivando…' : `Archivar los ${candidatos}`}
+            </button>
+          }
+        >
+          Hay <span className="font-medium">{candidatos}</span> cerrados hace más de un mes que
+          siguen en las listas del día. Sacarlos no borra nada.
+        </Aviso>
       )}
 
       {error && (
-        <p className="rounded-[var(--radius-control)] border border-rojo bg-rojo-aire px-3 py-2 text-sm text-rojo">
-          {error}
-        </p>
+        <Aviso tono="mal">{error}</Aviso>
       )}
 
-      <div role="tablist" className="riel flex gap-1 overflow-x-auto border-b border-linea">
-        {([
-          ['proyectos', 'Proyectos', proyectos.length],
-          ['oportunidades', 'Oportunidades', oportunidades.length],
-        ] as const).map(([clave, texto, cuantos]) => (
-          <button
-            key={clave}
-            type="button"
-            role="tab"
-            aria-selected={solapa === clave}
-            onClick={() => setSolapa(clave)}
-            className={`-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm
-                        transition-colors duration-150 ${
-                          solapa === clave
-                            ? 'border-azul-hondo font-medium text-tinta'
-                            : 'border-transparent text-gris hover:text-tinta'
-                        }`}
-          >
-            {texto}
-            <span
-              className={`cifra rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                solapa === clave ? 'bg-azul-aire text-azul-hondo' : 'bg-panel text-gris-50'
-              }`}
-            >
-              {cuantos}
-            </span>
-          </button>
-        ))}
-      </div>
+      <BarraSolapas
+        solapas={[
+          { clave: 'proyectos' as const, texto: 'Proyectos', señal: proyectos.length },
+          { clave: 'oportunidades' as const, texto: 'Oportunidades', señal: oportunidades.length },
+        ]}
+        activa={solapa}
+        alElegir={setSolapa}
+      />
 
       <div key={solapa} className="surge">
         <Filtro
