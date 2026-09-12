@@ -1,13 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 /* ------------------------------------------------------------------
-   Cambiar la propia contraseña.
+   Poner o cambiar la propia contraseña.
+
+   La misma pantalla sirve para dos momentos que se sienten distintos:
+   entrar por primera vez y cambiar una que ya existe. Supabase los
+   distingue en el enlace —invite contra recovery— y se nota en la URL,
+   así que la pantalla lo lee y habla de lo que la persona está
+   haciendo. A alguien que entra por primera vez decirle "cambiá tu
+   contraseña" lo deja buscando cuál era la anterior.
 
    La escribe la persona en su navegador y viaja directo a Supabase: no
    pasa por el servidor de la aplicación ni queda en ningún registro
@@ -16,8 +23,23 @@ import { createClient } from '@/lib/supabase/client'
    recuperación, que llega al dueño de la cuenta y a nadie más.
    ------------------------------------------------------------------ */
 
+/* Supabase deja el tipo en el fragmento de la URL (o en la query,
+   según el flujo). Se lee como lo que es —una propiedad del entorno—
+   para que el servidor y el cliente rindan lo mismo. */
+function tipoDeEnlace() {
+  if (typeof window === 'undefined') return 'cambio'
+  const texto = window.location.hash.slice(1) + '&' + window.location.search.slice(1)
+  return new URLSearchParams(texto).get('type') === 'invite' ? 'alta' : 'cambio'
+}
+
 export default function Clave() {
   const router = useRouter()
+  const tipo = useSyncExternalStore(
+    () => () => {},
+    tipoDeEnlace,
+    () => 'cambio',
+  )
+  const esAlta = tipo === 'alta'
   const [clave, setClave] = useState('')
   const [otraVez, setOtraVez] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -45,7 +67,9 @@ export default function Clave() {
       setError(
         error.message.includes('same')
           ? 'Es la misma que tenías.'
-          : 'No se pudo cambiar. Probá de nuevo.',
+          : error.message.includes('session') || error.message.includes('Auth')
+            ? 'El enlace venció o ya se usó. Pedile uno nuevo a quien te lo mandó.'
+            : 'No se pudo guardar. Probá de nuevo.',
       )
       setYendo(false)
       return
@@ -68,23 +92,26 @@ export default function Clave() {
             priority
             className="h-8 w-auto self-start"
           />
-          <h1 className="text-2xl font-bold tracking-tight text-tinta">Cambiar la contraseña</h1>
-          <p className="text-sm text-gris">
-            La escribís vos y viaja directo a Supabase: no pasa por el sistema ni queda guardada en
-            ningún lado nuestro.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-tinta">
+            {esAlta ? 'Elegí tu contraseña' : 'Cambiar la contraseña'}
+          </h1>
+          {esAlta && (
+            <p className="text-sm text-gris">
+              Es tu primera vez acá. Poné una contraseña y entrás.
+            </p>
+          )}
         </div>
 
         {listo ? (
           <p className="rounded-lg border border-verde bg-verde-aire px-3.5 py-3 text-sm text-tinta">
-            Listo, quedó cambiada. Te llevo al inicio.
+            {esAlta ? 'Listo. Bienvenido, te llevo al sistema.' : 'Listo, quedó cambiada. Te llevo al inicio.'}
           </p>
         ) : (
           <>
             <div className="flex flex-col gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
-                  La nueva
+                  {esAlta ? 'Tu contraseña' : 'La nueva'}
                 </span>
                 <input
                   type="password"
@@ -119,11 +146,13 @@ export default function Clave() {
 
             <div className="flex flex-wrap items-center gap-2">
               <button type="submit" disabled={yendo} className="boton boton-principal">
-                {yendo ? 'Guardando…' : 'Cambiarla'}
+                {yendo ? 'Guardando…' : esAlta ? 'Entrar' : 'Cambiarla'}
               </button>
-              <Link href="/hoy" className="boton boton-sutil">
-                Volver
-              </Link>
+              {!esAlta && (
+                <Link href="/hoy" className="boton boton-sutil">
+                  Volver
+                </Link>
+              )}
             </div>
           </>
         )}
