@@ -643,11 +643,16 @@ export async function cambiarProximaAccion(
 export async function ganarOportunidad(
   proyectoId: string,
   esquema: string,
+  /* Qué etapas arrancan. Vacío: arrancan todas, que es lo que uno
+     espera si cotizó tres y vendió las tres. Las que no arrancan quedan
+     cotizadas y esperando. */
+  activar: string[] = [],
 ): Promise<Resultado> {
   const supabase = await createClient()
   const { error } = await supabase.rpc('ganar_oportunidad', {
     p_proyecto: proyectoId,
     p_esquema: esquema,
+    p_activar: activar.length > 0 ? activar : null,
   })
   if (error) return { ok: false, error: traducir(error.message) }
 
@@ -2309,3 +2314,96 @@ export async function borrarColumna(clave: string, absorbe?: string): Promise<Re
   return { ok: true }
 }
 
+/* ------------------------------------------------------------------
+   Dar de alta una persona sin salir del formulario.
+
+   Crea la ficha —nombre, correo, rol— y nada más. El acceso al sistema
+   se da después, desde Usuarios y roles, que ya genera el enlace de
+   invitación.
+
+   Separar las dos cosas es a propósito: dar de alta a alguien para
+   asignarle trabajo y darle llaves del sistema son decisiones
+   distintas, y la segunda no debería poder tomarse sin querer desde un
+   modal al costado de un formulario de proyecto.
+   ------------------------------------------------------------------ */
+export async function altaRapidaPersona(
+  nombre: string,
+  email: string,
+  roles: string[],
+): Promise<{ ok: true; id: string; nombre: string } | { ok: false; error: string }> {
+  if (!nombre.trim()) return { ok: false, error: 'Poné el nombre.' }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('personas')
+    .insert({
+      nombre: nombre.trim(),
+      email: email.trim() || null,
+      roles,
+      activa: true,
+    })
+    .select('id, nombre')
+    .single()
+
+  if (error) {
+    if (error.message.includes('duplicate'))
+      return { ok: false, error: 'Ya hay alguien con ese nombre. Elegilo de la lista.' }
+    return { ok: false, error: traducir(error.message) }
+  }
+
+  revalidatePath('/', 'layout')
+  return { ok: true, id: data.id as string, nombre: data.nombre as string }
+}
+
+export type EtapaCotizada = {
+  id?: string
+  orden: number
+  titulo: string
+  entregable?: string
+  monto: number
+  moneda: string
+  casa?: string
+  cotizacion?: number | null
+  vence?: string | null
+}
+
+export async function guardarCotizacion(
+  proyectoId: string,
+  etapas: EtapaCotizada[],
+): Promise<Resultado> {
+  if (etapas.some((e) => !e.titulo.trim()))
+    return { ok: false, error: 'Cada etapa necesita un nombre.' }
+  if (etapas.some((e) => !Number.isFinite(e.monto) || e.monto < 0))
+    return { ok: false, error: 'Hay un monto que no se entiende.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guardar_etapas', {
+    p_proyecto: proyectoId,
+    p_etapas: etapas,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/pipeline')
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+
+/* Activar una etapa que quedó cotizada. Es el up-sell: el cliente
+   vuelve y pide lo que ya se le había presupuestado. */
+export async function activarEtapa(hitoId: string, vence: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('hitos')
+    .update({ activo: true, vence_at: vence || null }, { count: 'exact' })
+    .eq('id', hitoId)
+    .select('id')
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para activar esta etapa.' }
+
+  revalidatePath('/cuentas', 'layout')
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/tablero')
+  return { ok: true }
+}
