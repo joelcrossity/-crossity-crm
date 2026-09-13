@@ -5,6 +5,7 @@ import Campanita, { type Aviso } from '@/components/Campanita'
 import MenuUsuario from '@/components/MenuUsuario'
 import Tema from '@/components/Tema'
 import Buscador from '@/components/Buscador'
+import Dolar from '@/components/Dolar'
 import Navegacion from '@/components/Navegacion'
 import { GRUPOS, NOMBRE_ROL, SECCIONES, puedeVer, rolPrincipal } from '@/lib/permisos'
 import { plata } from '@/lib/estados'
@@ -111,6 +112,7 @@ export default async function Shell({
             </span>
 
             <span className="flex items-center gap-2.5">
+              <Dolar />
               <Buscador />
               <Tema />
               <Campanita avisos={avisos} />

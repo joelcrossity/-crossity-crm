@@ -9,8 +9,10 @@ import { configSupabase } from './config'
    verifican antes quién está pidiendo: si esta clave llegara al
    navegador, cualquiera podría leer y escribir todo.
 
-   Sirve para una sola cosa que la clave pública no puede hacer: crear
-   cuentas y generar enlaces de acceso. Nada más.
+   Sirve para lo que la clave pública no puede hacer y no tiene una
+   persona detrás: crear cuentas, generar enlaces de acceso, y guardar
+   la cotización que trae el cron. Nada más: cada uso nuevo acá es una
+   puerta que se abre sin RLS, así que tiene que justificarse.
    ------------------------------------------------------------------ */
 
 export function clienteAdmin() {
