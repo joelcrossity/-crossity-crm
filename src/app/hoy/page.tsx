@@ -3,7 +3,7 @@ import Shell, { Titulo } from '@/components/Shell'
 import { Marco, Barras, Columnas, Embudo, Cifra } from '@/components/Grafico'
 import Sugerencias, { type Sugerencia } from '@/components/Sugerencias'
 import { createClient } from '@/lib/supabase/server'
-import { ETAPAS } from '@/lib/estados'
+import { ETAPAS, plata } from '@/lib/estados'
 
 type Fila = {
   id: string

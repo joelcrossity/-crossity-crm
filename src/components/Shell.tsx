@@ -7,7 +7,6 @@ import Tema from '@/components/Tema'
 import Buscador from '@/components/Buscador'
 import Navegacion from '@/components/Navegacion'
 import { GRUPOS, NOMBRE_ROL, SECCIONES, puedeVer, rolPrincipal } from '@/lib/permisos'
-import { plata } from '@/lib/estados'
 
 type Dolar = {
   casa: string
