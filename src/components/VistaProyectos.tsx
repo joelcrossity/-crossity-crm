@@ -3,6 +3,7 @@
 import Filtro, { type Recorte } from '@/components/Filtro'
 import { Selector, useVista } from '@/components/Vistas'
 import TableroEstados, { RECORTE, type Columna } from '@/components/TableroEstados'
+import type { Cliente } from '@/components/ElegirCliente'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
 
 const RECORTES: Recorte<Fila>[] = [
@@ -39,11 +40,15 @@ export default function VistaProyectos({
   alta,
   responsables,
   columnas,
+  clientes = [],
+  personas = [],
 }: {
   filas: Fila[]
   alta: React.ReactNode
   responsables: string[]
   columnas: Columna[]
+  clientes?: Cliente[]
+  personas?: { id: string; nombre: string }[]
 }) {
   const vista = useVista('crossity.proyectos')
 
@@ -89,7 +94,7 @@ export default function VistaProyectos({
                 ))}
               </div>
             ) : (
-              <TableroEstados filas={vistos} columnas={columnas} />
+              <TableroEstados filas={vistos} columnas={columnas} clientes={clientes} personas={personas} />
             )}
           </div>
         </div>

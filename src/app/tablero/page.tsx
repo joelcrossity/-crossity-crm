@@ -60,6 +60,8 @@ export default async function Tablero() {
         <VistaProyectos
           filas={filas}
           columnas={(columnas ?? []) as Columna[]}
+          clientes={clientes}
+          personas={personas ?? []}
           responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
           alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
         />

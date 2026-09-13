@@ -4,6 +4,8 @@ import { useMemo, useOptimistic, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { archivarProyecto, cambiarEstado } from '@/app/acciones'
 import { CampoBusqueda, Plegable } from '@/components/ui'
+import EditarFicha from '@/components/EditarFicha'
+import type { Cliente } from '@/components/ElegirCliente'
 import { SUBESTADO, fechaCierre, fechaCorta, porCierre } from '@/lib/estados'
 import type { Fila } from '@/components/TablaProyectos'
 
@@ -91,6 +93,7 @@ function Tarjeta({
   alEmpezar,
   alTerminar,
   alArchivar,
+  alEditar,
 }: {
   f: Fila
   color: string
@@ -100,10 +103,32 @@ function Tarjeta({
   alEmpezar: (id: string) => void
   alTerminar: () => void
   alArchivar: (id: string) => void
+  alEditar: (f: Fila) => void
 }) {
   return (
     <li className="sale" data-yendo={yendose ? 'si' : 'no'}>
       <div className="group/tarjeta relative">
+        <span className="absolute top-2 right-2 z-10 flex gap-0.5 lg:opacity-0
+                         lg:group-hover/tarjeta:opacity-100">
+          {f.puedo_editar && (
+            <button
+              type="button"
+              aria-label={`Editar ${f.nombre}`}
+              title="Editar sin salir del tablero"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                alEditar(f)
+              }}
+              className="grid size-6 place-items-center rounded-md bg-superficie text-gris-25
+                         transition-colors duration-150 hover:text-azul-hondo"
+            >
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
+                <path d="M11.2 2.6a1.4 1.4 0 0 1 2 2L6 11.8l-2.7.9.9-2.7 7-7.4Z"
+                      stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
         <button
           type="button"
           aria-label={`Archivar ${f.nombre}`}
@@ -114,9 +139,8 @@ function Tarjeta({
             e.stopPropagation()
             alArchivar(f.id)
           }}
-          className="absolute top-2 right-2 z-10 grid size-6 place-items-center rounded-md
-                     bg-superficie text-gris-25 transition-colors duration-150
-                     hover:text-azul-hondo lg:opacity-0 lg:group-hover/tarjeta:opacity-100"
+          className="grid size-6 place-items-center rounded-md bg-superficie text-gris-25
+                     transition-colors duration-150 hover:text-azul-hondo"
         >
           <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
             <path
@@ -127,6 +151,7 @@ function Tarjeta({
             <path d="M1.6 3.2h12.8v2.4H1.6zM6.5 8.4h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
+        </span>
 
         <Link
           href={`/proyecto/${f.codigo}`}
@@ -219,6 +244,7 @@ function ZonaCerrada({
     alEmpezar: (id: string) => void
     alTerminar: () => void
     alArchivar: (id: string) => void
+    alEditar: (f: Fila) => void
   }
   alElegirMotivo: (id: string, color: string, motivo: string) => void
   alCancelarMotivo: () => void
@@ -397,7 +423,18 @@ function SinActivos({ cerrados }: { cerrados: number }) {
   )
 }
 
-export default function TableroEstados({ filas, columnas }: { filas: Fila[]; columnas: Columna[] }) {
+export default function TableroEstados({
+  filas,
+  columnas,
+  clientes = [],
+  personas = [],
+}: {
+  filas: Fila[]
+  columnas: Columna[]
+  clientes?: Cliente[]
+  personas?: { id: string; nombre: string }[]
+}) {
+  const [editando, setEditando] = useState<Fila | null>(null)
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
   const [encima, setEncima] = useState<string | null>(null)
@@ -513,6 +550,7 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
       setEncima(null)
     },
     alArchivar: archivar,
+    alEditar: setEditando,
   }
 
   return (
@@ -631,6 +669,28 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
           />
         ))}
       </div>
+
+      {editando && (
+        <EditarFicha
+          ficha={{
+            id: editando.id,
+            nombre: editando.nombre,
+            organizacion_id: editando.organizacion_id,
+            responsable_id: editando.responsable_id,
+            fecha_inicio: editando.fecha_inicio,
+            fecha_comprometida: editando.fecha_comprometida,
+            monto_neto: editando.monto_neto,
+            descripcion: editando.descripcion,
+            etapa: null,
+          }}
+          clientes={clientes}
+          personas={personas}
+          etapas={[]}
+          esOportunidad={false}
+          puedeEditar={editando.puedo_editar}
+          alCerrar={() => setEditando(null)}
+        />
+      )}
 
       <p className="text-2xs text-gris-50">
         Se arrastra entre columnas y el cambio impacta en el proyecto. Frenado y Perdido preguntan

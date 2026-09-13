@@ -2089,3 +2089,65 @@ export async function deQuienEsEsteCuit(
   const uno = (data ?? [])[0] as { id: string; nombre: string; donde: string } | undefined
   return uno ?? null
 }
+
+/* ------------------------------------------------------------------
+   Editar una ficha entera de una vez.
+
+   Ya había una acción por campo, y sirven: cada una guarda al salir del
+   input, sin botón. Pero un formulario que toca seis campos y dispara
+   seis guardados es seis viajes, seis revalidaciones y seis
+   oportunidades de que uno falle y los otros no, dejando la ficha a
+   medio guardar.
+
+   Esto manda lo que cambió, junto. Lo que no se tocó no viaja: mandar
+   todo el objeto haría que dos personas editando campos distintos se
+   pisen, porque la segunda en guardar reescribiría con lo que tenía en
+   pantalla cuando abrió.
+
+   Quién puede hacerlo no se decide acá: la política de proyectos ya
+   dice que edita quien participa, y el trigger de montos frena el
+   precio aparte. Si no le corresponde, la base devuelve cero filas y
+   eso se cuenta como que no se pudo.
+   ------------------------------------------------------------------ */
+
+export type CamposProyecto = {
+  nombre?: string
+  organizacion_id?: string
+  responsable_id?: string | null
+  fecha_inicio?: string | null
+  fecha_comprometida?: string | null
+  monto_neto?: number | null
+  descripcion?: string | null
+  etapa?: string
+  prioridad?: number | null
+}
+
+export async function editarProyecto(
+  id: string,
+  campos: CamposProyecto,
+): Promise<Resultado> {
+  const limpio: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(campos)) {
+    if (v !== undefined) limpio[k] = v === '' ? null : v
+  }
+
+  if (typeof limpio.nombre === 'string' && !limpio.nombre.trim())
+    return { ok: false, error: 'El proyecto necesita un nombre.' }
+  if (Object.keys(limpio).length === 0) return { ok: true }
+
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('proyectos')
+    .update(limpio, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para editar este proyecto.' }
+
+  revalidatePath('/tablero')
+  revalidatePath('/pipeline')
+  revalidatePath('/hoy')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}

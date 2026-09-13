@@ -23,6 +23,12 @@ export type Fila = {
   es_producto_propio: boolean
   responsable: string | null
   dias_sin_novedades: number
+  organizacion_id: string
+  responsable_id: string | null
+  fecha_inicio: string | null
+  monto_neto: number | null
+  descripcion: string | null
+  puedo_editar: boolean
 }
 
 

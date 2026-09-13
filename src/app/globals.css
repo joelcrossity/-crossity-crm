@@ -456,6 +456,21 @@ h1, h2, h3, h4 {
    correr, lo que se ve es el contenido, nunca el vacío.
    ------------------------------------------------------------------ */
 
+/* El panel de edición entra desde el borde. Corto: es una corrección
+   de paso, no una pantalla nueva, y una entrada larga la haría sentir
+   más importante de lo que es. */
+
+@keyframes desde_el_costado {
+  from { transform: translateX(1.5rem); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.entra-de-costado { animation: desde_el_costado 0.22s var(--ease-salida) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .entra-de-costado { animation: aparecer 0.12s linear both; }
+}
+
 /* ------------------------------------------------------------------
    Salida. Archivar saca la tarjeta de la pantalla antes de que el
    servidor conteste, y el hueco se cierra solo.
