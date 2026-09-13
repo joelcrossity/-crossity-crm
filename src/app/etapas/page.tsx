@@ -1,7 +1,7 @@
 import Shell, { Titulo } from '@/components/Shell'
 import SinAcceso from '@/components/SinAcceso'
 import { puedeVer } from '@/lib/permisos'
-import Etapas, { type Etapa, type Estado } from '@/components/Etapas'
+import Etapas, { type Etapa } from '@/components/Etapas'
 import Columnas from '@/components/Columnas'
 import { type Columna } from '@/components/TableroEstados'
 import { createClient } from '@/lib/supabase/server'
@@ -34,9 +34,8 @@ export default async function Configuracion() {
   const roles = (cuenta?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
   const esDireccion = roles.includes('direccion')
 
-  const [{ data: etapas }, { data: estados }, { data: columnas }] = await Promise.all([
+  const [{ data: etapas }, { data: columnas }] = await Promise.all([
     supabase.from('v_etapas').select('*'),
-    supabase.from('estados_proyecto').select('*'),
     supabase.from('columnas_tablero').select('*').order('orden'),
   ])
 
@@ -44,7 +43,7 @@ export default async function Configuracion() {
     <Shell activo="/etapas">
       <Titulo
         seccion="Sistema"
-        bajada="Cómo vende la agencia y en qué estados vive un proyecto. Lo primero se ajusta con el tiempo; lo segundo casi nunca."
+        bajada="Las etapas por las que pasa una venta y las columnas del tablero de proyectos. Son las dos listas que el sistema efectivamente lee."
       >
         Etapas y estados
       </Titulo>
@@ -52,7 +51,6 @@ export default async function Configuracion() {
       <div className="flex flex-col gap-10">
         <Etapas
           etapas={(etapas ?? []) as Etapa[]}
-          estados={(estados ?? []) as Estado[]}
           esDireccion={esDireccion}
         />
 

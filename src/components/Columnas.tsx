@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { cambiarZona, moverColumna, renombrarColumna } from '@/app/acciones'
+import { borrarColumna, cambiarZona, moverColumna, renombrarColumna } from '@/app/acciones'
 import { Seccion } from '@/components/ui'
 import type { Columna } from '@/components/TableroEstados'
 
@@ -110,6 +110,45 @@ const suyas = columnas.filter((c) => c.zona === zona)
                   className="boton boton-secundario boton-chico shrink-0"
                 >
                   {zona === 'arriba' ? 'Bajarla al pie' : 'Subirla al tablero'}
+                </button>
+              )}
+
+              {/* Borrar del todo. La base frena si hay proyectos adentro
+                  o si es la única de su color que recoge lo que no
+                  encaja en las demás: sin ella, un proyecto con un
+                  motivo no contemplado desaparecería del tablero. En
+                  ese caso pide a quién traspasarle ese papel. */}
+              {esDireccion && (
+                <button
+                  type="button"
+                  disabled={pendiente}
+                  title="Solo si está vacía y nadie queda sin columna"
+                  onClick={() => {
+                    const hermanas = columnas.filter(
+                      (o) => o.color === c.color && o.clave !== c.clave,
+                    )
+                    correr(async () => {
+                      const r = await borrarColumna(c.clave)
+                      if (r.ok || hermanas.length === 0) return r
+                      /* Solo el caso del recoge-todo se puede resolver
+                         acá; el de "tiene proyectos adentro" no, y su
+                         mensaje ya dice qué hacer. */
+                      if (!r.error.includes('recoge')) return r
+                      const quien = window.prompt(
+                        `${r.error}\n\n¿Qué columna se queda con eso? Escribí su nombre:\n` +
+                          hermanas.map((o) => `· ${o.etiqueta}`).join('\n'),
+                      )
+                      const elegida = hermanas.find(
+                        (o) => o.etiqueta.toLowerCase() === (quien ?? '').trim().toLowerCase(),
+                      )
+                      if (!elegida) return { ok: false as const, error: 'No se borró nada.' }
+                      return borrarColumna(c.clave, elegida.clave)
+                    })
+                  }}
+                  className="shrink-0 rounded-md border border-linea px-2 py-1 text-2xs text-gris-50
+                             transition-colors duration-150 hover:border-rojo hover:text-rojo"
+                >
+                  Borrar
                 </button>
               )}
             </li>

@@ -1340,21 +1340,6 @@ export async function apagarEtapa(clave: string, activa: boolean): Promise<Resul
   return { ok: true }
 }
 
-export async function renombrarEstado(
-  color: string,
-  etiqueta: string,
-  ayuda: string,
-): Promise<Resultado> {
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('renombrar_estado', {
-    p_color: color,
-    p_etiqueta: etiqueta,
-    p_ayuda: ayuda,
-  })
-  if (error) return { ok: false, error: traducir(error.message) }
-  revalidatePath('/', 'layout')
-  return { ok: true }
-}
 
 /* ------------------------------------------------------------------
    Un abono que no viene de un proyecto.
@@ -1668,13 +1653,6 @@ export async function fecharConsumo(
   return { ok: true }
 }
 
-export async function moverEstado(color: string, hacia: number): Promise<Resultado> {
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('mover_estado', { p_color: color, p_hacia: hacia })
-  if (error) return { ok: false, error: traducir(error.message) }
-  revalidatePath('/', 'layout')
-  return { ok: true }
-}
 
 /* ------------------------------------------------------------------
    Lo que se descuenta antes de repartir.
@@ -2305,5 +2283,28 @@ export async function revertirPago(liquidacionId: string): Promise<Resultado> {
   if (error) return { ok: false, error: traducir(error.message) }
   revalidatePath('/equipo', 'layout')
   revalidatePath('/cajas')
+  return { ok: true }
+}
+
+/* Borrar de verdad, no apagar. La base decide si se puede: una etapa
+   con oportunidades adentro no se borra, y una columna que es la única
+   que recoge lo que no encaja en su color tampoco, salvo que se diga
+   quién se queda con eso. */
+export async function borrarEtapa(clave: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('borrar_etapa', { p_clave: clave })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+export async function borrarColumna(clave: string, absorbe?: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('borrar_columna', {
+    p_clave: clave,
+    p_absorbe: absorbe ?? null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/', 'layout')
   return { ok: true }
 }

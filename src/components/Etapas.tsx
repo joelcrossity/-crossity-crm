@@ -4,10 +4,9 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   apagarEtapa,
+  borrarEtapa,
   guardarEtapa,
-  moverEstado,
   moverEtapa,
-  renombrarEstado,
 } from '@/app/acciones'
 import { Seccion } from '@/components/ui'
 
@@ -18,6 +17,12 @@ import { Seccion } from '@/components/ui'
 
    Las etapas del embudo son la forma en que la agencia vende, y esa
    forma se ajusta: se agregan, se renombran y se mueven de lugar.
+
+   Antes había acá una tercera lista, "Estados de proyecto", que no leía
+   nadie: solo esta pantalla la dibujaba. Renombrar algo ahí no cambiaba
+   nada en el tablero, y al lado de las columnas —que sí mandan— decía
+   casi lo mismo con otros colores. Una lista que se deja editar y no
+   hace nada es peor que no tenerla.
 
    Los estados de proyecto no son etiquetas: son comportamiento. Gris
    exige un motivo, verde exige un subestado, naranja cierra el trabajo.
@@ -35,32 +40,15 @@ export type Etapa = {
   cuantas: number
 }
 
-export type Estado = {
-  color: string
-  etiqueta: string
-  ayuda: string
-  orden: number
-}
-
-const PUNTO: Record<string, string> = {
-  verde: 'bg-verde',
-  amarillo: 'bg-amarillo',
-  gris: 'bg-gris-50',
-  naranja: 'bg-naranja',
-  rojo: 'bg-rojo',
-}
-
 const campo = 'campo'
 
 const rotulo = 'rotulo'
 
 export default function Etapas({
   etapas,
-  estados,
   esDireccion,
 }: {
   etapas: Etapa[]
-  estados: Estado[]
   esDireccion: boolean
 }) {
   const router = useRouter()
@@ -216,6 +204,23 @@ export default function Etapas({
                   {e.activa ? 'Apagar' : 'Prender'}
                 </button>
               )}
+
+              {/* Borrar de verdad, no apagar. Apagar sirve para lo que
+                  ya se usó y no se puede tirar sin perder historia; una
+                  etapa que nunca tuvo una oportunidad es ruido puro.
+                  Si tiene alguna, la base lo frena y lo dice. */}
+              {esDireccion && !e.es_final && (
+                <button
+                  type="button"
+                  disabled={pendiente}
+                  title="Solo se puede si nunca pasó ninguna oportunidad por acá"
+                  onClick={() => correr(() => borrarEtapa(e.clave))}
+                  className="shrink-0 rounded-md border border-linea px-2 py-1 text-2xs text-gris-50
+                             transition-colors duration-150 hover:border-rojo hover:text-rojo"
+                >
+                  Borrar
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -232,56 +237,6 @@ export default function Etapas({
         ))}
       </Seccion>
 
-      <div className="border-t border-linea pt-8">
-        <Seccion
-          titulo="Estados de proyecto"
-          ayuda="El orden se cambia como en el pipeline: es cómo se miran las columnas del tablero y hay meses en que lo primero que querés ver es lo frenado. El texto también. Lo que no se toca es el comportamiento: frenado exige un motivo, en vivo exige un detalle, terminado cierra el trabajo. Un sexto color rompería reglas que existen por buenas razones."
-        >
-
-        <ul className="flex flex-col gap-1.5">
-          {[...estados]
-            .sort((a, b) => a.orden - b.orden)
-            .map((e, i, lista) => (
-              <li
-                key={e.color}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border
-                           border-linea bg-superficie px-3.5 py-2.5"
-              >
-                {esDireccion && (
-                  <span className="flex shrink-0 flex-col gap-px">
-                    <Flecha
-                      hacia="arriba"
-                      apagada={i === 0 || pendiente}
-                      alClic={() => correr(() => moverEstado(e.color, -1))}
-                    />
-                    <Flecha
-                      hacia="abajo"
-                      apagada={i === lista.length - 1 || pendiente}
-                      alClic={() => correr(() => moverEstado(e.color, 1))}
-                    />
-                  </span>
-                )}
-                <span className={`size-2.5 shrink-0 rounded-full ${PUNTO[e.color]}`} aria-hidden />
-                <span className="min-w-0 flex-1">
-                  {esDireccion ? (
-                    <Editable
-                      valor={e.etiqueta}
-                      ayuda={e.ayuda}
-                      pendiente={pendiente}
-                      alGuardar={(t, a) => correr(() => renombrarEstado(e.color, t, a))}
-                    />
-                  ) : (
-                    <span>
-                      <span className="block text-base font-medium text-tinta">{e.etiqueta}</span>
-                      <span className="block text-2xs text-gris-50">{e.ayuda}</span>
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-        </ul>
-        </Seccion>
-      </div>
     </div>
   )
 }
