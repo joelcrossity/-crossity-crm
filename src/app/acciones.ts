@@ -2407,3 +2407,35 @@ export async function activarEtapa(hitoId: string, vence: string): Promise<Resul
   revalidatePath('/tablero')
   return { ok: true }
 }
+
+/* Las etapas cotizadas de una oportunidad. Se piden al abrir el panel y
+   no viajan con cada tarjeta del tablero: son varias filas por
+   oportunidad y casi nunca se miran. */
+export async function leerEtapas(
+  proyectoId: string,
+): Promise<{ ok: true; etapas: EtapaCotizada[] } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('hitos')
+    .select('id, orden, titulo, entregable, monto_neto, moneda, casa_cotizacion, cotizacion_pactada, vence_at, activo')
+    .eq('proyecto_id', proyectoId)
+    .order('orden')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  return {
+    ok: true,
+    etapas: (data ?? []).map((h) => ({
+      id: h.id as string,
+      orden: h.orden as number,
+      titulo: (h.titulo as string) ?? '',
+      entregable: (h.entregable as string) ?? '',
+      monto: Number(h.monto_neto ?? 0),
+      moneda: (h.moneda as string) ?? 'ARS',
+      casa: (h.casa_cotizacion as string) ?? undefined,
+      cotizacion: (h.cotizacion_pactada as number) ?? null,
+      vence: (h.vence_at as string) ?? null,
+      activa: !!h.activo,
+    })) as EtapaCotizada[],
+  }
+}

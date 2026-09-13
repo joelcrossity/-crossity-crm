@@ -2,6 +2,7 @@
 
 import Filtro, { type Recorte } from '@/components/Filtro'
 import { Selector, useVista } from '@/components/Vistas'
+import type { Cliente } from '@/components/ElegirCliente'
 import Tablero, { type Op } from '@/components/Tablero'
 import ListaPipeline from '@/components/ListaPipeline'
 import { type EtapaViva } from '@/lib/estados'
@@ -32,11 +33,17 @@ export default function VistaPipeline({
   seguimientos,
   etapas,
   alta,
+  clientes = [],
+  personas = [],
+  cotizaciones = [],
 }: {
   ops: Op[]
   seguimientos: [string, string | null][]
   etapas: EtapaViva[]
   alta: React.ReactNode
+  clientes?: Cliente[]
+  personas?: { id: string; nombre: string }[]
+  cotizaciones?: { casa: string; venta: number }[]
 }) {
   const vista = useVista('crossity.pipeline')
   const mapa = new Map(seguimientos)
@@ -69,7 +76,13 @@ export default function VistaPipeline({
             {vista === 'lista' ? (
               <ListaPipeline ops={vistos} seguimientos={mapa} etapas={etapas} />
             ) : (
-              <Tablero ops={vistos} etapas={etapas} />
+              <Tablero
+              ops={vistos}
+              etapas={etapas}
+              clientes={clientes}
+              personas={personas}
+              cotizaciones={cotizaciones}
+            />
             )}
           </div>
         </div>

@@ -27,6 +27,13 @@ type Op = {
   negocia_sin_base: boolean
   cotizado_sin_monto: boolean
   enfriada: boolean
+  organizacion_id: string
+  responsable_id: string | null
+  descripcion: string | null
+  casa_cotizacion: string
+  cotizacion_pactada: number | null
+  puedo_editar: boolean
+  etapas_cotizadas: number
 }
 
 export default async function Pipeline() {
@@ -65,10 +72,11 @@ export default async function Pipeline() {
     cuits: (c.cuits as string[] | null) ?? null,
     razones: (c.razones as string | null) ?? null,
   }))
-  const [{ data }, { data: referidos }, { data: filas }] = await Promise.all([
+  const [{ data }, { data: referidos }, { data: filas }, { data: dolar }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
     supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
     supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
+    supabase.from('v_cotizacion_hoy').select('casa, venta'),
   ])
   const ops = (data ?? []) as Op[]
 
@@ -101,6 +109,13 @@ export default async function Pipeline() {
     cotizado_sin_monto: o.cotizado_sin_monto,
     referente: porReferente.get(o.id) ?? null,
     enfriada: !!o.enfriada,
+    organizacion_id: o.organizacion_id,
+    responsable_id: o.responsable_id,
+    descripcion: o.descripcion,
+    casa_cotizacion: o.casa_cotizacion ?? 'oficial',
+    cotizacion_pactada: o.cotizacion_pactada,
+    puedo_editar: !!o.puedo_editar,
+    etapas_cotizadas: Number(o.etapas_cotizadas ?? 0),
   }))
 
   const seguimientos: [string, string | null][] = ops.map((o) => [o.id, o.proximo_seguimiento])
@@ -151,6 +166,9 @@ export default async function Pipeline() {
           ops={tarjetas}
           seguimientos={seguimientos}
           etapas={etapas}
+          clientes={clientes}
+          personas={personas ?? []}
+          cotizaciones={(dolar ?? []) as { casa: string; venta: number }[]}
           alta={
             <span className="flex flex-wrap items-start gap-2">
               <Charla clientes={clientes} />

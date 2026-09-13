@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { archivarProyecto, cambiarEtapa, enfriar, reflotar } from '@/app/acciones'
 import { plata, type EtapaViva } from '@/lib/estados'
 import { Plegable } from '@/components/ui'
+import EditarOportunidad from '@/components/EditarOportunidad'
+import type { Cliente } from '@/components/ElegirCliente'
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -29,6 +31,13 @@ export type Op = {
   nombre: string
   cliente: string
   etapa: string
+  organizacion_id: string
+  responsable_id: string | null
+  descripcion: string | null
+  casa_cotizacion: string
+  cotizacion_pactada: number | null
+  puedo_editar: boolean
+  etapas_cotizadas: number
   monto_neto: number | null
   moneda: string
   proxima_accion: string | null
@@ -90,9 +99,11 @@ function Tarjeta({
   alEmpezar,
   alTerminar,
   alArchivar,
+  alEditar,
 }: {
   o: Op
   etiqueta: string
+  alEditar: (o: Op) => void
   arrastrando: string | null
   yendose: boolean
   alEmpezar: (id: string) => void
@@ -105,6 +116,27 @@ function Tarjeta({
         {/* Aparece al pasar el cursor para no competir con el contenido,
             pero en pantalla táctil queda siempre visible: sin cursor no
             hay hover que revele nada. */}
+        <span className="absolute top-2 right-2 z-10 flex gap-0.5 lg:opacity-0
+                         lg:group-hover/tarjeta:opacity-100">
+          {o.puedo_editar && (
+            <button
+              type="button"
+              aria-label={`Editar ${o.nombre}`}
+              title="Editar y cotizar sin salir del pipeline"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                alEditar(o)
+              }}
+              className="grid size-6 place-items-center rounded-md bg-superficie text-gris-25
+                         transition-colors duration-150 hover:text-azul-hondo"
+            >
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
+                <path d="M11.2 2.6a1.4 1.4 0 0 1 2 2L6 11.8l-2.7.9.9-2.7 7-7.4Z"
+                      stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
         <button
           type="button"
           aria-label={`Archivar ${o.nombre}`}
@@ -115,9 +147,8 @@ function Tarjeta({
             e.stopPropagation()
             alArchivar(o.id)
           }}
-          className="absolute top-2 right-2 z-10 grid size-6 place-items-center rounded-md
-                     bg-superficie text-gris-25 transition-colors duration-150
-                     hover:text-azul-hondo lg:opacity-0 lg:group-hover/tarjeta:opacity-100"
+          className="grid size-6 place-items-center rounded-md bg-superficie text-gris-25
+                     transition-colors duration-150 hover:text-azul-hondo"
         >
           <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
             <path
@@ -133,6 +164,7 @@ function Tarjeta({
             />
           </svg>
         </button>
+        </span>
 
         <Link
           href={`/proyecto/${o.codigo}`}
@@ -176,6 +208,11 @@ function Tarjeta({
               {!o.enfriada && o.negocia_sin_base && <Chip tono="amarillo">nurturing</Chip>}
               {o.referente && <Chip tono="violeta">por {o.referente.split(' ')[0]}</Chip>}
               {o.enfriada && <Chip tono="gris">{etiqueta}</Chip>}
+              {o.etapas_cotizadas > 0 && (
+                <Chip tono="violeta">
+                  {o.etapas_cotizadas} etapa{o.etapas_cotizadas > 1 ? 's' : ''}
+                </Chip>
+              )}
             </span>
           )}
         </Link>
@@ -202,7 +239,20 @@ function Hueco({ activo, texto }: { activo: boolean; texto: string }) {
   )
 }
 
-export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[] }) {
+export default function Tablero({
+  ops,
+  etapas,
+  clientes = [],
+  personas = [],
+  cotizaciones = [],
+}: {
+  ops: Op[]
+  etapas: EtapaViva[]
+  clientes?: Cliente[]
+  personas?: { id: string; nombre: string }[]
+  cotizaciones?: { casa: string; venta: number }[]
+}) {
+  const [editando, setEditando] = useState<Op | null>(null)
   const ETIQUETA = new Map<string, string>(etapas.map((e) => [e.valor, e.etiqueta]))
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
@@ -283,6 +333,7 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
       setEncima(null)
     },
     alArchivar: archivar,
+    alEditar: setEditando,
   }
 
   const frias = vista.filter((o) => o.enfriada)
@@ -362,6 +413,30 @@ export default function Tablero({ ops, etapas }: { ops: Op[]; etapas: EtapaViva[
           )
         })}
       </div>
+
+      {editando && (
+        <EditarOportunidad
+          op={{
+            id: editando.id,
+            codigo: editando.codigo,
+            nombre: editando.nombre,
+            organizacion_id: editando.organizacion_id,
+            cliente: editando.cliente,
+            responsable_id: editando.responsable_id,
+            monto_neto: editando.monto_neto,
+            moneda: editando.moneda,
+            casa_cotizacion: editando.casa_cotizacion,
+            cotizacion_pactada: editando.cotizacion_pactada,
+            etapa: editando.etapa,
+            descripcion: editando.descripcion,
+          }}
+          clientes={clientes}
+          personas={personas}
+          etapasPipeline={etapas}
+          cotizaciones={cotizaciones}
+          alCerrar={() => setEditando(null)}
+        />
+      )}
 
       {/* Las enfriadas al pie: no se perdieron, pero tampoco tienen que
           ocupar una columna del ancho de las que se están trabajando. */}
