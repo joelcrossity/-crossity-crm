@@ -1,5 +1,7 @@
 'use client'
 
+import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { anotarCharla } from '@/app/acciones'
@@ -33,7 +35,7 @@ export default function Charla({
   clientes,
   siempreAbierto = false,
 }: {
-  clientes: { id: string; nombre: string; proyectos: number; enVivo: number }[]
+  clientes: Cliente[]
   siempreAbierto?: boolean
 }) {
   const router = useRouter()
@@ -75,24 +77,23 @@ export default function Charla({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-0.5">
           <span className={rotulo}>Con quién</span>
-          <select
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-            className={campo}
-            autoFocus
-          >
-            <option value="">elegí…</option>
-            <option value="nuevo">Alguien nuevo</option>
-            <option value="sin_definir">Todavía no sé de quién es</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-                {c.enVivo > 0 ? ` — ${c.enVivo} en vivo` : c.proyectos > 0 ? ` — ${c.proyectos} atrás` : ''}
-              </option>
-            ))}
-          </select>
+          <ElegirCliente
+            clientes={clientes}
+            elegido={clienteId}
+            nombreNuevo={clienteNuevo}
+            alElegir={setClienteId}
+            alEscribirNuevo={setClienteNuevo}
+            autoFoco
+            extras={[
+              {
+                valor: 'sin_definir',
+                texto: 'Todavía no sé de quién es',
+                ayuda: 'abre una cuenta provisoria',
+              },
+            ]}
+          />
           {elegido && elegido.proyectos > 0 && (
             <span className="text-2xs text-azul-hondo">
               Ya es cliente: esto se suma a su ficha, no abre otra.
@@ -103,19 +104,7 @@ export default function Charla({
               Queda en espera y te lo va a recordar la campanita hasta que le pongas nombre.
             </span>
           )}
-        </label>
-
-        {clienteId === 'nuevo' && (
-          <label className="flex flex-col gap-0.5">
-            <span className={rotulo}>Cómo se llama</span>
-            <input
-              value={clienteNuevo}
-              onChange={(e) => setClienteNuevo(e.target.value)}
-              placeholder="Vision Motors"
-              className={campo}
-            />
-          </label>
-        )}
+        </div>
 
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>De dónde salió</span>

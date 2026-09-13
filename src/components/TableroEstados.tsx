@@ -198,9 +198,11 @@ function ZonaCerrada({
   alPasarEncima,
   alSalir,
   alSoltar,
+  arrancaAbierto,
 }: {
   columna: Columna
   filas: Fila[]
+  arrancaAbierto: boolean
   yendose: Set<string>
   objetivo: boolean
   pregunta: { id: string; clave: string } | null
@@ -245,6 +247,7 @@ function ZonaCerrada({
       alPasarEncima={alPasarEncima}
       alSalir={alSalir}
       alSoltar={alSoltar}
+      arrancaAbierto={arrancaAbierto}
     >
       {pregunta && (
         <Motivo
@@ -351,6 +354,41 @@ function Hueco({ activo, texto }: { activo: boolean; texto: string }) {
   )
 }
 
+/* ------------------------------------------------------------------
+   Cuando no hay nada activo.
+
+   Tres columnas vacías no se leen como "no tenés trabajo en curso": se
+   leen como que el sistema no cargó. Y el que abre por primera vez, con
+   dos proyectos ya entregados, concluye que está roto.
+
+   Así que si no hay nada arriba, las columnas no se dibujan y se dice
+   en una línea qué pasa y dónde está lo suyo. Las columnas vuelven
+   mientras se arrastra algo, porque soltar un terminado en "En vivo"
+   para reabrirlo tiene que seguir siendo posible.
+   ------------------------------------------------------------------ */
+
+function SinActivos({ cerrados }: { cerrados: number }) {
+  return (
+    <div className="surge flex flex-col items-center gap-1.5 rounded-[var(--radius-tarjeta)]
+                    border border-linea bg-panel px-6 py-12 text-center">
+      <svg viewBox="0 0 24 24" className="mb-1 size-7 text-gris-25" fill="none" aria-hidden>
+        <path
+          d="M4 7.5h16M4 12h16M4 16.5h10"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+      <p className="text-base font-medium text-tinta">No tenés proyectos activos</p>
+      <p className="max-w-[42ch] text-sm text-gris">
+        {cerrados > 0
+          ? `Tu trabajo terminado está acá abajo: ${cerrados} ${cerrados === 1 ? 'proyecto' : 'proyectos'}. Para reabrir uno, arrastralo a una columna.`
+          : 'Cuando te asignen uno, o cuando ganes una oportunidad del pipeline, va a aparecer acá.'}
+      </p>
+    </div>
+  )
+}
+
 export default function TableroEstados({ filas, columnas }: { filas: Fila[]; columnas: Columna[] }) {
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
@@ -435,6 +473,14 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
   const activas = columnas.filter((c) => c.zona === 'arriba')
   const cerradas = columnas.filter((c) => c.zona === 'abajo')
 
+  const cuantosEn = (cs: Columna[]) =>
+    cs.reduce((n, c) => n + enColumna(c).filter((f) => !yendose.has(f.id)).length, 0)
+  const hayActivos = cuantosEn(activas) > 0
+  const cerrados = cuantosEn(cerradas)
+  /* Las columnas vuelven mientras se arrastra: reabrir un terminado
+     soltándolo arriba tiene que seguir siendo posible. */
+  const muestraColumnas = hayActivos || arrastrando !== null
+
   const propiasDeTarjeta = {
     arrastrando,
     alEmpezar: setArrastrando,
@@ -464,7 +510,12 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
         </p>
       )}
 
-      <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
+      {!muestraColumnas && <SinActivos cerrados={cerrados} />}
+
+      <div
+        hidden={!muestraColumnas}
+        className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10"
+      >
         {activas.map((c) => {
           const suyas = enColumna(c)
           const visibles = suyas.filter((f) => !yendose.has(f.id))
@@ -552,6 +603,7 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
             }}
             alSalir={() => setEncima((v) => (v === c.clave ? null : v))}
             alSoltar={() => soltar(c)}
+            arrancaAbierto={!hayActivos && enColumna(c).length > 0}
           />
         ))}
       </div>

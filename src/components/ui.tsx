@@ -309,11 +309,15 @@ export function Plegable({
   alSoltar,
   alPasarEncima,
   alSalir,
+  arrancaAbierto = false,
 }: {
   titulo: string
   cuantos: number
   ayuda?: string
   punto?: React.ReactNode
+  /* Para cuando lo plegado es todo lo que hay: dejarlo cerrado sería
+     abrir la pantalla en blanco. */
+  arrancaAbierto?: boolean
   /* Cuando algo se está arrastrando encima: el plegable sigue siendo un
      destino válido aunque esté cerrado. */
   resaltado?: boolean
@@ -322,7 +326,7 @@ export function Plegable({
   alPasarEncima?: (e: React.DragEvent) => void
   alSalir?: () => void
 }) {
-  const [abierto, setAbierto] = useState(false)
+  const [abierto, setAbierto] = useState(arrancaAbierto)
 
   return (
     <div

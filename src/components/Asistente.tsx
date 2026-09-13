@@ -1,5 +1,7 @@
 'use client'
 
+import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { crearProyectoCompleto, type HitoNuevo } from '@/app/acciones'
@@ -32,7 +34,7 @@ export default function Asistente({
   personas,
   arrancaComo = 'proyecto',
 }: {
-  clientes: { id: string; nombre: string; proyectos: number; enVivo: number }[]
+  clientes: Cliente[]
   personas: { id: string; nombre: string }[]
   arrancaComo?: 'proyecto' | 'oportunidad'
 }) {
@@ -150,38 +152,14 @@ export default function Asistente({
       {paso === 0 && (
         <div className="flex flex-col gap-3">
           <Titulo texto="¿Para quién es?" ayuda="El proyecto casi siempre aparece antes que el cliente. Si es alguien nuevo, se da de alta acá." />
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-0.5">
-              <Etiqueta>Cliente</Etiqueta>
-              <select
-                value={clienteId}
-                onChange={(e) => setClienteId(e.target.value)}
-                className={`${campo} w-64 cursor-pointer`}
-                autoFocus
-              >
-                <option value="">elegir cliente</option>
-                <option value="nuevo">＋ Cliente nuevo</option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}
-                    {c.proyectos > 0 ? ` · ${c.proyectos} proyecto${c.proyectos > 1 ? 's' : ''}` : ' · sin historia'}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {clienteId === 'nuevo' && (
-              <label className="flex flex-col gap-0.5">
-                <Etiqueta acento>Nombre del cliente nuevo</Etiqueta>
-                <input
-                  value={clienteNuevo}
-                  onChange={(e) => setClienteNuevo(e.target.value)}
-                  placeholder="Vision Motors"
-                  className={`${campo} w-56 border-azul`}
-                />
-              </label>
-            )}
-          </div>
+          <ElegirCliente
+            clientes={clientes}
+            elegido={clienteId}
+            nombreNuevo={clienteNuevo}
+            alElegir={setClienteId}
+            alEscribirNuevo={setClienteNuevo}
+            autoFoco
+          />
 
           {elegido && (
             <Nota>

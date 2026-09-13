@@ -48,7 +48,7 @@ export default async function Pipeline() {
     )
   const { data: cuentas } = await supabase
     .from('v_cuenta')
-    .select('id, cuenta, proyectos_totales, en_vivo')
+    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias')
     .order('cuenta')
   const { data: personas } = await supabase
     .from('personas').select('id, nombre').eq('activa', true).order('nombre')
@@ -57,6 +57,11 @@ export default async function Pipeline() {
     nombre: c.cuenta as string,
     proyectos: (c.proyectos_totales as number) ?? 0,
     enVivo: (c.en_vivo as number) ?? 0,
+    /* Marcas y alias para que el buscador del selector los encuentre:
+       el alias guarda el nombre viejo de una fusión, y sin él quien lo
+       escriba no halla nada y crea el duplicado de nuevo. */
+    marcas: (c.marcas as string | null) ?? null,
+    alias: (c.alias as string[] | null) ?? null,
   }))
   const [{ data }, { data: referidos }, { data: filas }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),
