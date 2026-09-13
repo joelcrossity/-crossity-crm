@@ -2151,3 +2151,25 @@ export async function editarProyecto(
   revalidatePath('/cuentas', 'layout')
   return { ok: true }
 }
+
+/* Leer la planilla de otro mes sin recargar la pantalla. La cuenta la
+   hace la base: replicarla en el navegador sería tener dos versiones de
+   la misma suma, y la que se ve terminaría discrepando de la que se
+   factura. */
+export async function leerPlanilla(
+  mes: string,
+  casa: string,
+): Promise<{ ok: true; lineas: Linea[] } | { ok: false; error: string }> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('planilla_mes', { p_mes: mes, p_casa: casa })
+  if (error) return { ok: false, error: traducir(error.message) }
+  return { ok: true, lineas: (data ?? []) as Linea[] }
+}
+
+type Linea = {
+  seccion: string
+  fila: string
+  detalle: string
+  monto: number
+  es_previsto: boolean
+}
