@@ -30,13 +30,13 @@ export type Columna = {
   etiqueta: string
   ayuda: string
   color: string
-  /* Cuando hay motivo, la columna es un recorte dentro del color: dos
-     proyectos grises pueden estar en columnas distintas según por qué
-     se detuvieron. */
-  motivo: string | null
+  /* El recorte dentro del color: dos proyectos verdes pueden estar en
+     columnas distintas según en qué fase estén, y dos grises según por
+     qué se detuvieron. Contra qué campo se compara lo decide el color. */
+  detalle: string | null
   zona: string
   orden: number
-  motivo_al_soltar: string | null
+  detalle_al_soltar: string | null
 }
 
 /* Los motivos que se ofrecen al soltar en una columna que no define el
@@ -44,15 +44,23 @@ export type Columna = {
    humano vive acá porque es texto de pantalla. */
 const MOTIVOS: Record<string, { valor: string; texto: string }[]> = {
   gris: [
-    { valor: 'pausado_cliente', texto: 'Lo pausó el cliente' },
-    { valor: 'esperando_anticipo', texto: 'Esperando el anticipo' },
-    { valor: 'dormido', texto: 'Se durmió' },
+    { valor: 'pausado_cliente', texto: 'Pausado por el cliente' },
+    { valor: 'esperando_anticipo', texto: 'Pendiente de anticipo' },
+    { valor: 'dormido', texto: 'Sin actividad ni respuesta' },
   ],
   rojo: [
-    { valor: 'perdido', texto: 'Lo perdimos' },
-    { valor: 'descartado', texto: 'Lo descartamos' },
-    { valor: 'entregado', texto: 'Se entregó y se cerró' },
+    { valor: 'perdido', texto: 'Perdido' },
+    { valor: 'descartado', texto: 'Descartado' },
+    { valor: 'entregado', texto: 'Entregado y cerrado' },
   ],
+}
+
+/* Qué campo del proyecto mira cada color para saber en qué columna va.
+   Verde se parte por fase de trabajo; gris y rojo, por el porqué. */
+export const RECORTE: Record<string, (f: Fila) => string | null> = {
+  verde: (f) => f.subestado,
+  gris: (f) => f.motivo_gris,
+  rojo: (f) => f.motivo_rojo,
 }
 
 const PUNTO: Record<string, string> = {
@@ -412,9 +420,13 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
   /* La columna sin motivo de un color se queda con lo que no entró en
      ninguna de las que sí lo definen: si no, un proyecto gris sin
      motivo conocido desaparecería del tablero. */
-  const sobrantes = (f: Fila, c: Columna) =>
-    !c.motivo &&
-    !columnas.some((o) => o.color === c.color && o.motivo && o.motivo === f.motivo_gris)
+  const sobrantes = (f: Fila, c: Columna) => {
+    const suyo = RECORTE[c.color]?.(f) ?? null
+    return (
+      !c.detalle &&
+      !columnas.some((o) => o.color === c.color && o.detalle && o.detalle === suyo)
+    )
+  }
 
   /* Qué filas caen en cada columna: el color, y si la columna define un
      motivo, también ese motivo. Así "Por arrancar" y "Frenado" son dos
@@ -423,7 +435,11 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
      La que se está archivando sigue en la lista mientras se desvanece:
      sacarla acá la haría desaparecer de golpe, sin animación. */
   const enColumna = (c: Columna) =>
-    vista.filter((f) => f.color === c.color && (c.motivo ? f.motivo_gris === c.motivo : sobrantes(f, c)))
+    vista.filter(
+      (f) =>
+        f.color === c.color &&
+        (c.detalle ? RECORTE[c.color]?.(f) === c.detalle : sobrantes(f, c)),
+    )
 
   function guardar(id: string, color: string, detalle: string | null) {
     setPreguntando(null)
@@ -461,11 +477,19 @@ export default function TableroEstados({ filas, columnas }: { filas: Fila[]; col
     if (!id) return
 
     const f = vista.find((x) => x.id === id)
-    if (!f || f.color === columna.color) return
+    /* Mover dentro del mismo color también es un movimiento real: de
+       "En desarrollo" a "Implementando" no cambia el color, cambia la
+       fase. Solo se descarta soltar en la columna donde ya estaba. */
+    if (!f) return
+    const suyo = RECORTE[columna.color]?.(f) ?? null
+    if (f.color === columna.color && (columna.detalle ?? null) === suyo) return
 
-    /* Si la columna ya define el motivo, no hay nada que preguntar:
-       soltar en "Por arrancar" ya dice que está esperando el anticipo. */
-    if (columna.motivo_al_soltar) guardar(id, columna.color, columna.motivo_al_soltar)
+    /* Si la columna ya define su detalle, no hay nada que preguntar:
+       soltar en "Implementando" ya dice en qué fase quedó, y soltar en
+       "Comenzar" ya dice que espera el anticipo. Solo pregunta la que
+       no lo define, que hoy son Frenado y Perdido: ahí el porqué es el
+       dato, y sin él dentro de tres meses nadie sabe qué pasó. */
+    if (columna.detalle_al_soltar) guardar(id, columna.color, columna.detalle_al_soltar)
     else if (MOTIVOS[columna.color]) setPreguntando({ id, clave: columna.clave })
     else guardar(id, columna.color, null)
   }

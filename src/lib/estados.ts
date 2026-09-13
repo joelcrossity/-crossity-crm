@@ -10,13 +10,17 @@ export const COLORES = {
 export type Color = keyof typeof COLORES
 
 export const SUBESTADO: Record<string, string> = {
-  en_curso: 'en curso',
+  en_curso: 'en desarrollo',
+  implementando: 'implementando',
+  en_revision: 'en revisión',
   bloqueado: 'bloqueado',
-  esperando_cliente: 'esperando cliente',
-  esperando_anticipo: 'esperando anticipo',
+  esperando_cliente: 'esperando al cliente',
+  esperando_anticipo: 'pendiente de anticipo',
   pausado_cliente: 'pausado por el cliente',
-  dormido: 'dormido',
-  no_se_dio: 'no se dio',
+  /* "dormido" describía bien lo que pasa pero se lee mal en una ficha
+     que el cliente puede llegar a ver por encima del hombro. */
+  dormido: 'sin actividad',
+  no_se_dio: 'no prosperó',
 }
 
 export type EtapaViva = { valor: string; etiqueta: string }

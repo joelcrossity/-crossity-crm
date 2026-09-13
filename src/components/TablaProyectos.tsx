@@ -16,6 +16,7 @@ export type Fila = {
   color: string
   subestado: string | null
   motivo_gris: string | null
+  motivo_rojo: string | null
   prioridad: number | null
   fecha_comprometida: string | null
   cerrado_at: string | null

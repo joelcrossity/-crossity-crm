@@ -2,7 +2,7 @@
 
 import Filtro, { type Recorte } from '@/components/Filtro'
 import { Selector, useVista } from '@/components/Vistas'
-import TableroEstados, { type Columna } from '@/components/TableroEstados'
+import TableroEstados, { RECORTE, type Columna } from '@/components/TableroEstados'
 import { Grupo, type Fila } from '@/components/TablaProyectos'
 
 const RECORTES: Recorte<Fila>[] = [
@@ -81,7 +81,9 @@ export default function VistaProyectos({
                     titulo={c.etiqueta}
                     ayuda={c.ayuda}
                     filas={vistos.filter(
-                      (f) => f.color === c.color && (!c.motivo || f.motivo_gris === c.motivo),
+                      (f) =>
+                        f.color === c.color &&
+                        (!c.detalle || RECORTE[c.color]?.(f) === c.detalle),
                     )}
                   />
                 ))}
