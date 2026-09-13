@@ -17,13 +17,10 @@ type Dolar = {
 }
 
 type Pulso = {
-  en_vivo: number
-  atrasados: number
-  frenados: number
-  en_pipeline: number
-  seguimientos_vencidos: number
-  por_cobrar: number
+  proyectos: number
+  por_estado: { etiqueta: string; n: number }[]
   abonos: number
+  en_pipeline: number
 }
 
 /* La navegación sale del mapa de permisos, no de una lista fija: así
@@ -224,78 +221,56 @@ export function Rastro({
 function Franja({ pulso, dolar }: { pulso: Pulso | null; dolar: Dolar[] }) {
   if (!pulso) return null
 
-  const señales: { rotulo: string; valor: string; nota?: string; alarma: boolean; href: string }[] = [
+  /* Un censo, no una lista de alarmas. Antes eran cuatro señales y tres
+     eran alarmas —atrasados, sin novedades, por cobrar— que estaban en
+     cero casi siempre. Una alarma que está en cero todos los días deja
+     de leerse, y cuando alguna vez se enciende ya nadie la mira.
+
+     Esto ubica: cuántos proyectos hay y dónde, cuántos abonos facturan,
+     cuántas oportunidades siguen abiertas. Lo que hay que atender vive
+     en Hoy, que es la pantalla que existe para eso. */
+  const censo: { rotulo: string; valor: string; nota?: string; href: string }[] = [
     {
-      rotulo: 'En vivo',
-      valor: String(pulso.en_vivo),
-      nota:
-        pulso.frenados > 0
-          ? `${pulso.frenados} sin novedades`
-          : pulso.abonos > 0
-            ? `+ ${pulso.abonos} abonos`
-            : undefined,
-      alarma: pulso.frenados > 0,
+      rotulo: 'Proyectos',
+      valor: String(pulso.proyectos),
+      // El desglose sale de las columnas del tablero: si mañana se
+      // agrega o se borra una, esto la refleja sin tocar nada.
+      nota: pulso.por_estado.map((e) => `${e.n} ${e.etiqueta.toLowerCase()}`).join(' · '),
       href: '/tablero',
     },
     {
-      rotulo: 'Atrasados',
-      valor: String(pulso.atrasados),
-      nota: pulso.atrasados > 0 ? 'pasaron la fecha' : 'ninguno',
-      alarma: pulso.atrasados > 0,
-      href: '/tablero',
-    },
-    {
-      rotulo: 'Por cobrar',
-      valor: plata(pulso.por_cobrar),
-      nota: 'facturado sin entrar',
-      alarma: pulso.por_cobrar > 0,
-      href: '/admin',
+      rotulo: 'Mantenimiento',
+      valor: String(pulso.abonos),
+      nota: pulso.abonos === 1 ? 'facturando' : 'facturando',
+      href: '/mantenimientos',
     },
     {
       rotulo: 'Pipeline',
       valor: String(pulso.en_pipeline),
-      nota:
-        pulso.seguimientos_vencidos > 0
-          ? `${pulso.seguimientos_vencidos} vencido${pulso.seguimientos_vencidos > 1 ? 's' : ''}`
-          : 'al día',
-      alarma: pulso.seguimientos_vencidos > 0,
+      nota: 'abiertas',
       href: '/pipeline',
     },
   ]
 
   return (
     <div className="riel flex gap-x-6 overflow-x-auto border-t border-linea px-5 py-1.5 lg:px-10">
-      {señales.map((s) => (
+      {censo.map((s) => (
         <Link
           key={s.rotulo}
           href={s.href}
           className="group flex shrink-0 items-baseline gap-1.5 text-2xs"
         >
-          <span
-            className={`size-1.5 shrink-0 self-center rounded-full ${
-              s.alarma ? 'bg-rojo' : 'bg-verde'
-            }`}
-            aria-hidden
-          />
           <span className="font-medium uppercase tracking-wider text-gris-50">{s.rotulo}</span>
-          <span
-            className={`cifra font-bold transition-colors duration-150 ${
-              s.alarma ? 'text-rojo' : 'text-tinta'
-            } group-hover:text-azul-hondo`}
-          >
+          <span className="cifra font-bold text-tinta transition-colors duration-150
+                           group-hover:text-azul-hondo">
             {s.valor}
           </span>
           {s.nota && <span className="text-gris-50">{s.nota}</span>}
         </Link>
       ))}
 
-      {/* El dólar va acá y no arriba: la barra de arriba es para lo que
-          se toca —buscar, avisos, tu cuenta— y ésta para lo que se
-          mira. Además el riel corre en horizontal, así que no compite
-          por lugar con nada.
-
-          Si la cotización no es de hoy se dice. Un número viejo sin
-          aviso se lee como el del día, y con eso se cotiza mal. */}
+      {/* El dólar, al final. Si la cotización no es de hoy se dice: un
+          número viejo sin aviso se lee como el del día. */}
       {dolar
         .slice()
         .sort((a) => (a.casa === 'oficial' ? -1 : 1))

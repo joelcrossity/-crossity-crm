@@ -3,7 +3,7 @@ import Shell, { Titulo } from '@/components/Shell'
 import { Marco, Barras, Columnas, Embudo, Cifra } from '@/components/Grafico'
 import Sugerencias, { type Sugerencia } from '@/components/Sugerencias'
 import { createClient } from '@/lib/supabase/server'
-import { ETAPAS, plata } from '@/lib/estados'
+import { ETAPAS } from '@/lib/estados'
 
 type Fila = {
   id: string
@@ -57,9 +57,6 @@ export default async function Hoy() {
 
   const filas = (proyectos ?? []) as Fila[]
   const vivos = filas.filter((f) => f.color === 'verde')
-  const frenados = vivos
-    .filter((f) => f.dias_sin_novedades > 7)
-    .sort((a, b) => b.dias_sin_novedades - a.dias_sin_novedades)
   const atrasados = vivos
     .filter((f) => (f.dias_de_atraso ?? -1) > 0)
     .sort((a, b) => (b.dias_de_atraso ?? 0) - (a.dias_de_atraso ?? 0))
@@ -203,13 +200,6 @@ export default async function Hoy() {
               tono={sinAgendar > 0 ? 'amarillo' : 'tinta'}
               href="/pipeline"
             />
-            <Cifra
-              valor={String(frenados.length)}
-              titulo="frenados"
-              nota="más de 7 días sin novedades"
-              tono={frenados.length > 0 ? 'rojo' : 'verde'}
-              href="/tablero"
-            />
           </section>
         )}
 
@@ -260,18 +250,6 @@ export default async function Hoy() {
 
         {(esDireccion || esComercial) && (
           <>
-            <Bloque
-              pregunta="Se están cayendo"
-              porque="Más de una semana sin que nadie cargue una novedad. No significa que estén parados: significa que nadie sabe."
-              filas={frenados}
-              vacio="Todos los proyectos en vivo tuvieron novedades esta semana."
-              urgente
-              columna={(f) => (
-                <span className="cifra shrink-0 text-sm font-bold text-rojo">
-                  {f.dias_sin_novedades} días
-                </span>
-              )}
-            />
             <Bloque
               pregunta="Pasaron la fecha"
               porque="La entrega comprometida venció y el proyecto sigue en vivo."
