@@ -5,10 +5,16 @@ import Campanita, { type Aviso } from '@/components/Campanita'
 import MenuUsuario from '@/components/MenuUsuario'
 import Tema from '@/components/Tema'
 import Buscador from '@/components/Buscador'
-import Dolar from '@/components/Dolar'
 import Navegacion from '@/components/Navegacion'
 import { GRUPOS, NOMBRE_ROL, SECCIONES, puedeVer, rolPrincipal } from '@/lib/permisos'
 import { plata } from '@/lib/estados'
+
+type Dolar = {
+  casa: string
+  venta: number
+  fecha: string
+  desactualizada: boolean
+}
 
 type Pulso = {
   en_vivo: number
@@ -52,11 +58,13 @@ export default async function Shell({
   })).filter((g) => g.items.length > 0)
   const iniciales = yo?.nombre.split(' ').map((p) => p[0]).slice(0, 2).join('') ?? '?'
 
-  const [{ data: crudos }, { data: lectura }, { data: pulso }] = await Promise.all([
-    supabase.from('v_campanita').select('*').order('momento', { ascending: false }).limit(40),
-    supabase.from('lecturas').select('campanita_at').maybeSingle(),
-    supabase.from('v_estado_general').select('*').maybeSingle(),
-  ])
+  const [{ data: crudos }, { data: lectura }, { data: pulso }, { data: dolar }] =
+    await Promise.all([
+      supabase.from('v_campanita').select('*').order('momento', { ascending: false }).limit(40),
+      supabase.from('lecturas').select('campanita_at').maybeSingle(),
+      supabase.from('v_estado_general').select('*').maybeSingle(),
+      supabase.from('v_cotizacion_hoy').select('*'),
+    ])
 
   /* Sin marca de lectura, todo es nuevo: la primera vez que alguien
      abre el sistema tiene que ver lo que se venía acumulando. */
@@ -112,7 +120,6 @@ export default async function Shell({
             </span>
 
             <span className="flex items-center gap-2.5">
-              <Dolar />
               <Buscador />
               <Tema />
               <Campanita avisos={avisos} />
@@ -129,7 +136,7 @@ export default async function Shell({
             </span>
           </div>
 
-          <Franja pulso={pulso as Pulso | null} />
+          <Franja pulso={pulso as Pulso | null} dolar={(dolar ?? []) as Dolar[]} />
         </div>
 
         <div className="px-5 py-8 lg:px-10 lg:py-10">
@@ -214,7 +221,7 @@ export function Rastro({
    haciendo otra cosa, que es cuando importa.
    ------------------------------------------------------------------ */
 
-function Franja({ pulso }: { pulso: Pulso | null }) {
+function Franja({ pulso, dolar }: { pulso: Pulso | null; dolar: Dolar[] }) {
   if (!pulso) return null
 
   const señales: { rotulo: string; valor: string; nota?: string; alarma: boolean; href: string }[] = [
@@ -281,6 +288,37 @@ function Franja({ pulso }: { pulso: Pulso | null }) {
           {s.nota && <span className="text-gris-50">{s.nota}</span>}
         </Link>
       ))}
+
+      {/* El dólar va acá y no arriba: la barra de arriba es para lo que
+          se toca —buscar, avisos, tu cuenta— y ésta para lo que se
+          mira. Además el riel corre en horizontal, así que no compite
+          por lugar con nada.
+
+          Si la cotización no es de hoy se dice. Un número viejo sin
+          aviso se lee como el del día, y con eso se cotiza mal. */}
+      {dolar
+        .slice()
+        .sort((a) => (a.casa === 'oficial' ? -1 : 1))
+        .map((d) => (
+          <span key={d.casa} className="flex shrink-0 items-baseline gap-1.5 text-2xs">
+            <span className="font-medium uppercase tracking-wider text-gris-50">{d.casa}</span>
+            <span
+              className={`cifra font-bold ${d.desactualizada ? 'text-gris-50' : 'text-tinta'}`}
+              title={
+                d.desactualizada
+                  ? `Del ${d.fecha}, no de hoy. Se actualiza sola cada mañana.`
+                  : 'Cotización de hoy'
+              }
+            >
+              ${d.venta.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+            </span>
+            {d.desactualizada && (
+              <span className="text-amarillo" aria-label="No es de hoy">
+                ·
+              </span>
+            )}
+          </span>
+        ))}
     </div>
   )
 }
