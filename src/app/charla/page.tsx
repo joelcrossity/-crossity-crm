@@ -11,7 +11,7 @@ export default async function NuevaCharla() {
   const supabase = await createClient()
   const { data: cuentas } = await supabase
     .from('v_cuenta')
-    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias')
+    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits')
     .order('cuenta')
 
   const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
@@ -24,6 +24,7 @@ export default async function NuevaCharla() {
        escriba no halla nada y crea el duplicado de nuevo. */
     marcas: (c.marcas as string | null) ?? null,
     alias: (c.alias as string[] | null) ?? null,
+    cuits: (c.cuits as string[] | null) ?? null,
   }))
 
   return (

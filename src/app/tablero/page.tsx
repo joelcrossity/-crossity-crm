@@ -10,7 +10,7 @@ export default async function Tablero() {
   const supabase = await createClient()
   const { data: cuentas } = await supabase
     .from('v_cuenta')
-    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias')
+    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits')
     .order('cuenta')
   const { data: personas } = await supabase
     .from('personas').select('id, nombre').eq('activa', true).order('nombre')
@@ -24,6 +24,7 @@ export default async function Tablero() {
        escriba no halla nada y crea el duplicado de nuevo. */
     marcas: (c.marcas as string | null) ?? null,
     alias: (c.alias as string[] | null) ?? null,
+    cuits: (c.cuits as string[] | null) ?? null,
   }))
   const { data: columnas } = await supabase
     .from('columnas_tablero')

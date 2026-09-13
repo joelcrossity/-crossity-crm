@@ -46,6 +46,7 @@ export default function Asistente({
 
   const [clienteId, setClienteId] = useState('')
   const [clienteNuevo, setClienteNuevo] = useState('')
+  const [cuitNuevo, setCuitNuevo] = useState('')
   const [nombre, setNombre] = useState('')
   const [monto, setMonto] = useState('')
   const [moneda, setMoneda] = useState('ARS')
@@ -99,6 +100,7 @@ export default function Asistente({
       const r = await crearProyectoCompleto({
         clienteId,
         clienteNuevo,
+        cuitNuevo,
         nombre,
         monto,
         moneda,
@@ -158,6 +160,8 @@ export default function Asistente({
             nombreNuevo={clienteNuevo}
             alElegir={setClienteId}
             alEscribirNuevo={setClienteNuevo}
+            cuitNuevo={cuitNuevo}
+            alEscribirCuit={setCuitNuevo}
             autoFoco
           />
 

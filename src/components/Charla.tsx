@@ -45,6 +45,7 @@ export default function Charla({
 
   const [clienteId, setClienteId] = useState('')
   const [clienteNuevo, setClienteNuevo] = useState('')
+  const [cuitNuevo, setCuitNuevo] = useState('')
   const [tema, setTema] = useState('')
   const [loHablado, setLoHablado] = useState('')
   const [origen, setOrigen] = useState('')
@@ -85,6 +86,8 @@ export default function Charla({
             nombreNuevo={clienteNuevo}
             alElegir={setClienteId}
             alEscribirNuevo={setClienteNuevo}
+            cuitNuevo={cuitNuevo}
+            alEscribirCuit={setCuitNuevo}
             autoFoco
             extras={[
               {
@@ -198,7 +201,7 @@ export default function Charla({
             setError(null)
             empezar(async () => {
               const r = await anotarCharla({
-                clienteId, clienteNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
+                clienteId, clienteNuevo, cuitNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
               })
               if (r.ok && r.ir) router.push(r.ir)
               else if (!r.ok) setError(r.error)

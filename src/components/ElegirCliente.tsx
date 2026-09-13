@@ -1,6 +1,7 @@
 'use client'
 
-import { useId, useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState, useTransition } from 'react'
+import { deQuienEsEsteCuit } from '@/app/acciones'
 
 /* ------------------------------------------------------------------
    Elegir un cliente.
@@ -31,7 +32,13 @@ export type Cliente = {
   enVivo: number
   marcas?: string | null
   alias?: string[] | null
+  cuits?: string[] | null
 }
+
+/* El CUIT sin puntos ni guiones: la misma cuenta que hace la columna
+   generada en la base, para que "30-71234567-8" y "30712345678" se
+   busquen igual acá y allá. */
+const soloNumeros = (s: string) => s.replace(/\D/g, '')
 
 /* La misma normalización que usa clave_cliente() en la base: sin
    mayúsculas, sin tildes, sin puntuación y sin el sufijo societario.
@@ -68,8 +75,10 @@ export default function ElegirCliente({
   clientes,
   elegido,
   nombreNuevo,
+  cuitNuevo = '',
   alElegir,
   alEscribirNuevo,
+  alEscribirCuit,
   autoFoco = false,
   extras = [],
 }: {
@@ -82,11 +91,15 @@ export default function ElegirCliente({
      todavía no eligió. */
   elegido: string
   nombreNuevo: string
+  cuitNuevo?: string
   alElegir: (id: string) => void
   alEscribirNuevo: (nombre: string) => void
+  alEscribirCuit?: (cuit: string) => void
   autoFoco?: boolean
 }) {
   const [busca, setBusca] = useState('')
+  const [duenio, setDuenio] = useState<{ id: string; nombre: string; donde: string } | null>(null)
+  const [, consultando] = useTransition()
   const [abierto, setAbierto] = useState(false)
   const [marcado, setMarcado] = useState(0)
   const listaId = useId()
@@ -98,8 +111,12 @@ export default function ElegirCliente({
   const halladas = useMemo(() => {
     const q = busca.trim().toLowerCase()
     if (!q) return clientes
-    return clientes.filter((c) =>
-      [c.nombre, c.marcas ?? '', ...(c.alias ?? [])].join(' ').toLowerCase().includes(q),
+    // Si lo que escribe son números, está buscando por CUIT.
+    const n = soloNumeros(q)
+    return clientes.filter(
+      (c) =>
+        [c.nombre, c.marcas ?? '', ...(c.alias ?? [])].join(' ').toLowerCase().includes(q) ||
+        (n.length >= 3 && (c.cuits ?? []).some((x) => x.includes(n))),
     )
   }, [clientes, busca])
 
@@ -293,6 +310,63 @@ export default function ElegirCliente({
               className={`campo w-72 ${parecidos.length > 0 ? 'border-amarillo' : 'border-azul'}`}
             />
           </label>
+
+          {alEscribirCuit && (
+            <label className="flex flex-col gap-0.5">
+              <span className="text-2xs font-medium uppercase tracking-wider text-gris-50">
+                CUIT o DNI <span className="normal-case">— opcional, pero evita duplicados</span>
+              </span>
+              <input
+                value={cuitNuevo}
+                inputMode="numeric"
+                onChange={(e) => {
+                  alEscribirCuit(e.target.value)
+                  setDuenio(null)
+                }}
+                /* Se pregunta al salir del campo y no en cada tecla: el
+                   número recién está completo cuando se terminó de
+                   escribir, y un viaje al servidor por dígito no aporta
+                   nada. */
+                onBlur={() => {
+                  const n = soloNumeros(cuitNuevo)
+                  if (n.length < 7) return setDuenio(null)
+                  const local = clientes.find((c) => (c.cuits ?? []).includes(n))
+                  if (local) return setDuenio({ id: local.id, nombre: local.nombre, donde: 'la cuenta' })
+                  // Puede ser de un cliente que esta persona no ve.
+                  consultando(async () => setDuenio(await deQuienEsEsteCuit(cuitNuevo)))
+                }}
+                placeholder="30-71234567-8"
+                className={`campo cifra w-72 ${duenio ? 'border-rojo' : ''}`}
+              />
+            </label>
+          )}
+
+          {duenio && (
+            <div
+              role="alert"
+              className="surge flex flex-col gap-1.5 rounded-md border border-rojo bg-rojo-aire
+                         px-2.5 py-2"
+            >
+              <span className="text-2xs text-tinta">
+                Ya hay un cliente con el CUIT{' '}
+                <span className="cifra font-medium">{cuitNuevo.trim()}</span>:{' '}
+                <span className="font-medium">{duenio.nombre}</span>
+                {duenio.donde !== 'la cuenta' && `, en ${duenio.donde}`}.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  alEscribirNuevo('')
+                  alEscribirCuit?.('')
+                  setDuenio(null)
+                  alElegir(duenio.id)
+                }}
+                className="boton boton-principal boton-chico w-fit"
+              >
+                Usar la ficha existente
+              </button>
+            </div>
+          )}
 
           {parecidos.length > 0 && (
             <div className="surge flex flex-col gap-1.5 rounded-md border border-amarillo

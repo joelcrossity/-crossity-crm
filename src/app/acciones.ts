@@ -314,11 +314,26 @@ export async function fecharHito(
 
 type AltaCuenta = { id: string; codigo: string } | { error: string }
 
-async function altaDeCuenta(nombre: string, alias: string[]): Promise<AltaCuenta> {
+async function altaDeCuenta(
+  nombre: string,
+  alias: string[],
+  cuit?: string,
+): Promise<AltaCuenta> {
   const supabase = await createClient()
+  const limpio = (cuit ?? '').replace(/\D/g, '')
+
+  /* El índice único sobre el CUIT normalizado es el que de verdad
+     impide el duplicado, pero su error no se entiende. Se pregunta
+     antes para poder decir de quién es. */
+  if (limpio) {
+    const { data: duenio } = await supabase.rpc('cliente_con_cuit', { p_cuit: limpio })
+    const ya = (duenio ?? [])[0] as { nombre: string } | undefined
+    if (ya) return { error: `Ese CUIT ya es de ${ya.nombre}.` }
+  }
+
   const { data, error } = await supabase
     .from('organizaciones')
-    .insert({ nombre_canonico: nombre, alias })
+    .insert({ nombre_canonico: nombre, alias, cuit: cuit?.trim() || null })
     .select('id, codigo')
     .single()
 
@@ -327,7 +342,7 @@ async function altaDeCuenta(nombre: string, alias: string[]): Promise<AltaCuenta
   // Toda cuenta arranca con una razón social y una marca con su mismo
   // nombre. Las que facturan por varias se agregan después.
   await supabase.from('razones_sociales').insert({
-    organizacion_id: data.id, razon_social: nombre, es_principal: true,
+    organizacion_id: data.id, razon_social: nombre, es_principal: true, cuit: cuit?.trim() || null,
   })
   await supabase.from('marcas').insert({
     organizacion_id: data.id, nombre, es_principal: true,
@@ -417,6 +432,7 @@ export type HitoNuevo = {
 export type ProyectoNuevo = {
   clienteId: string
   clienteNuevo: string
+  cuitNuevo?: string
   nombre: string
   monto: string
   moneda: string
@@ -434,7 +450,7 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
   let organizacion_id = d.clienteId
   if (organizacion_id === 'nuevo') {
     if (!d.clienteNuevo.trim()) return { ok: false, error: 'Poné el nombre del cliente nuevo.' }
-    const r = await altaDeCuenta(d.clienteNuevo.trim(), [])
+    const r = await altaDeCuenta(d.clienteNuevo.trim(), [], d.cuitNuevo)
     if ('error' in r) {
       if (r.error.includes('duplicate')) return { ok: false, error: 'Ya existe un cliente con ese nombre.' }
       return { ok: false, error: traducir(r.error) }
@@ -676,6 +692,7 @@ export async function perderOportunidad(
 export type Charla = {
   clienteId: string
   clienteNuevo: string
+  cuitNuevo?: string
   tema: string
   loHablado: string
   origen: string
@@ -699,7 +716,7 @@ export async function anotarCharla(c: Charla): Promise<Resultado> {
     if (!organizacion_id) return { ok: false, error: 'No se pudo abrir la charla sin cliente.' }
   } else if (organizacion_id === 'nuevo') {
     if (!c.clienteNuevo.trim()) return { ok: false, error: 'Poné de quién es la charla.' }
-    const r = await altaDeCuenta(c.clienteNuevo.trim(), [])
+    const r = await altaDeCuenta(c.clienteNuevo.trim(), [], c.cuitNuevo)
     if ('error' in r) {
       if (r.error.includes('duplicate'))
         return { ok: false, error: 'Ya existe un cliente con ese nombre. Elegilo de la lista.' }
@@ -2051,4 +2068,24 @@ export async function cambiarZona(clave: string, zona: string): Promise<Resultad
   if (error) return { ok: false, error: traducir(error.message) }
   revalidatePath('/', 'layout')
   return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   ¿De quién es este CUIT?
+
+   La pregunta va al servidor y no se resuelve con la lista que ya tiene
+   la pantalla, porque el cliente que lo tiene puede ser uno que esta
+   persona no ve. Si solo mirara su propia lista, cargaría el duplicado
+   y el índice único lo frenaría con un error incomprensible.
+   ------------------------------------------------------------------ */
+export async function deQuienEsEsteCuit(
+  cuit: string,
+): Promise<{ id: string; nombre: string; donde: string } | null> {
+  const limpio = cuit.replace(/\D/g, '')
+  if (limpio.length < 7) return null
+
+  const supabase = await createClient()
+  const { data } = await supabase.rpc('cliente_con_cuit', { p_cuit: limpio })
+  const uno = (data ?? [])[0] as { id: string; nombre: string; donde: string } | undefined
+  return uno ?? null
 }
