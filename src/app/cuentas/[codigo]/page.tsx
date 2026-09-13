@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
+import Asistente from '@/components/Asistente'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Pestanas from '@/components/Pestanas'
 import ProyectosDelCliente, {
@@ -48,6 +49,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: servicios },
     { data: hoyRow },
     { data: documentos },
+    { data: personas },
   ] = await Promise.all([
       supabase
         .from('proyectos')
@@ -91,6 +93,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         .select('id, titulo, url, clase, version, enviado_at, enviado_por')
         .eq('organizacion_id', org.id)
         .order('created_at', { ascending: false }),
+      supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre')
     ])
 
   type P = {
@@ -123,6 +126,11 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
 
   const principal = ((contactos ?? []) as { nombre: string; rol: string | null; email: string | null; telefono: string | null }[])[0]
   const ejecutivo = ps.find((x) => x.personas?.nombre)?.personas?.nombre
+  /* Un solo cliente en la lista: el selector no se usa porque el
+     cliente va fijo, pero el componente lo pide. */
+  const paraElSelector = [
+    { id: org.id, nombre: org.nombre_canonico, proyectos: ps.length, enVivo: vivos.length },
+  ]
 
   return (
     <Shell activo="/cuentas" titulo={org.nombre_canonico}>
@@ -158,9 +166,30 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
           </span>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-0.5">
-          <span className="cifra text-2xl font-bold text-tinta">{plata(facturable)}</span>
-          <span className="text-2xs text-gris-50">facturable en toda la relación</span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="flex flex-col items-end gap-0.5">
+            <span className="cifra text-2xl font-bold text-tinta">{plata(facturable)}</span>
+            <span className="text-2xs text-gris-50">facturable en toda la relación</span>
+          </span>
+
+          {/* Abrir algo nuevo para este cliente sin salir de acá. El
+              cliente va fijo: la pantalla ya sabe para quién es, y
+              hacerlo buscar de nuevo en una lista de treinta y cuatro
+              es justo lo que hace que alguien cargue un duplicado. */}
+          <span className="flex flex-wrap justify-end gap-1.5">
+            <Asistente
+              clientes={paraElSelector}
+              personas={(personas ?? []) as { id: string; nombre: string }[]}
+              arrancaComo="proyecto"
+              clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
+            />
+            <Asistente
+              clientes={paraElSelector}
+              personas={(personas ?? []) as { id: string; nombre: string }[]}
+              arrancaComo="oportunidad"
+              clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
+            />
+          </span>
         </div>
       </header>
 

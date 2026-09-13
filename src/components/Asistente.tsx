@@ -33,10 +33,15 @@ export default function Asistente({
   clientes,
   personas,
   arrancaComo = 'proyecto',
+  clienteFijo,
 }: {
   clientes: Cliente[]
   personas: { id: string; nombre: string }[]
   arrancaComo?: 'proyecto' | 'oportunidad'
+  /* Cuando se entra desde la ficha de un cliente ya se sabe para quién
+     es. Volver a pedirlo es hacer buscar algo que la pantalla ya tiene
+     en el título. */
+  clienteFijo?: { id: string; nombre: string }
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
@@ -44,7 +49,7 @@ export default function Asistente({
   const [error, setError] = useState<string | null>(null)
   const [pendiente, empezar] = useTransition()
 
-  const [clienteId, setClienteId] = useState('')
+  const [clienteId, setClienteId] = useState(clienteFijo?.id ?? '')
   const [clienteNuevo, setClienteNuevo] = useState('')
   const [cuitNuevo, setCuitNuevo] = useState('')
   const [nombre, setNombre] = useState('')
@@ -154,6 +159,12 @@ export default function Asistente({
       {paso === 0 && (
         <div className="flex flex-col gap-3">
           <Titulo texto="¿Para quién es?" ayuda="El proyecto casi siempre aparece antes que el cliente. Si es alguien nuevo, se da de alta acá." />
+          {clienteFijo ? (
+            <p className="flex items-baseline gap-2 rounded-md border border-linea bg-panel px-3 py-2">
+              <span className="text-2xs uppercase tracking-wider text-gris-50">Para</span>
+              <span className="text-sm font-medium text-tinta">{clienteFijo.nombre}</span>
+            </p>
+          ) : (
           <ElegirCliente
             clientes={clientes}
             elegido={clienteId}
@@ -164,6 +175,7 @@ export default function Asistente({
             alEscribirCuit={setCuitNuevo}
             autoFoco
           />
+          )}
 
           {elegido && (
             <Nota>
