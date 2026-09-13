@@ -1382,7 +1382,7 @@ export async function crearAbono(datos: FormData): Promise<Resultado> {
   if (organizacion_id === 'nuevo') {
     const nuevo = String(datos.get('cliente_nuevo') ?? '').trim()
     if (!nuevo) return { ok: false, error: 'Poné el nombre del cliente.' }
-    const r = await altaDeCuenta(nuevo, [])
+    const r = await altaDeCuenta(nuevo, [], String(datos.get('cuit_nuevo') ?? ''))
     if ('error' in r) {
       if (r.error.includes('duplicate'))
         return { ok: false, error: 'Ya existe un cliente con ese nombre. Elegilo de la lista.' }

@@ -48,7 +48,7 @@ export default async function Pipeline() {
     )
   const { data: cuentas } = await supabase
     .from('v_cuenta')
-    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits')
+    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits, razones')
     .order('cuenta')
   const { data: personas } = await supabase
     .from('personas').select('id, nombre').eq('activa', true).order('nombre')
@@ -63,6 +63,7 @@ export default async function Pipeline() {
     marcas: (c.marcas as string | null) ?? null,
     alias: (c.alias as string[] | null) ?? null,
     cuits: (c.cuits as string[] | null) ?? null,
+    razones: (c.razones as string | null) ?? null,
   }))
   const [{ data }, { data: referidos }, { data: filas }] = await Promise.all([
     supabase.from('v_pipeline').select('*'),

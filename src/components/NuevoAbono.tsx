@@ -1,5 +1,7 @@
 'use client'
 
+import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { crearAbono } from '@/app/acciones'
@@ -19,7 +21,7 @@ export default function NuevoAbono({
   servicios,
   hoy,
 }: {
-  clientes: { id: string; nombre: string }[]
+  clientes: Cliente[]
   personas: { id: string; nombre: string }[]
   servicios: { id: string; nombre: string }[]
   hoy: string
@@ -29,6 +31,8 @@ export default function NuevoAbono({
   const [pendiente, empezar] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [cliente, setCliente] = useState('')
+  const [clienteNuevo, setClienteNuevo] = useState('')
+  const [cuitNuevo, setCuitNuevo] = useState('')
 
   if (!abierto)
     return (
@@ -63,32 +67,27 @@ export default function NuevoAbono({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="flex flex-col gap-0.5">
+        {/* El mismo selector que en proyectos y pipeline. Un abono suele
+            arrancar para un cliente que ya está, y buscarlo en una
+            lista de treinta y cuatro sin filtro es lo que hizo que el
+            mismo cliente se cargara dos veces. Va con inputs ocultos
+            porque este formulario manda FormData. */}
+        <div className="flex flex-col gap-0.5 sm:col-span-2">
           <span className={rotulo}>De quién</span>
-          <select
-            name="cliente_id"
-            value={cliente}
-            onChange={(e) => setCliente(e.target.value)}
-            className={campo}
-            required
-            autoFocus
-          >
-            <option value="">elegí…</option>
-            <option value="nuevo">Un cliente nuevo</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {cliente === 'nuevo' && (
-          <label className="flex flex-col gap-0.5">
-            <span className={rotulo}>Cómo se llama</span>
-            <input name="cliente_nuevo" placeholder="Vision Motors" className={campo} />
-          </label>
-        )}
+          <ElegirCliente
+            clientes={clientes}
+            elegido={cliente}
+            nombreNuevo={clienteNuevo}
+            cuitNuevo={cuitNuevo}
+            alElegir={setCliente}
+            alEscribirNuevo={setClienteNuevo}
+            alEscribirCuit={setCuitNuevo}
+            autoFoco
+          />
+          <input type="hidden" name="cliente_id" value={cliente} />
+          <input type="hidden" name="cliente_nuevo" value={clienteNuevo} />
+          <input type="hidden" name="cuit_nuevo" value={cuitNuevo} />
+        </div>
 
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>De qué es</span>

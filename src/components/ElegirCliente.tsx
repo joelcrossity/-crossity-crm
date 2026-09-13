@@ -33,6 +33,7 @@ export type Cliente = {
   marcas?: string | null
   alias?: string[] | null
   cuits?: string[] | null
+  razones?: string | null
 }
 
 /* El CUIT sin puntos ni guiones: la misma cuenta que hace la columna
@@ -115,10 +116,30 @@ export default function ElegirCliente({
     const n = soloNumeros(q)
     return clientes.filter(
       (c) =>
-        [c.nombre, c.marcas ?? '', ...(c.alias ?? [])].join(' ').toLowerCase().includes(q) ||
+        [c.nombre, c.marcas ?? '', c.razones ?? '', ...(c.alias ?? [])]
+          .join(' ').toLowerCase().includes(q) ||
         (n.length >= 3 && (c.cuits ?? []).some((x) => x.includes(n))),
     )
   }, [clientes, busca])
+
+  /* Mientras busca: si lo que escribió no aparece pero hay algo que se
+     le parece mucho, se lo ofrece. Es el momento en que la gente
+     decide crear uno nuevo, y es justo donde conviene preguntarle si no
+     era este otro.
+
+     Compara las claves normalizadas por prefijo: "sushi parana" y
+     "sushi paraná srl" colapsan igual, y "sus" todavía no —tres letras
+     coinciden con demasiadas cosas como para sugerir nada—. */
+  const quisoDecir = useMemo(() => {
+    const k = clave(busca)
+    if (k.length < 5 || halladas.length > 0) return []
+    return clientes
+      .filter((c) => {
+        const ck = clave(c.nombre)
+        return ck.startsWith(k.slice(0, 5)) || k.startsWith(ck.slice(0, 5))
+      })
+      .slice(0, 3)
+  }, [clientes, busca, halladas.length])
 
   /* Al dar de alta uno nuevo: ¿ya hay alguno que se le parece? */
   const parecidos = useMemo(() => {
@@ -247,8 +268,24 @@ export default function ElegirCliente({
               ))}
 
               {halladas.length === 0 && (
-                <li className="px-2 py-3 text-center text-2xs text-gris-50">
-                  Ninguno coincide con «{busca.trim()}».
+                <li className="flex flex-col gap-1.5 px-2 py-3">
+                  <span className="text-center text-2xs text-gris-50">
+                    Ninguno coincide con «{busca.trim()}».
+                  </span>
+                  {quisoDecir.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => tomar(c.id)}
+                      className="flex items-center gap-2 rounded-md border border-amarillo
+                                 bg-amarillo-aire px-2 py-1.5 text-left transition-colors
+                                 duration-150 hover:border-azul"
+                    >
+                      <span className="shrink-0 text-2xs text-gris">¿Buscabas</span>
+                      <Cuenta c={c} />
+                      <span className="shrink-0 text-2xs text-gris">?</span>
+                    </button>
+                  ))}
                 </li>
               )}
             </ul>

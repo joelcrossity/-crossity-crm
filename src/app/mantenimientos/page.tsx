@@ -70,7 +70,9 @@ export default async function Mantenimientos() {
   ] = await Promise.all([
     supabase.from('v_recurrentes').select('*').order('cliente'),
     supabase.from('v_pulso').select('id, dias_sin_novedades'),
-    supabase.from('v_cuenta').select('id, cuenta').order('cuenta'),
+    supabase.from('v_cuenta')
+      .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits, razones')
+      .order('cuenta'),
     supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
     supabase.from('servicios').select('id, nombre').eq('activo', true).order('orden'),
     supabase.rpc('hoy_es'),
@@ -109,6 +111,12 @@ export default async function Mantenimientos() {
             clientes={((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
               id: c.id as string,
               nombre: c.cuenta as string,
+              proyectos: (c.proyectos_totales as number) ?? 0,
+              enVivo: (c.en_vivo as number) ?? 0,
+              marcas: (c.marcas as string | null) ?? null,
+              alias: (c.alias as string[] | null) ?? null,
+              cuits: (c.cuits as string[] | null) ?? null,
+              razones: (c.razones as string | null) ?? null,
             }))}
             personas={(personas ?? []) as { id: string; nombre: string }[]}
             servicios={(servicios ?? []) as { id: string; nombre: string }[]}
