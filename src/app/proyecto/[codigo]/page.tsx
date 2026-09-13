@@ -55,7 +55,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     .select(`
       id, codigo, nombre, color, subestado, motivo_gris, motivo_rojo, tipo, etapa,
       prioridad, fecha_comprometida, monto_neto, moneda, condicion, motivo_condicion,
-      alicuota_iva, nota_iva,
+      alicuota_iva, nota_iva, casa_cotizacion, cotizacion_pactada,
       es_producto_propio, monto_mensual, vigencia_desde, vigencia_hasta, responsable_id,
       origen_id, carpeta_url, modalidad, unidad_consumo, precio_unitario, incluido_en_base,
       responsable_tecnico_id, programa, origen, proxima_accion, proximo_seguimiento,
@@ -633,6 +633,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     moneda={p.moneda}
                     alicuota={Number(p.alicuota_iva)}
                     notaIva={p.nota_iva}
+                    casaCotizacion={(p.casa_cotizacion as string) ?? 'oficial'}
+                    cotizacionPactada={(p.cotizacion_pactada as number | null) ?? null}
                     cotizacion={
                       ((cambio ?? []) as Record<string, unknown>[]).find((c) => c.codigo === p.moneda)
                         ?.valor as number | null ?? null

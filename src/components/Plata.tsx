@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { anotarCotizacion, cambiarIva, cambiarMoneda } from '@/app/acciones'
+import {
+  anotarCotizacion,
+  cambiarCasaCotizacion,
+  cambiarIva,
+  cambiarMoneda,
+} from '@/app/acciones'
 import { plata } from '@/lib/estados'
 
 /* ------------------------------------------------------------------
@@ -39,6 +44,8 @@ export default function Plata({
   alicuota,
   notaIva,
   cotizacion,
+  casaCotizacion = 'oficial',
+  cotizacionPactada = null,
   diasDeAtraso,
 }: {
   proyectoId: string
@@ -47,12 +54,15 @@ export default function Plata({
   alicuota: number
   notaIva: string | null
   cotizacion: number | null
+  casaCotizacion?: string
+  cotizacionPactada?: number | null
   diasDeAtraso: number | null
 }) {
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [nota, setNota] = useState(notaIva ?? '')
+  const [pactada, setPactada] = useState(cotizacionPactada != null ? String(cotizacionPactada) : '')
 
   const iva = (neto ?? 0) * (alicuota / 100)
   const total = (neto ?? 0) + iva
@@ -85,6 +95,48 @@ export default function Plata({
             ))}
           </select>
         </label>
+
+        {/* A qué dólar se valúa. Solo aparece si el trabajo no está en
+            pesos: en un proyecto en pesos no hay nada que convertir, y
+            un selector que no hace nada es un selector que confunde.
+
+            Es por proyecto y no general a propósito: si un cliente
+            pactó al oficial y otro al blue, valuar los dos al mismo
+            dólar da un número que no le sirve a nadie. */}
+        {moneda !== 'ARS' && (
+          <label className="flex flex-col gap-0.5">
+            <span className={rotulo}>Se valúa al</span>
+            <select
+              value={casaCotizacion}
+              disabled={pendiente}
+              onChange={(e) => correr(() => cambiarCasaCotizacion(proyectoId, e.target.value, pactada))}
+              className={`${campo} w-36`}
+            >
+              <option value="oficial">Oficial</option>
+              <option value="blue">Blue</option>
+              <option value="pactado">Pactado</option>
+            </select>
+          </label>
+        )}
+
+        {moneda !== 'ARS' && casaCotizacion === 'pactado' && (
+          <label className="flex flex-col gap-0.5">
+            <span className={rotulo}>A cuánto se pactó</span>
+            <input
+              value={pactada}
+              inputMode="decimal"
+              disabled={pendiente}
+              onChange={(e) => setPactada(e.target.value)}
+              onBlur={() =>
+                pactada !== (cotizacionPactada != null ? String(cotizacionPactada) : '') &&
+                correr(() => cambiarCasaCotizacion(proyectoId, 'pactado', pactada))
+              }
+              placeholder="1450"
+              className={`${campo} cifra w-32`}
+            />
+            <span className="text-2xs text-gris-50">No se mueve con el mercado.</span>
+          </label>
+        )}
 
         <span className="flex flex-col gap-0.5">
           <span className={rotulo}>IVA</span>

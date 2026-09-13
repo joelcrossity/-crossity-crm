@@ -2249,3 +2249,23 @@ export async function archivarCaja(id: string, activa: boolean): Promise<Resulta
   revalidatePath('/cajas')
   return { ok: true }
 }
+
+/* A qué dólar se valúa este trabajo. "pactado" guarda un número que no
+   se mueve: es lo que significa pactar una cotización con el cliente. */
+export async function cambiarCasaCotizacion(
+  proyectoId: string,
+  casa: string,
+  pactada: string,
+): Promise<Resultado> {
+  if (!['oficial', 'blue', 'bolsa', 'tarjeta', 'pactado'].includes(casa))
+    return { ok: false, error: 'Ese tipo de cambio no existe.' }
+
+  let valor: number | null = null
+  if (casa === 'pactado') {
+    valor = parseFloat(pactada.replace(/\./g, '').replace(',', '.'))
+    if (!Number.isFinite(valor) || valor <= 0)
+      return { ok: false, error: 'Poné a cuánto se pactó el dólar.' }
+  }
+
+  return guardar(proyectoId, { casa_cotizacion: casa, cotizacion_pactada: valor })
+}
