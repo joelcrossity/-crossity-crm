@@ -40,6 +40,11 @@ export type Archivado = {
   responsable: string | null
   servicio: string | null
   era_oportunidad: boolean
+  era_abono: boolean
+  monto_mensual: number | null
+  vigencia_desde: string | null
+  vigencia_hasta: string | null
+  plan: string | null
   cobrado: number
 }
 
@@ -73,15 +78,22 @@ export default function Historial({
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [solapa, setSolapa] = useState<'proyectos' | 'oportunidades'>('proyectos')
+  const [solapa, setSolapa] = useState<'proyectos' | 'oportunidades' | 'abonos'>('proyectos')
 
   /* Lo último que cerró, primero. Si no se sabe cuándo cerró se usa
      cuándo se archivó, que es lo más cerca que hay: son dos hechos
      distintos, pero archivar pasa poco después de cerrar. */
   const ordenadas = [...filas].sort(porCierre((f) => f.cerrado_at ?? f.archivado_at))
-  const proyectos = ordenadas.filter((f) => !f.era_oportunidad)
+  /* Tres preguntas distintas, tres pestañas. De un abono viejo uno
+     quiere saber cuánto dejaba por mes y hasta cuándo estuvo; de un
+     proyecto, cuánto se cobró; de una oportunidad, en qué etapa murió.
+     Mezclarlos obliga a columnas que sirven para un tercio de las
+     filas. El abono sale de proyectos: era un proyecto más y no lo es. */
+  const abonos = ordenadas.filter((f) => f.era_abono)
+  const proyectos = ordenadas.filter((f) => !f.era_oportunidad && !f.era_abono)
   const oportunidades = ordenadas.filter((f) => f.era_oportunidad)
-  const visibles = solapa === 'proyectos' ? proyectos : oportunidades
+  const visibles =
+    solapa === 'proyectos' ? proyectos : solapa === 'abonos' ? abonos : oportunidades
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null)
@@ -147,6 +159,7 @@ export default function Historial({
         solapas={[
           { clave: 'proyectos' as const, texto: 'Proyectos', señal: proyectos.length },
           { clave: 'oportunidades' as const, texto: 'Oportunidades', señal: oportunidades.length },
+          { clave: 'abonos' as const, texto: 'Mantenimientos', señal: abonos.length },
         ]}
         activa={solapa}
         alElegir={setSolapa}
@@ -165,7 +178,9 @@ export default function Historial({
                 {visibles.length === 0
                   ? solapa === 'proyectos'
                     ? 'Todavía no archivaste ningún proyecto.'
-                    : 'Todavía no archivaste ninguna oportunidad.'
+                    : solapa === 'abonos'
+                      ? 'Todavía no archivaste ningún mantenimiento.'
+                      : 'Todavía no archivaste ninguna oportunidad.'
                   : 'Ninguno coincide con ese recorte.'}
               </p>
             ) : (
@@ -185,7 +200,14 @@ export default function Historial({
                         </span>
                         <span className="cifra block truncate text-2xs text-gris-50">
                           {f.cliente}
-                          {f.servicio && ` · ${f.servicio}`}
+                          {f.plan && ` · ${f.plan}`}
+                          {/* De un abono, entre qué fechas estuvo: es lo
+                              primero que se pregunta al mirarlo viejo. */}
+                          {f.era_abono && f.vigencia_desde &&
+                            ` · ${fechaCorta(f.vigencia_desde)} a ${
+                              f.vigencia_hasta ? fechaCorta(f.vigencia_hasta) : 'sin cierre'
+                            }`}
+                          {!f.era_abono && f.servicio && ` · ${f.servicio}`}
                           {f.responsable && ` · ${f.responsable}`}
                         </span>
                       </Link>
@@ -198,7 +220,14 @@ export default function Historial({
                       </span>
 
                       <span className="w-28 shrink-0 text-right">
-                        {f.era_oportunidad ? (
+                        {f.era_abono ? (
+                          <>
+                            <span className="cifra block text-sm font-medium text-tinta">
+                              {f.monto_mensual ? plata(f.monto_mensual, f.moneda) : '—'}
+                            </span>
+                            <span className="block text-2xs text-gris-50">por mes</span>
+                          </>
+                        ) : f.era_oportunidad ? (
                           <span className="cifra block text-sm text-gris">
                             {f.monto_neto ? plata(f.monto_neto, f.moneda) : '—'}
                           </span>
