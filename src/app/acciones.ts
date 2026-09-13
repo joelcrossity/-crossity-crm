@@ -2269,3 +2269,41 @@ export async function cambiarCasaCotizacion(
 
   return guardar(proyectoId, { casa_cotizacion: casa, cotizacion_pactada: valor })
 }
+
+/* Registrar lo que se le transfirió a alguien del equipo. La base
+   decide quién puede y se encarga de todo lo demás: marcar las
+   entregas, colgarlas de la caja y dejar la cotización congelada. */
+export async function registrarPago(
+  porciones: string[],
+  fecha: string,
+  cajaId: string,
+  notas: string,
+): Promise<Resultado> {
+  if (porciones.length === 0)
+    return { ok: false, error: 'Elegí al menos una entrega para pagar.' }
+  if (!fecha) return { ok: false, error: 'Poné la fecha del pago.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('registrar_pago', {
+    p_porciones: porciones,
+    p_fecha: fecha,
+    p_caja: cajaId || null,
+    p_notas: notas.trim() || null,
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/equipo', 'layout')
+  revalidatePath('/cajas')
+  revalidatePath('/mi-posicion')
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function revertirPago(liquidacionId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('revertir_pago', { p_liquidacion: liquidacionId })
+  if (error) return { ok: false, error: traducir(error.message) }
+  revalidatePath('/equipo', 'layout')
+  revalidatePath('/cajas')
+  return { ok: true }
+}

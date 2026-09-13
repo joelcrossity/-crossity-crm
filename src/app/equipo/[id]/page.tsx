@@ -1,5 +1,9 @@
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
+import CuentaColaborador, {
+  type Pago,
+  type Porcion,
+} from '@/components/CuentaColaborador'
 import Pestanas from '@/components/Pestanas'
 import MiDia, { type Pendiente } from '@/components/MiDia'
 import Calendario, { type Evento } from '@/components/Calendario'
@@ -53,6 +57,9 @@ export default async function FichaPersona({
     { data: agenda },
     { data: posicion },
     { data: hoyRow },
+    { data: porciones },
+    { data: pagos },
+    { data: cajas },
   ] = await Promise.all([
     supabase.from('v_equipo').select('*').eq('id', id).maybeSingle(),
     supabase.from('v_carga').select('*').eq('persona_id', id).maybeSingle(),
@@ -60,6 +67,10 @@ export default async function FichaPersona({
     supabase.from('v_agenda_persona').select('*').eq('persona_id', id).order('fecha'),
     supabase.from('v_posicion_de').select('*').eq('persona_id', id),
     supabase.rpc('hoy_es'),
+    supabase.from('v_porciones').select('*').eq('persona_id', id).order('codigo').order('etapa'),
+    supabase.from('v_pagos_hechos').select('*').eq('persona_id', id)
+      .order('fecha', { ascending: false }),
+    supabase.from('cajas').select('id, nombre, moneda').eq('activa', true).order('orden'),
   ])
 
   if (!quien) notFound()
@@ -203,6 +214,14 @@ export default async function FichaPersona({
                           lista para transferir y sin su factura. Sin factura no se puede pagar.
                         </p>
                       )}
+
+                      <CuentaColaborador
+                        porciones={(porciones ?? []) as Porcion[]}
+                        pagos={(pagos ?? []) as Pago[]}
+                        cajas={(cajas ?? []) as { id: string; nombre: string; moneda: string }[]}
+                        puedePagar={mando}
+                        hoy={(hoyRow as string) ?? ''}
+                      />
 
                       <Seccion
                         titulo="Proyecto por proyecto"
