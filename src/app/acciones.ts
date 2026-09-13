@@ -1601,15 +1601,32 @@ export async function cambiarModalidad(
   })
 }
 
+/* Un número escrito por una persona: puede venir con puntos de miles,
+   con coma decimal, o vacío. Vacío no es cero —"no sé todavía cuánto
+   facturó Meta" no es "Meta facturó cero"— así que devuelve null. */
+function numeroDePantalla(x: string | undefined): number | null | 'mal' {
+  if (x === undefined || x.trim() === '') return null
+  const n = parseFloat(x.replace(/\./g, '').replace(',', '.'))
+  return Number.isFinite(n) && n >= 0 ? n : 'mal'
+}
+
 export async function anotarConsumo(
   proyectoId: string,
   periodo: string,
   cantidad: string,
   notas: string,
+  costos?: { meta?: string; ia?: string; otros?: string },
 ): Promise<Resultado> {
-  const n = parseFloat(cantidad.replace(/\./g, '').replace(',', '.'))
-  if (!Number.isFinite(n) || n < 0) return { ok: false, error: 'La cantidad no se entiende.' }
+  const n = numeroDePantalla(cantidad)
+  if (n === 'mal' || n === null) return { ok: false, error: 'La cantidad no se entiende.' }
   if (!periodo) return { ok: false, error: 'Elegí de qué mes es.' }
+
+  const meta = numeroDePantalla(costos?.meta)
+  const ia = numeroDePantalla(costos?.ia)
+  const otros = numeroDePantalla(costos?.otros)
+  if (meta === 'mal') return { ok: false, error: 'El costo de Meta no se entiende.' }
+  if (ia === 'mal') return { ok: false, error: 'El costo de la IA no se entiende.' }
+  if (otros === 'mal') return { ok: false, error: 'El costo de servidores no se entiende.' }
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('anotar_consumo', {
@@ -1617,6 +1634,9 @@ export async function anotarConsumo(
     p_periodo: periodo,
     p_cantidad: n,
     p_notas: notas.trim() || null,
+    p_costo_meta: meta,
+    p_costo_ia: ia,
+    p_costo_otros: otros,
   })
   if (error) return { ok: false, error: traducir(error.message) }
   revalidatePath('/', 'layout')
@@ -2172,4 +2192,60 @@ type Linea = {
   detalle: string
   monto: number
   es_previsto: boolean
+}
+
+/* ------------------------------------------------------------------
+   Las cajas.
+
+   Quién puede tocarlas lo decide la política de la tabla: leerlas pide
+   ver_facturacion y escribirlas, dirección o administración. Acá no se
+   vuelve a preguntar; si no le corresponde, la base devuelve cero filas
+   y eso se cuenta como que no se pudo.
+   ------------------------------------------------------------------ */
+
+export async function guardarCaja(datos: {
+  id?: string
+  nombre: string
+  moneda: string
+  saldo_inicial: number
+  desde: string
+  notas?: string | null
+}): Promise<Resultado> {
+  if (!datos.nombre.trim()) return { ok: false, error: 'La caja necesita un nombre.' }
+  if (!['ARS', 'USD'].includes(datos.moneda))
+    return { ok: false, error: 'La moneda tiene que ser ARS o USD.' }
+  if (isNaN(datos.saldo_inicial))
+    return { ok: false, error: 'El saldo inicial tiene que ser un número.' }
+
+  const supabase = await createClient()
+  const fila = {
+    nombre: datos.nombre.trim(),
+    moneda: datos.moneda,
+    saldo_inicial: datos.saldo_inicial,
+    desde: datos.desde,
+    notas: datos.notas?.trim() || null,
+  }
+
+  const { error, count } = datos.id
+    ? await supabase.from('cajas').update(fila, { count: 'exact' }).eq('id', datos.id).select('id')
+    : await supabase.from('cajas').insert(fila, { count: 'exact' }).select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para administrar cajas.' }
+
+  revalidatePath('/cajas')
+  revalidatePath('/admin')
+  return { ok: true }
+}
+
+export async function archivarCaja(id: string, activa: boolean): Promise<Resultado> {
+  const supabase = await createClient()
+  /* No se borra: los cobros que entraron por ahí la siguen apuntando, y
+     borrarla dejaría esa plata sin decir dónde está. Se apaga. */
+  const { error, count } = await supabase
+    .from('cajas').update({ activa }, { count: 'exact' }).eq('id', id).select('id')
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para administrar cajas.' }
+  revalidatePath('/cajas')
+  return { ok: true }
 }

@@ -90,6 +90,12 @@ export const SECCIONES: Record<
     detalle: 'cobranza, caja y posición',
     grupo: 'Financiero',
   },
+  '/cajas': {
+    ve: ['direccion', 'administracion'],
+    nombre: 'Cajas',
+    detalle: 'dónde está la plata',
+    grupo: 'Financiero',
+  },
   '/planilla': {
     ve: ['direccion', 'administracion'],
     nombre: 'Planilla',

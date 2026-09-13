@@ -89,6 +89,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: conceptos },
     { data: consumos },
     { data: hoyRow },
+    { data: veLaPlata },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -137,12 +138,19 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       supabase.from('v_reparto').select('*').eq('proyecto_id', p.id),
       supabase.from('v_descuentos').select('*').eq('proyecto_id', p.id).order('fecha'),
       supabase.from('conceptos_impuesto').select('*').order('orden'),
+      /* v_consumo y no la tabla: consumos quedó cerrada a authenticated
+         para que los costos no se puedan pedir salteando el tapado. La
+         vista trae además los bloques y el margen ya calculados. */
       supabase
-        .from('consumos')
-        .select('id, periodo, cantidad, precio_unitario, monto, notas, facturado_at, cobrado_at')
+        .from('v_consumo')
+        .select('*')
         .eq('proyecto_id', p.id)
         .order('periodo', { ascending: false }),
       supabase.rpc('hoy_es'),
+      /* Si esta persona ve los costos del abono. Se pregunta a la base
+         y no se deduce del rol: el permiso puede estar ajustado para
+         alguien en particular, y el rol no lo sabría. */
+      supabase.rpc('puede_persona', { p_accion: 'ver_rentabilidad_mantenimientos' }),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -645,6 +653,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       moneda={p.moneda}
                       consumos={(consumos ?? []) as Mes[]}
                       hoy={(hoyRow as string) ?? ''}
+                      puedeVerLaPlata={veLaPlata === true}
                     />
                   )}
 

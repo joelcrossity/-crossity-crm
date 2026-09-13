@@ -26,12 +26,28 @@ import { Seccion } from '@/components/ui'
 export type Consumo = {
   id: string
   periodo: string
-  cantidad: number
-  precio_unitario: number | null
-  monto: number
+  usado: number
+  incluido: number | null
+  unidad: string | null
+  bloques: number
+  max_bloques: number | null
+  requiere_upgrade: boolean
   notas: string | null
   facturado_at: string | null
   cobrado_at: string | null
+  moneda: string
+  /* En null si la persona no tiene ver_rentabilidad_mantenimientos.
+     No los tapa esta pantalla: no le llegan. */
+  base: number | null
+  excedente: number | null
+  facturado: number | null
+  costo_meta: number | null
+  costo_ia: number | null
+  costo_otros: number | null
+  costo_total: number | null
+  margen: number | null
+  margen_pct: number | null
+  ve_la_plata: boolean
 }
 
 const MODALIDADES: [string, string, string][] = [
@@ -56,6 +72,7 @@ export default function Consumo({
   moneda,
   consumos,
   hoy,
+  puedeVerLaPlata,
 }: {
   proyectoId: string
   modalidad: string
@@ -66,6 +83,7 @@ export default function Consumo({
   moneda: string
   consumos: Consumo[]
   hoy: string
+  puedeVerLaPlata?: boolean
 }) {
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
@@ -76,8 +94,15 @@ export default function Consumo({
   const [mes, setMes] = useState(hoy.slice(0, 7))
   const [cant, setCant] = useState('')
   const [notas, setNotas] = useState('')
+  const [cMeta, setCMeta] = useState('')
+  const [cIa, setCIa] = useState('')
+  const [cOtros, setCOtros] = useState('')
 
   const variable = modalidad !== 'fijo'
+  /* Lo dice la base, no el rol de esta pantalla. Y si todavía no hay
+     ningún mes cargado no se puede deducir de las filas, así que la
+     página lo pregunta y lo pasa. */
+  const veLaPlata = puedeVerLaPlata ?? (consumos[0]?.ve_la_plata ?? false)
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string }>, luego?: () => void) {
     setError(null)
@@ -94,10 +119,12 @@ export default function Consumo({
   const guardarConfig = (m = modalidad) => correr(() => cambiarModalidad(proyectoId, m, u, pr, inc))
 
   const sinCobrar = consumos.filter((c) => !c.cobrado_at)
+  /* Solo con los meses cuyo monto llegó: promediar tratando los tapados
+     como cero daría un promedio falso y más bajo. */
+  const conMonto = consumos.slice(0, 3).filter((c) => c.facturado != null)
   const promedio =
-    consumos.length > 0
-      ? consumos.slice(0, 3).reduce((s, c) => s + Number(c.monto), 0) /
-        Math.min(3, consumos.length)
+    conMonto.length > 0
+      ? conMonto.reduce((s, c) => s + Number(c.facturado), 0) / conMonto.length
       : 0
 
   return (
@@ -231,10 +258,14 @@ export default function Consumo({
               disabled={pendiente || !cant}
               onClick={() =>
                 correr(
-                  () => anotarConsumo(proyectoId, `${mes}-01`, cant, notas),
+                  () => anotarConsumo(proyectoId, `${mes}-01`, cant, notas,
+                    { meta: cMeta, ia: cIa, otros: cOtros }),
                   () => {
                     setCant('')
                     setNotas('')
+                    setCMeta('')
+                    setCIa('')
+                    setCOtros('')
                   },
                 )
               }
@@ -242,6 +273,39 @@ export default function Consumo({
             >
               {pendiente ? 'Guardando…' : 'Cerrar el mes'}
             </button>
+
+            {/* Lo que costó atender el mes. Solo lo ve —y lo carga—
+                quien tiene el permiso de rentabilidad: a quien no, ni
+                le llega el dato ni tiene sentido pedirle que lo cargue.
+
+                Dejarlos vacíos es válido y no es lo mismo que cero: la
+                factura de Meta llega después de cerrar el mes, así que
+                se carga primero el consumo y los costos cuando lleguen.
+                Un vacío no pisa lo que ya estaba. */}
+            {veLaPlata && (
+              <div className="flex w-full flex-wrap items-end gap-2 border-t border-linea pt-3">
+                <span className="w-full text-2xs text-gris-50">
+                  Lo que costó atender el mes. Se puede dejar vacío y completar cuando lleguen las
+                  facturas: vacío no borra lo ya cargado.
+                </span>
+                {([
+                  ['Meta / WhatsApp', cMeta, setCMeta],
+                  ['Créditos de IA', cIa, setCIa],
+                  ['Servidores y otros', cOtros, setCOtros],
+                ] as const).map(([et, val, set]) => (
+                  <label key={et} className="flex flex-col gap-0.5">
+                    <span className={rotulo}>{et}</span>
+                    <input
+                      value={val}
+                      inputMode="decimal"
+                      onChange={(e) => set(e.target.value)}
+                      placeholder="—"
+                      className={`${campo} cifra w-32`}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {consumos.length === 0 ? (
@@ -263,21 +327,56 @@ export default function Consumo({
 
                   <span className="min-w-0 flex-1">
                     <span className="cifra block text-sm text-tinta">
-                      {Number(c.cantidad)} {u || 'unidades'}
-                      {c.precio_unitario ? (
-                        <span className="text-2xs text-gris-50">
-                          {' '}
-                          × {plata(c.precio_unitario, moneda)}
+                      {Number(c.usado)}
+                      {c.incluido ? (
+                        <span className="text-gris-50"> / {Number(c.incluido)}</span>
+                      ) : null}{' '}
+                      {c.unidad || u || 'unidades'}
+                      {c.bloques > 0 && (
+                        <span className="ml-2 text-2xs text-amarillo">
+                          +{c.bloques} bloque{c.bloques > 1 ? 's' : ''}
                         </span>
-                      ) : null}
+                      )}
                     </span>
-                    {c.notas && (
-                      <span className="block truncate text-2xs text-gris-50">{c.notas}</span>
+                    {c.requiere_upgrade ? (
+                      <span className="block text-2xs font-medium text-rojo">
+                        Pasó el máximo de {c.max_bloques} bloques: conviene ofrecerle el plan que
+                        sigue.
+                      </span>
+                    ) : (
+                      c.notas && (
+                        <span className="block truncate text-2xs text-gris-50">{c.notas}</span>
+                      )
                     )}
                   </span>
 
-                  <span className="cifra w-28 shrink-0 text-right text-sm font-bold text-tinta">
-                    {plata(c.monto, moneda)}
+                  {/* Sin permiso, acá no hay un cero: no hay nada, y se
+                      dice por qué en vez de dejar un hueco mudo. */}
+                  <span className="w-40 shrink-0 text-right">
+                    {c.facturado == null ? (
+                      <span className="text-2xs text-gris-25">sin acceso a los montos</span>
+                    ) : (
+                      <>
+                        <span className="cifra block text-sm font-bold text-tinta">
+                          {plata(c.facturado, c.moneda || moneda)}
+                        </span>
+                        <span className="cifra block text-2xs text-gris-50">
+                          {c.excedente ? (
+                            <>
+                              {plata(c.base ?? 0, c.moneda || moneda)} + {plata(c.excedente, c.moneda || moneda)}
+                            </>
+                          ) : (
+                            'base'
+                          )}
+                          {c.margen != null && (
+                            <span className={c.margen >= 0 ? ' text-verde' : ' text-rojo'}>
+                              {' · '}queda {plata(c.margen, c.moneda || moneda)}
+                              {c.margen_pct != null && ` (${c.margen_pct}%)`}
+                            </span>
+                          )}
+                        </span>
+                      </>
+                    )}
                   </span>
 
                   <span className="flex shrink-0 items-center gap-1.5">
