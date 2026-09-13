@@ -230,7 +230,7 @@ function Franja({ pulso, dolar }: { pulso: Pulso | null; dolar: Dolar[] }) {
       valor: String(pulso.en_vivo),
       nota:
         pulso.frenados > 0
-          ? `${pulso.frenados} frenado${pulso.frenados > 1 ? 's' : ''}`
+          ? `${pulso.frenados} sin novedades`
           : pulso.abonos > 0
             ? `+ ${pulso.abonos} abonos`
             : undefined,

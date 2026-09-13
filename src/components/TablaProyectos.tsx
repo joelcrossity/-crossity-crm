@@ -29,6 +29,7 @@ export type Fila = {
   monto_neto: number | null
   descripcion: string | null
   puedo_editar: boolean
+  tiene_abono: boolean
 }
 
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { archivarProyecto, cambiarEstado } from '@/app/acciones'
 import { CampoBusqueda, Plegable } from '@/components/ui'
 import EditarFicha from '@/components/EditarFicha'
+import OfrecerAbono from '@/components/OfrecerAbono'
 import type { Cliente } from '@/components/ElegirCliente'
 import { SUBESTADO, fechaCierre, fechaCorta, porCierre } from '@/lib/estados'
 import type { Fila } from '@/components/TablaProyectos'
@@ -428,13 +429,20 @@ export default function TableroEstados({
   columnas,
   clientes = [],
   personas = [],
+  hoy = '',
 }: {
   filas: Fila[]
   columnas: Columna[]
+  hoy?: string
   clientes?: Cliente[]
   personas?: { id: string; nombre: string }[]
 }) {
   const [editando, setEditando] = useState<Fila | null>(null)
+  /* Al soltar en Terminado se pregunta si sigue con abono. Es el momento
+     exacto: el trabajo está fresco y se sabe qué va a haber que
+     mantener. Una semana después nadie se acuerda, y el cliente se
+     queda con algo funcionando que nadie factura. */
+  const [terminado, setTerminado] = useState<Fila | null>(null)
   const [, empezar] = useTransition()
   const [arrastrando, setArrastrando] = useState<string | null>(null)
   const [encima, setEncima] = useState<string | null>(null)
@@ -487,7 +495,10 @@ export default function TableroEstados({
       /* Sin router.refresh(): la acción ya revalida esta ruta y Next
          vuelve con la página al día en la misma respuesta. Pedirlo de
          nuevo era un segundo viaje completo para traer lo mismo. */
-      if (!r.ok) setError(r.error)
+      if (!r.ok) return setError(r.error)
+
+      const f = filas.find((x) => x.id === id)
+      if (color === 'naranja' && f && !f.tiene_abono) setTerminado(f)
     })
   }
 
@@ -669,6 +680,20 @@ export default function TableroEstados({
           />
         ))}
       </div>
+
+      {terminado && (
+        <div className="fixed right-5 bottom-5 z-(--z-aviso) w-[22rem] max-w-[calc(100vw-2.5rem)]">
+          <OfrecerAbono
+            proyecto={{
+              id: terminado.id,
+              nombre: terminado.nombre,
+              cliente: terminado.cliente,
+            }}
+            hoy={hoy}
+            alCerrar={() => setTerminado(null)}
+          />
+        </div>
+      )}
 
       {editando && (
         <EditarFicha

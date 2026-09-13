@@ -63,6 +63,7 @@ export default async function Tablero() {
           columnas={(columnas ?? []) as Columna[]}
           clientes={clientes}
           personas={personas ?? []}
+          hoy={new Date().toISOString().slice(0, 10)}
           responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
           alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
         />

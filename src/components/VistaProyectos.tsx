@@ -42,6 +42,7 @@ export default function VistaProyectos({
   columnas,
   clientes = [],
   personas = [],
+  hoy = '',
 }: {
   filas: Fila[]
   alta: React.ReactNode
@@ -49,6 +50,7 @@ export default function VistaProyectos({
   columnas: Columna[]
   clientes?: Cliente[]
   personas?: { id: string; nombre: string }[]
+  hoy?: string
 }) {
   const vista = useVista('crossity.proyectos')
 
@@ -94,7 +96,7 @@ export default function VistaProyectos({
                 ))}
               </div>
             ) : (
-              <TableroEstados filas={vistos} columnas={columnas} clientes={clientes} personas={personas} />
+              <TableroEstados filas={vistos} columnas={columnas} clientes={clientes} personas={personas} hoy={hoy} />
             )}
           </div>
         </div>

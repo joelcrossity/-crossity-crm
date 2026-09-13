@@ -2308,3 +2308,4 @@ export async function borrarColumna(clave: string, absorbe?: string): Promise<Re
   revalidatePath('/', 'layout')
   return { ok: true }
 }
+
