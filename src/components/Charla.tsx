@@ -1,8 +1,6 @@
 'use client'
 
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
-import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
-import { useBorrador } from '@/lib/borrador'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -55,26 +53,26 @@ export default function Charla({
   const [referidoPor, setReferidoPor] = useState('')
   const [referidoNota, setReferidoNota] = useState('')
 
-  /* Una charla se anota mientras pasa o justo después, y "lo hablado"
-     puede ser largo —a veces dictado—. Perderlo es perder la reunión. */
-  const campos = {
-    clienteId, clienteNuevo, cuitNuevo, tema, loHablado,
-    origen, cuando, referidoPor, referidoNota,
-  }
-  const borrador = useBorrador('charla', campos, abierto)
+  /* Se abre en blanco. El resguardo automático que había acá ofrecía
+     recuperar charlas que nadie había escrito: bastaba abrir y cerrar
+     para dejar un borrador vacío guardado. */
+  function vaciar() {
+    setClienteId('')
+    setClienteNuevo('')
+    setCuitNuevo('')
+    setTema('')
+    setLoHablado('')
+    setReferidoPor('')
+    setReferidoNota('')
 
-  function recuperar() {
-    const previo = borrador.restaurar()
-    if (!previo) return
-    setClienteId(previo.clienteId)
-    setClienteNuevo(previo.clienteNuevo)
-    setCuitNuevo(previo.cuitNuevo)
-    setTema(previo.tema)
-    setLoHablado(previo.loHablado)
-    setOrigen(previo.origen)
-    setCuando(previo.cuando)
-    setReferidoPor(previo.referidoPor)
-    setReferidoNota(previo.referidoNota)
+    /* Y se tira el resguardo que pudo quedar guardado de antes. Sacar
+       la función del código no borra lo que ya está en la máquina de
+       cada uno, y son datos de clientes: se van con el primer uso. */
+    try {
+      window.localStorage.removeItem('borrador:charla')
+    } catch {
+      // Sin permiso para tocar el almacenamiento no hay nada guardado.
+    }
   }
 
   const elegido = clientes.find((c) => c.id === clienteId)
@@ -83,7 +81,10 @@ export default function Charla({
     return (
       <button
         type="button"
-        onClick={() => setAbierto(true)}
+        onClick={() => {
+          vaciar()
+          setAbierto(true)
+        }}
         className="w-fit rounded-md border border-linea-fuerte px-3.5 py-1.5 text-sm font-medium
                    text-gris transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
       >
@@ -100,12 +101,6 @@ export default function Charla({
           oportunidad en interés: el alcance, el monto y las entregas se cargan cuando existan.
         </p>
       </div>
-
-      <AvisoBorrador
-        hay={!!borrador.hay}
-        alRestaurar={recuperar}
-        alDescartar={borrador.olvidar}
-      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
@@ -234,7 +229,7 @@ export default function Charla({
                 clienteId, clienteNuevo, cuitNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
               })
               if (r.ok) {
-                borrador.olvidar()
+                vaciar()
                 if (r.ir) router.push(r.ir)
               } else setError(r.error)
             })
@@ -253,7 +248,6 @@ export default function Charla({
           </button>
         )}
 
-        <EstadoDelBorrador estado={borrador.estado} />
         {error && <span className="text-sm text-rojo">{error}</span>}
       </div>
     </div>

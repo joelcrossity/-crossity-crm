@@ -2,8 +2,6 @@
 
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
 import ElegirPersona from '@/components/ElegirPersona'
-import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
-import { useBorrador } from '@/lib/borrador'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -69,29 +67,33 @@ export default function Asistente({
   const [responsableTecnicoId, setResponsableTecnicoId] = useState('')
   const [hitos, setHitos] = useState<HitoNuevo[]>([])
 
-  /* El formulario más largo del sistema: nombre, monto, moneda, IVA,
-     dos responsables y las entregas una por una. Perderlo por cerrar
-     una pestaña es media hora de trabajo. */
-  const campos = {
-    clienteId, clienteNuevo, cuitNuevo, nombre, monto, moneda, iva,
-    programa, responsableId, responsableTecnicoId, hitos,
-  }
-  const borrador = useBorrador(`alta:${arrancaComo}`, campos, abierto)
+  /* Se abre siempre en blanco. Hubo un resguardo automático acá y se
+     sacó: ofrecía recuperar borradores que nadie había escrito, porque
+     bastaba abrir y cerrar la ventana para dejar uno guardado con los
+     campos vacíos. Un cartel que aparece cuando no hay nada que
+     recuperar entrena a ignorarlo, y entonces tampoco sirve el día que
+     sí hay algo. */
+  function vaciar() {
+    setClienteId(clienteFijo?.id ?? '')
+    setClienteNuevo('')
+    setCuitNuevo('')
+    setNombre('')
+    setMonto('')
+    setMoneda('ARS')
+    setIva('21')
+    setPrograma('')
+    setResponsableId('')
+    setResponsableTecnicoId('')
+    setHitos([])
 
-  function recuperar() {
-    const previo = borrador.restaurar()
-    if (!previo) return
-    if (!clienteFijo) setClienteId(previo.clienteId)
-    setClienteNuevo(previo.clienteNuevo)
-    setCuitNuevo(previo.cuitNuevo)
-    setNombre(previo.nombre)
-    setMonto(previo.monto)
-    setMoneda(previo.moneda)
-    setIva(previo.iva)
-    setPrograma(previo.programa)
-    setResponsableId(previo.responsableId)
-    setResponsableTecnicoId(previo.responsableTecnicoId)
-    setHitos(previo.hitos)
+    /* Y se tira el resguardo que pudo quedar guardado de antes. Sacar
+       la función del código no borra lo que ya está en la máquina de
+       cada uno, y son datos de clientes: se van con el primer uso. */
+    try {
+      window.localStorage.removeItem(`borrador:alta:${arrancaComo}`)
+    } catch {
+      // Sin permiso para tocar el almacenamiento no hay nada guardado.
+    }
   }
 
   const elegido = clientes.find((c) => c.id === clienteId)
@@ -150,9 +152,9 @@ export default function Asistente({
         hitos,
       })
       if (r.ok) {
-        // Guardado: el borrador ya no sirve y ofrecerlo la próxima vez
-        // sería ofrecer algo que ya está cargado en el sistema.
-        borrador.olvidar()
+        // Ya está en el sistema: los campos se vacían para que volver a
+        // abrir no muestre lo que se acaba de cargar.
+        vaciar()
         if (r.ir) router.push(r.ir)
       } else setError(r.error)
     })
@@ -183,7 +185,11 @@ export default function Asistente({
     return (
       <button
         type="button"
-        onClick={() => setAbierto(true)}
+        onClick={() => {
+          vaciar()
+          setPaso(0)
+          setAbierto(true)
+        }}
         className="w-fit rounded-md bg-azul-hondo px-3.5 py-1.5 text-sm font-medium text-white
                    transition-colors duration-150 hover:bg-azul"
       >
@@ -213,12 +219,6 @@ export default function Asistente({
           </li>
         ))}
       </ol>
-
-      <AvisoBorrador
-        hay={!!borrador.hay}
-        alRestaurar={recuperar}
-        alDescartar={borrador.olvidar}
-      />
 
       {paso === 0 && (
         <div className="flex flex-col gap-3">
@@ -527,10 +527,6 @@ export default function Asistente({
         >
           Cancelar
         </button>
-
-        {/* Cancelar no borra el borrador a propósito: se cierra mucho
-            sin querer, y lo que se escribió tiene que seguir ahí. */}
-        <EstadoDelBorrador estado={borrador.estado} />
 
         {paso === PASOS.length - 1 && nombre.trim() && (
           <span className="text-2xs text-gris-50">
