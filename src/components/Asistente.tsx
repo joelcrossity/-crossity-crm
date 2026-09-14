@@ -1,6 +1,9 @@
 'use client'
 
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
+import ElegirPersona from '@/components/ElegirPersona'
+import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
+import { useBorrador } from '@/lib/borrador'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -61,6 +64,31 @@ export default function Asistente({
   const [responsableTecnicoId, setResponsableTecnicoId] = useState('')
   const [hitos, setHitos] = useState<HitoNuevo[]>([])
 
+  /* El formulario más largo del sistema: nombre, monto, moneda, IVA,
+     dos responsables y las entregas una por una. Perderlo por cerrar
+     una pestaña es media hora de trabajo. */
+  const campos = {
+    clienteId, clienteNuevo, cuitNuevo, nombre, monto, moneda, iva,
+    programa, responsableId, responsableTecnicoId, hitos,
+  }
+  const borrador = useBorrador(`alta:${arrancaComo}`, campos, abierto)
+
+  function recuperar() {
+    const previo = borrador.restaurar()
+    if (!previo) return
+    if (!clienteFijo) setClienteId(previo.clienteId)
+    setClienteNuevo(previo.clienteNuevo)
+    setCuitNuevo(previo.cuitNuevo)
+    setNombre(previo.nombre)
+    setMonto(previo.monto)
+    setMoneda(previo.moneda)
+    setIva(previo.iva)
+    setPrograma(previo.programa)
+    setResponsableId(previo.responsableId)
+    setResponsableTecnicoId(previo.responsableTecnicoId)
+    setHitos(previo.hitos)
+  }
+
   const elegido = clientes.find((c) => c.id === clienteId)
   const esOportunidad = arrancaComo === 'oportunidad'
 
@@ -116,8 +144,12 @@ export default function Asistente({
         arranca: arrancaComo,
         hitos,
       })
-      if (r.ok && r.ir) router.push(r.ir)
-      else if (!r.ok) setError(r.error)
+      if (r.ok) {
+        // Guardado: el borrador ya no sirve y ofrecerlo la próxima vez
+        // sería ofrecer algo que ya está cargado en el sistema.
+        borrador.olvidar()
+        if (r.ir) router.push(r.ir)
+      } else setError(r.error)
     })
   }
 
@@ -155,6 +187,12 @@ export default function Asistente({
           </li>
         ))}
       </ol>
+
+      <AvisoBorrador
+        hay={!!borrador.hay}
+        alRestaurar={recuperar}
+        alDescartar={borrador.olvidar}
+      />
 
       {paso === 0 && (
         <div className="flex flex-col gap-3">
@@ -243,33 +281,22 @@ export default function Asistente({
             </label>
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-0.5">
-              <Etiqueta>Responsable del proyecto</Etiqueta>
-              <select
-                value={responsableId}
-                onChange={(e) => setResponsableId(e.target.value)}
-                className={`${campo} w-48 cursor-pointer`}
-              >
-                <option value="">sin asignar</option>
-                {personas.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-0.5">
-              <Etiqueta>Responsable técnico</Etiqueta>
-              <select
-                value={responsableTecnicoId}
-                onChange={(e) => setResponsableTecnicoId(e.target.value)}
-                className={`${campo} w-48 cursor-pointer`}
-              >
-                <option value="">sin asignar</option>
-                {personas.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
-                ))}
-              </select>
-            </label>
+          {/* Con el botón de alta: la persona que falta en la lista
+              suele ser justo la que entró esta semana, y abandonar el
+              formulario para darla de alta es perder todo lo cargado. */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ElegirPersona
+              personas={personas}
+              elegida={responsableId}
+              alElegir={setResponsableId}
+              etiqueta="Responsable del proyecto"
+            />
+            <ElegirPersona
+              personas={personas}
+              elegida={responsableTecnicoId}
+              alElegir={setResponsableTecnicoId}
+              etiqueta="Responsable técnico"
+            />
           </div>
 
           <label className="flex w-40 flex-col gap-0.5">
@@ -474,6 +501,10 @@ export default function Asistente({
         >
           Cancelar
         </button>
+
+        {/* Cancelar no borra el borrador a propósito: se cierra mucho
+            sin querer, y lo que se escribió tiene que seguir ahí. */}
+        <EstadoDelBorrador estado={borrador.estado} />
 
         {paso === PASOS.length - 1 && nombre.trim() && (
           <span className="text-2xs text-gris-50">

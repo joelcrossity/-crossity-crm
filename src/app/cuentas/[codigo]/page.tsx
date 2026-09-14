@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Shell, { Rastro } from '@/components/Shell'
 import Asistente from '@/components/Asistente'
+import PreCotizadas, { type PreCotizada } from '@/components/PreCotizadas'
 import Documentos, { type Documento } from '@/components/Documentos'
 import Pestanas from '@/components/Pestanas'
 import ProyectosDelCliente, {
@@ -50,6 +51,8 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: hoyRow },
     { data: documentos },
     { data: personas },
+    { data: precotizadas },
+    { data: puedeAbrirTrabajo },
   ] = await Promise.all([
       supabase
         .from('proyectos')
@@ -93,7 +96,13 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
         .select('id, titulo, url, clase, version, enviado_at, enviado_por')
         .eq('organizacion_id', org.id)
         .order('created_at', { ascending: false }),
-      supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre')
+      supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
+      supabase.from('v_precotizado').select('*').eq('organizacion_id', org.id).order('codigo').order('orden'),
+      /* Activar una etapa pone trabajo en ejecución y reparte plata: es
+         el mismo permiso que tocar montos. Se le pregunta a la base en
+         vez de deducirlo de los roles, porque puede estar ajustado para
+         alguien en particular y el rol no lo sabría. */
+      supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' })
     ])
 
   type P = {
@@ -201,6 +210,12 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
             señal: vivos.length,
             contenido: (
               <div className="flex flex-col gap-9">
+                <PreCotizadas
+                  etapas={(precotizadas ?? []) as PreCotizada[]}
+                  puedeActivar={puedeAbrirTrabajo === true}
+                  hoy={new Date().toISOString().slice(0, 10)}
+                />
+
                 <section className="escalona grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Cifra valor={String(ps.length)} titulo="proyectos" nota="en toda la relación" />
                   <Cifra
