@@ -64,7 +64,13 @@ async function explicar(mensaje: string): Promise<string> {
     const { data } = await supabase.rpc('quien_soy_para_el_sistema')
     const v = data as Record<string, unknown> | null
     if (!v) return texto
-    if (!v.me_reconoce) return `${texto} (El servidor no reconoce tu sesión: probá cerrar sesión y volver a entrar.)`
+    /* Sin sesión no es un problema de permisos, así que no se dice que
+       falta un rol: se dice lo que pasa y qué hacer. Decirle a alguien
+       que no tiene un permiso que sí tiene lo manda a pedir un permiso
+       que ya le dieron, y ahí se pierde la tarde. */
+    if (!v.me_reconoce)
+      return 'Se cortó tu sesión, así que el sistema no supo quién pedía esto y no guardó nada. Entrá de nuevo desde crm.crossity.ar y repetilo: lo que escribiste sigue acá.'
+
     const roles = Array.isArray(v.roles) ? v.roles.join(', ') : 'ninguno'
     return `${texto} (El servidor te ve como ${v.nombre}, con: ${roles}.)`
   } catch {

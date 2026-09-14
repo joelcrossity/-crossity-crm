@@ -19,8 +19,18 @@ import { NextResponse, type NextRequest } from 'next/server'
    Las vistas previas quedan afuera. Cada despliegue de prueba tiene su
    propia dirección y mandarlas a producción haría imposible revisar
    nada antes de publicarlo.
+
+   Y se redirige al navegar, nunca al guardar. Una cookie de sesión
+   viaja en "el mismo sitio": si mandamos un guardado del dominio viejo
+   al nuevo, el navegador lo deja salir pero le saca la sesión, y al
+   servidor le llega un desconocido pidiendo guardar. Rechaza, claro, y
+   el mensaje sale contradictorio: la pantalla la dibujó el dominio que
+   sí conoce a la persona, y el rechazo lo escribió el que no la vio
+   nunca. Así que un guardado se atiende donde nació, con la sesión que
+   traía, y lo que se reencamina es la próxima navegación.
    ------------------------------------------------------------------ */
 function aDondeDeVerdad(request: NextRequest): URL | null {
+  if (request.method !== 'GET') return null
   if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') return null
 
   const oficial = (process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL)?.replace(/\/+$/, '')
@@ -85,7 +95,14 @@ export async function proxy(request: NextRequest) {
   const abiertas = ['/login', '/clave']
   const abiertaPorPrefijo = pathname.startsWith('/entrar/')
 
-  if (!user && !abiertas.includes(pathname) && !abiertaPorPrefijo) {
+  /* Al login se manda al que navega sin sesión. Al que intenta guardar
+     sin sesión no: un guardado espera una respuesta del sistema y
+     recibiría la pantalla de login entera, que su navegador no sabe
+     leer, y el intento moriría sin decir nada. Lo dejamos llegar para
+     que la base lo rechace y la respuesta diga en castellano que la
+     sesión venció. Dejarlo llegar no abre nada: sin sesión la base no
+     le muestra ni le deja tocar una sola fila. */
+  if (!user && request.method === 'GET' && !abiertas.includes(pathname) && !abiertaPorPrefijo) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
