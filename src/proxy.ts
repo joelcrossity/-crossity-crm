@@ -28,13 +28,20 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  /* /clave queda abierta: quien llega desde el correo de recuperación
-     todavía no tiene sesión cuando corre esto —el token viaja en el
-     fragmento de la URL y lo procesa el navegador—, así que mandarlo al
-     login haría que el enlace del correo nunca funcione. */
-  const abiertas = ['/login', '/clave']
+  /* Las que se abren sin sesión, y las dos por la misma razón: quien
+     llega ahí todavía no es nadie en el sistema.
 
-  if (!user && !abiertas.includes(pathname)) {
+     /clave recibe al que viene del correo de recuperación: el token
+     viaja en el fragmento de la URL y lo procesa el navegador, así que
+     cuando esto corre todavía no hay sesión.
+
+     /entrar recibe al que abre un código de invitación. Mandarlo al
+     login sería pedirle que entre con la contraseña que justamente
+     viene a crear. */
+  const abiertas = ['/login', '/clave']
+  const abiertaPorPrefijo = pathname.startsWith('/entrar/')
+
+  if (!user && !abiertas.includes(pathname) && !abiertaPorPrefijo) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
