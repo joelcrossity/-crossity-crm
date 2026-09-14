@@ -19,6 +19,25 @@ type Fila = {
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
+/* Un más, repetido en los tres atajos. */
+function Mas() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
+      <path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* El primero va lleno y los otros dos delineados: los tres caben, pero
+   solo uno puede ser el gesto por defecto. Anotar una charla es el que
+   más se usa y el único que no pide haber cotizado nada. */
+const atajoFuerte =
+  'flex items-center gap-2 rounded-md bg-azul-hondo px-3.5 py-2 text-sm font-medium ' +
+  'text-white transition-colors duration-150 hover:bg-azul'
+const atajo =
+  'flex items-center gap-2 rounded-md border border-linea px-3.5 py-2 text-sm font-medium ' +
+  'text-tinta transition-colors duration-150 hover:border-azul hover:text-azul-hondo'
+
 export default async function Hoy() {
   const supabase = await createClient()
 
@@ -44,6 +63,7 @@ export default async function Hoy() {
     { data: ofrecer },
     { data: sinAbono },
     { data: comisiones },
+    { data: puedeCargar },
   ] = await Promise.all([
       supabase.from('v_tablero').select('*'),
       supabase.from('v_pipeline').select('etapa, monto_neto, moneda, sin_agendar, seguimiento_vencido'),
@@ -53,6 +73,9 @@ export default async function Hoy() {
       supabase.from('v_para_ofrecer').select('cliente, cliente_codigo, servicio, razon').limit(12),
       supabase.from('v_sin_mantenimiento').select('codigo, nombre, cliente').limit(6),
       supabase.from('v_comisiones_sin_acordar').select('codigo, nombre, referente').limit(6),
+      /* Los atajos de arriba solo aparecen si puede abrir trabajo: un
+         atajo que rebota es peor que no tener el atajo. */
+      supabase.rpc('carga_trabajo'),
     ])
 
   const filas = (proyectos ?? []) as Fila[]
@@ -162,21 +185,30 @@ export default async function Hoy() {
               : 'Tus proyectos y tu pipeline.'
         }
         acciones={
-          <Link
-            href="/charla"
-            className="flex items-center gap-2 rounded-md bg-azul-hondo px-3.5 py-2 text-sm
-                       font-medium text-white transition-colors duration-150 hover:bg-azul"
-          >
-            <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
-              <path
-                d="M8 3.5v9M3.5 8h9"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-            Anotar una charla
-          </Link>
+          /* Los tres modos de que entre trabajo, en el orden en que
+             pasan de verdad: primero se habla, después se cotiza, y a
+             veces el cliente ya dijo que sí y no hay nada que cotizar.
+             Ese último existe porque obligar a pasar por el pipeline
+             algo ya cerrado hace que se cargue mal o no se cargue.
+
+             Solo se muestran si la persona puede abrir trabajo: un
+             atajo que rebota es peor que no tener el atajo. */
+          puedeCargar === true ? (
+            <span className="flex flex-wrap items-center gap-2">
+              <Link href="/charla" className={atajoFuerte}>
+                <Mas />
+                Anotar una charla
+              </Link>
+              <Link href="/pipeline" className={atajo}>
+                <Mas />
+                Nueva oportunidad
+              </Link>
+              <Link href="/tablero" className={atajo}>
+                <Mas />
+                Proyecto directo
+              </Link>
+            </span>
+          ) : null
         }
       >
         {esDireccion ? 'Cómo viene la empresa' : esAdmin ? 'Qué hay para cobrar' : 'Qué necesita atención'}
