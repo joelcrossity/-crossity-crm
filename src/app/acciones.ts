@@ -42,6 +42,36 @@ function traducir(mensaje: string): string {
   return mensaje
 }
 
+/* ------------------------------------------------------------------
+   Cuando la base rechaza por permisos, preguntarle qué ve.
+
+   Un permiso negado sin explicación obliga a mandar una captura,
+   adivinar y probar a ciegas. Pasó exactamente eso: el sistema le decía
+   a Santiago que le faltaba un rol que él tiene, y desde la base no
+   había forma de reproducirlo.
+
+   Así que cuando el rechazo es por una regla de fila, se le pregunta al
+   servidor quién cree que es quien pidió, y eso viaja en el mensaje. Si
+   dice los roles correctos, el problema no es el permiso y hay que
+   buscar en otro lado; si dice que no reconoce a nadie, es la sesión.
+   ------------------------------------------------------------------ */
+async function explicar(mensaje: string): Promise<string> {
+  const texto = traducir(mensaje)
+  if (!mensaje.includes('row-level security')) return texto
+
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.rpc('quien_soy_para_el_sistema')
+    const v = data as Record<string, unknown> | null
+    if (!v) return texto
+    if (!v.me_reconoce) return `${texto} (El servidor no reconoce tu sesión: probá cerrar sesión y volver a entrar.)`
+    const roles = Array.isArray(v.roles) ? v.roles.join(', ') : 'ninguno'
+    return `${texto} (El servidor te ve como ${v.nombre}, con: ${roles}.)`
+  } catch {
+    return texto
+  }
+}
+
 async function guardar(
   proyectoId: string,
   cambios: Record<string, unknown>
@@ -501,7 +531,7 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
     .select('id, codigo')
     .single()
 
-  if (error || !data) return { ok: false, error: traducir(error?.message ?? 'No se pudo crear') }
+  if (error || !data) return { ok: false, error: await explicar(error?.message ?? 'No se pudo crear') }
 
   if (hitos.length > 0) {
     const { error: eh } = await supabase.from('hitos').insert(
