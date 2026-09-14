@@ -1,6 +1,8 @@
 'use client'
 
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
+import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
+import { useBorrador } from '@/lib/borrador'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -53,6 +55,28 @@ export default function Charla({
   const [referidoPor, setReferidoPor] = useState('')
   const [referidoNota, setReferidoNota] = useState('')
 
+  /* Una charla se anota mientras pasa o justo después, y "lo hablado"
+     puede ser largo —a veces dictado—. Perderlo es perder la reunión. */
+  const campos = {
+    clienteId, clienteNuevo, cuitNuevo, tema, loHablado,
+    origen, cuando, referidoPor, referidoNota,
+  }
+  const borrador = useBorrador('charla', campos, abierto)
+
+  function recuperar() {
+    const previo = borrador.restaurar()
+    if (!previo) return
+    setClienteId(previo.clienteId)
+    setClienteNuevo(previo.clienteNuevo)
+    setCuitNuevo(previo.cuitNuevo)
+    setTema(previo.tema)
+    setLoHablado(previo.loHablado)
+    setOrigen(previo.origen)
+    setCuando(previo.cuando)
+    setReferidoPor(previo.referidoPor)
+    setReferidoNota(previo.referidoNota)
+  }
+
   const elegido = clientes.find((c) => c.id === clienteId)
 
   if (!abierto)
@@ -76,6 +100,12 @@ export default function Charla({
           oportunidad en interés: el alcance, el monto y las entregas se cargan cuando existan.
         </p>
       </div>
+
+      <AvisoBorrador
+        hay={!!borrador.hay}
+        alRestaurar={recuperar}
+        alDescartar={borrador.olvidar}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
@@ -203,8 +233,10 @@ export default function Charla({
               const r = await anotarCharla({
                 clienteId, clienteNuevo, cuitNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
               })
-              if (r.ok && r.ir) router.push(r.ir)
-              else if (!r.ok) setError(r.error)
+              if (r.ok) {
+                borrador.olvidar()
+                if (r.ir) router.push(r.ir)
+              } else setError(r.error)
             })
           }}
           className="boton boton-principal"
@@ -220,6 +252,8 @@ export default function Charla({
             Cancelar
           </button>
         )}
+
+        <EstadoDelBorrador estado={borrador.estado} />
         {error && <span className="text-sm text-rojo">{error}</span>}
       </div>
     </div>
