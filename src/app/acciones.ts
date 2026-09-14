@@ -22,6 +22,23 @@ function traducir(mensaje: string): string {
   if (mensaje.includes('ya es un mantenimiento')) return 'Esto ya es un mantenimiento.'
   if (mensaje.includes('participaciones')) return 'El reparto sólo lo copia dirección. Abrilo sin copiarlo y cargalo después.'
   if (mensaje.includes('arman el equipo')) return 'Sólo dirección, administración o coordinación arman el equipo.'
+
+  /* El mensaje crudo de la base cuando una regla por fila rechaza algo.
+     Dice el nombre de la tabla y nada más: no sirve ni para saber qué
+     hacer ni para pedir ayuda. Se traduce por tabla, porque el motivo
+     es distinto en cada una. */
+  if (mensaje.includes('row-level security')) {
+    if (mensaje.includes('"proyectos"'))
+      return 'No tenés permiso para crear trabajo. Lo pueden hacer dirección, administración, coordinación, vendedores y project managers.'
+    if (mensaje.includes('"organizaciones"'))
+      return 'No tenés permiso para dar de alta clientes.'
+    if (mensaje.includes('"hitos"'))
+      return 'No podés cargar entregas en este proyecto: no estás asignado a él.'
+    if (mensaje.includes('"cobros"'))
+      return 'Cargar cobros es de administración. Se puede habilitar en Sistema → Usuarios y roles.'
+    return 'No tenés permiso para hacer eso acá.'
+  }
+
   return mensaje
 }
 
