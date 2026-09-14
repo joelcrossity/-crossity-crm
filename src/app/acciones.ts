@@ -74,11 +74,15 @@ async function explicar(mensaje: string): Promise<string> {
     /* Si el servidor confirma el permiso, el mensaje no puede decir que
        falta. Eso fue exactamente lo que pasó: el rechazo hablaba de
        roles y el permiso estaba bien; lo que falló fue devolver la fila
-       recién escrita. Se avisa de lo otro, que es lo que importa: puede
-       haber quedado creado, y repetirlo lo duplica. */
+       recién escrita.
+
+       Y se dice que no quedó nada, porque no queda: cuando la base
+       rechaza, deshace la sentencia entera. Hacerle dudar de eso lo
+       manda a buscar un proyecto que no existe, o peor, a no cargarlo
+       por miedo a duplicarlo. */
     const sobreTrabajo = mensaje.includes('"proyectos"') || mensaje.includes('"organizaciones"')
     if (sobreTrabajo && v.carga_trabajo === true)
-      return 'Tenés el permiso, así que esto es un problema nuestro y no tuyo. Puede haber quedado guardado igual: buscalo en la lista antes de cargarlo de nuevo, para no duplicarlo. Avisanos si aparece.'
+      return 'Tenés el permiso, así que esto es un problema nuestro y no tuyo. No se guardó nada y lo que escribiste sigue acá: probá una vez más y, si vuelve a pasar, avisanos con esta pantalla abierta.'
 
     const roles = Array.isArray(v.roles) ? v.roles.join(', ') : 'ninguno'
     return `${texto} (El servidor te ve como ${v.nombre}, con: ${roles}. Crear trabajo: ${v.carga_trabajo === true ? 'sí' : 'no'}.)`
