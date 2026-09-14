@@ -2355,6 +2355,9 @@ export type Componente = {
   estado: 'cotizado' | 'bonificado' | 'sin_cotizar'
   monto: number | null
   moneda: string
+  /* Su monto es por mes, no por una vez: es el abono que arranca
+     cuando el trabajo termina. No suma al total del proyecto. */
+  recurrente?: boolean
 }
 
 export type Cuota = {
@@ -2387,6 +2390,11 @@ export async function guardarPropuesta(
         return { ok: false, error: `Hay un componente sin nombre en "${e.nombre}".` }
       if (c.estado === 'cotizado' && (!c.monto || c.monto <= 0))
         return { ok: false, error: `"${c.nombre}" está cotizado pero sin monto.` }
+      if (c.recurrente && c.estado === 'sin_cotizar')
+        return {
+          ok: false,
+          error: `"${c.nombre}" es mensual: lo que se cotiza de un abono es justamente cuánto sale por mes.`,
+        }
     }
     for (const q of e.cuotas) {
       if (!q.titulo.trim()) return { ok: false, error: `Hay una cuota sin nombre en "${e.nombre}".` }
@@ -2409,6 +2417,7 @@ export async function guardarPropuesta(
         estado: c.estado,
         monto: c.estado === 'sin_cotizar' ? null : (c.monto ?? 0),
         moneda: c.moneda,
+        recurrente: !!c.recurrente,
       })),
       cuotas: e.cuotas.map((q) => ({
         id: q.id,
@@ -2441,7 +2450,8 @@ export async function leerPropuesta(
     await Promise.all([
       supabase.from('etapas_cotizacion').select('id, orden, nombre, alcance')
         .eq('proyecto_id', proyectoId).order('orden'),
-      supabase.from('componentes').select('id, etapa_id, orden, nombre, detalle, estado, monto, moneda')
+      supabase.from('componentes')
+        .select('id, etapa_id, orden, nombre, detalle, estado, monto, moneda, recurrente')
         .order('orden'),
       supabase.from('hitos')
         .select('id, etapa_id, orden, titulo, monto_neto, moneda, casa_cotizacion, cotizacion_pactada, vence_at, activo')
@@ -2466,6 +2476,7 @@ export async function leerPropuesta(
           estado: c.estado as Componente['estado'],
           monto: c.monto as number | null,
           moneda: (c.moneda as string) ?? 'USD',
+          recurrente: !!c.recurrente,
         })),
       cuotas: (cuotas ?? [])
         .filter((q) => q.etapa_id === e.id)

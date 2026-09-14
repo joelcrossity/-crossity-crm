@@ -43,19 +43,28 @@ const NOMBRES = ['Anticipo', 'Avance', 'Entrega final']
 const vacia = (moneda: string): EtapaPropuesta => ({
   nombre: '',
   alcance: '',
-  componentes: [{ nombre: '', estado: 'cotizado', monto: null, moneda }],
+  componentes: [{ nombre: '', estado: 'cotizado', monto: null, moneda, recurrente: false }],
   cuotas: [],
 })
 
+/* Lo de una sola vez. Lo recurrente queda afuera: son dos platas
+   distintas y sumarlas da un número que no es ninguno de los dos. */
 function totalDe(e: EtapaPropuesta) {
   return e.componentes
-    .filter((c) => c.estado === 'cotizado')
+    .filter((c) => c.estado === 'cotizado' && !c.recurrente)
     .reduce((s, c) => s + (Number(c.monto) || 0), 0)
 }
 
 function bonificadoDe(e: EtapaPropuesta) {
   return e.componentes
-    .filter((c) => c.estado === 'bonificado')
+    .filter((c) => c.estado === 'bonificado' && !c.recurrente)
+    .reduce((s, c) => s + (Number(c.monto) || 0), 0)
+}
+
+/* Lo que va a entrar todos los meses cuando esto termine. */
+function mensualDe(e: EtapaPropuesta) {
+  return e.componentes
+    .filter((c) => c.recurrente && c.estado !== 'sin_cotizar')
     .reduce((s, c) => s + (Number(c.monto) || 0), 0)
 }
 
@@ -131,6 +140,7 @@ export default function Cotizador({
           {etapas.map((e, i) => {
             const suTotal = totalDe(e)
             const suBonificado = bonificadoDe(e)
+            const suMensual = mensualDe(e)
             const sinCotizar = e.componentes.filter((c) => c.estado === 'sin_cotizar').length
             const repartido = e.cuotas.reduce((s, q) => s + (Number(q.monto) || 0), 0)
             const descuadre = e.cuotas.length > 0 ? suTotal - repartido : 0
@@ -164,6 +174,11 @@ export default function Cotizador({
 
                   <span className="cifra flex shrink-0 items-baseline gap-2 text-2xs">
                     <span className="text-sm font-bold text-tinta">{plata(suTotal, moneda)}</span>
+                    {suMensual > 0 && (
+                      <span className="text-azul-hondo">
+                        + {plata(suMensual, moneda)}/mes
+                      </span>
+                    )}
                     {suBonificado > 0 && (
                       <span className="text-verde">+{plata(suBonificado, moneda)} bonif.</span>
                     )}
@@ -307,7 +322,13 @@ function Componentes({
                 title={ayuda}
                 disabled={bloqueada}
                 onClick={() =>
-                  tocar(i, { estado: v, monto: v === 'sin_cotizar' ? null : (c.monto ?? 0) })
+                  tocar(i, {
+                    estado: v,
+                    monto: v === 'sin_cotizar' ? null : (c.monto ?? 0),
+                    // Lo que se cotiza de un abono es cuánto sale por
+                    // mes: no puede estar sin cotizar y ser mensual.
+                    recurrente: v === 'sin_cotizar' ? false : c.recurrente,
+                  })
                 }
                 className={`rounded px-2 py-1 text-2xs transition-colors duration-150 ${
                   c.estado === v ? 'bg-azul-aire font-medium text-azul-hondo' : 'text-gris-50'
@@ -321,15 +342,38 @@ function Componentes({
           {c.estado === 'sin_cotizar' ? (
             <span className="pb-2 text-2xs text-gris-50">falta relevarlo</span>
           ) : (
-            <input
-              value={c.monto == null || c.monto === 0 ? '' : String(c.monto)}
-              inputMode="decimal"
-              disabled={bloqueada}
-              onChange={(x) => tocar(i, { monto: Number(x.target.value.replace(',', '.')) || 0 })}
-              placeholder="0"
-              aria-label="Monto"
-              className="campo cifra w-24 text-sm"
-            />
+            <span className="flex items-center gap-1.5">
+              <input
+                value={c.monto == null || c.monto === 0 ? '' : String(c.monto)}
+                inputMode="decimal"
+                disabled={bloqueada}
+                onChange={(x) => tocar(i, { monto: Number(x.target.value.replace(',', '.')) || 0 })}
+                placeholder="0"
+                aria-label="Monto"
+                className="campo cifra w-24 text-sm"
+              />
+              {/* Por única vez o por mes. Un abono cotizado junto con el
+                  proyecto es lo que después arranca solo al terminarlo,
+                  con el monto que ya se había acordado. */}
+              <button
+                type="button"
+                disabled={bloqueada}
+                aria-pressed={!!c.recurrente}
+                title={
+                  c.recurrente
+                    ? 'Es un abono mensual: no suma al total del proyecto'
+                    : 'Se cobra una sola vez'
+                }
+                onClick={() => tocar(i, { recurrente: !c.recurrente })}
+                className={`rounded-md border px-2 py-1.5 text-2xs transition-colors duration-150 ${
+                  c.recurrente
+                    ? 'border-azul-hondo bg-azul-aire font-medium text-azul-hondo'
+                    : 'border-linea text-gris-50 hover:border-azul'
+                }`}
+              >
+                {c.recurrente ? 'por mes' : 'una vez'}
+              </button>
+            </span>
           )}
 
           {!bloqueada && (
@@ -360,7 +404,10 @@ function Componentes({
         <button
           type="button"
           onClick={() =>
-            alCambiar([...etapa.componentes, { nombre: '', estado: 'cotizado', monto: null, moneda }])
+            alCambiar([
+              ...etapa.componentes,
+              { nombre: '', estado: 'cotizado', monto: null, moneda, recurrente: false },
+            ])
           }
           className="w-fit text-2xs text-azul-hondo transition-colors duration-150 hover:underline"
         >
