@@ -90,6 +90,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: consumos },
     { data: hoyRow },
     { data: veLaPlata },
+    { data: etapasCotizadas },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -151,6 +152,9 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
          y no se deduce del rol: el permiso puede estar ajustado para
          alguien en particular, y el rol no lo sabría. */
       supabase.rpc('puede_persona', { p_accion: 'ver_rentabilidad_mantenimientos' }),
+      /* Si tiene propuesta por etapas: con ella, ganar abre el modal de
+         conversión; sin ella, el camino viejo del esquema de cobro. */
+      supabase.from('etapas_cotizacion').select('id').eq('proyecto_id', p.id),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -270,6 +274,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             proximaAccion={p.proxima_accion}
             proximoSeguimiento={p.proximo_seguimiento}
             vencido={!!enPipeline?.seguimiento_vencido}
+            codigo={p.codigo as string}
+            nombre={p.nombre as string}
+            cliente={cliente.nombre_canonico}
+            moneda={(p.moneda as string) ?? 'ARS'}
+            tienePropuesta={(etapasCotizadas ?? []).length > 0}
             etapas={((filasEtapas ?? []) as { clave: string; etiqueta: string }[]).map((e) => ({
               valor: e.clave,
               etiqueta: e.etiqueta,

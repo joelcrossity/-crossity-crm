@@ -2314,6 +2314,175 @@ export async function borrarColumna(clave: string, absorbe?: string): Promise<Re
   return { ok: true }
 }
 
+
+
+/* Activar una etapa que quedó cotizada. Es el up-sell: el cliente
+   vuelve y pide lo que ya se le había presupuestado. */
+export async function activarEtapa(hitoId: string, vence: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('hitos')
+    .update({ activo: true, vence_at: vence || null }, { count: 'exact' })
+    .eq('id', hitoId)
+    .select('id')
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para activar esta etapa.' }
+
+  revalidatePath('/cuentas', 'layout')
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/tablero')
+  return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   La propuesta: etapas, lo que incluye cada una y cómo se paga.
+
+   Tres niveles porque una cotización real tiene tres. La etapa es el
+   bloque que el cliente aprueba entero; los componentes son qué recibe
+   y cuánto vale cada parte; las cuotas son cuándo paga ese total.
+
+   Las cuotas son opcionales a propósito: una etapa cotizada y no
+   vendida tiene precio y todavía no tiene forma de pago.
+   ------------------------------------------------------------------ */
+
+export type Componente = {
+  id?: string
+  nombre: string
+  detalle?: string
+  /* cotizado tiene precio; bonificado vale cero y se muestra para que
+     se vea qué se regala; sin_cotizar es alcance presentado que
+     necesita relevamiento antes de poder ponerle número. */
+  estado: 'cotizado' | 'bonificado' | 'sin_cotizar'
+  monto: number | null
+  moneda: string
+}
+
+export type Cuota = {
+  id?: string
+  titulo: string
+  monto: number
+  moneda: string
+  casa?: string
+  cotizacion?: number | null
+  vence?: string | null
+  activa?: boolean
+}
+
+export type EtapaPropuesta = {
+  id?: string
+  nombre: string
+  alcance?: string
+  componentes: Componente[]
+  cuotas: Cuota[]
+}
+
+export async function guardarPropuesta(
+  proyectoId: string,
+  etapas: EtapaPropuesta[],
+): Promise<Resultado> {
+  for (const e of etapas) {
+    if (!e.nombre.trim()) return { ok: false, error: 'Cada etapa necesita un nombre.' }
+    for (const c of e.componentes) {
+      if (!c.nombre.trim())
+        return { ok: false, error: `Hay un componente sin nombre en "${e.nombre}".` }
+      if (c.estado === 'cotizado' && (!c.monto || c.monto <= 0))
+        return { ok: false, error: `"${c.nombre}" está cotizado pero sin monto.` }
+    }
+    for (const q of e.cuotas) {
+      if (!q.titulo.trim()) return { ok: false, error: `Hay una cuota sin nombre en "${e.nombre}".` }
+      if (!Number.isFinite(q.monto) || q.monto <= 0)
+        return { ok: false, error: `La cuota "${q.titulo}" no tiene monto.` }
+    }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('guardar_propuesta', {
+    p_proyecto: proyectoId,
+    p_etapas: etapas.map((e) => ({
+      id: e.id,
+      nombre: e.nombre.trim(),
+      alcance: e.alcance ?? '',
+      componentes: e.componentes.map((c) => ({
+        id: c.id,
+        nombre: c.nombre.trim(),
+        detalle: c.detalle ?? '',
+        estado: c.estado,
+        monto: c.estado === 'sin_cotizar' ? null : (c.monto ?? 0),
+        moneda: c.moneda,
+      })),
+      cuotas: e.cuotas.map((q) => ({
+        id: q.id,
+        titulo: q.titulo.trim(),
+        monto: q.monto,
+        moneda: q.moneda,
+        casa: q.casa ?? '',
+        cotizacion: q.cotizacion ?? null,
+        vence: q.vence ?? null,
+      })),
+    })),
+  })
+  if (error) return { ok: false, error: traducir(error.message) }
+
+  revalidatePath('/pipeline')
+  revalidatePath('/proyecto', 'layout')
+  revalidatePath('/cuentas', 'layout')
+  return { ok: true }
+}
+
+/* Leer la propuesta armada. Se pide al abrir el panel y no viaja con
+   cada tarjeta: son muchas filas por oportunidad y casi nunca se
+   miran desde el tablero. */
+export async function leerPropuesta(
+  proyectoId: string,
+): Promise<{ ok: true; etapas: EtapaPropuesta[] } | { ok: false; error: string }> {
+  const supabase = await createClient()
+
+  const [{ data: etapas, error: e1 }, { data: comps, error: e2 }, { data: cuotas, error: e3 }] =
+    await Promise.all([
+      supabase.from('etapas_cotizacion').select('id, orden, nombre, alcance')
+        .eq('proyecto_id', proyectoId).order('orden'),
+      supabase.from('componentes').select('id, etapa_id, orden, nombre, detalle, estado, monto, moneda')
+        .order('orden'),
+      supabase.from('hitos')
+        .select('id, etapa_id, orden, titulo, monto_neto, moneda, casa_cotizacion, cotizacion_pactada, vence_at, activo')
+        .eq('proyecto_id', proyectoId).not('etapa_id', 'is', null).order('orden'),
+    ])
+
+  const fallo = e1 ?? e2 ?? e3
+  if (fallo) return { ok: false, error: traducir(fallo.message) }
+
+  return {
+    ok: true,
+    etapas: (etapas ?? []).map((e) => ({
+      id: e.id as string,
+      nombre: (e.nombre as string) ?? '',
+      alcance: (e.alcance as string) ?? '',
+      componentes: (comps ?? [])
+        .filter((c) => c.etapa_id === e.id)
+        .map((c) => ({
+          id: c.id as string,
+          nombre: (c.nombre as string) ?? '',
+          detalle: (c.detalle as string) ?? '',
+          estado: c.estado as Componente['estado'],
+          monto: c.monto as number | null,
+          moneda: (c.moneda as string) ?? 'USD',
+        })),
+      cuotas: (cuotas ?? [])
+        .filter((q) => q.etapa_id === e.id)
+        .map((q) => ({
+          id: q.id as string,
+          titulo: (q.titulo as string) ?? '',
+          monto: Number(q.monto_neto ?? 0),
+          moneda: (q.moneda as string) ?? 'USD',
+          casa: (q.casa_cotizacion as string) ?? undefined,
+          cotizacion: q.cotizacion_pactada as number | null,
+          vence: (q.vence_at as string) ?? null,
+          activa: !!q.activo,
+        })),
+    })),
+  }
+}
+
 /* ------------------------------------------------------------------
    Dar de alta una persona sin salir del formulario.
 
@@ -2355,87 +2524,3 @@ export async function altaRapidaPersona(
   return { ok: true, id: data.id as string, nombre: data.nombre as string }
 }
 
-export type EtapaCotizada = {
-  id?: string
-  orden: number
-  titulo: string
-  entregable?: string
-  monto: number
-  moneda: string
-  casa?: string
-  cotizacion?: number | null
-  vence?: string | null
-}
-
-export async function guardarCotizacion(
-  proyectoId: string,
-  etapas: EtapaCotizada[],
-): Promise<Resultado> {
-  if (etapas.some((e) => !e.titulo.trim()))
-    return { ok: false, error: 'Cada etapa necesita un nombre.' }
-  if (etapas.some((e) => !Number.isFinite(e.monto) || e.monto < 0))
-    return { ok: false, error: 'Hay un monto que no se entiende.' }
-
-  const supabase = await createClient()
-  const { error } = await supabase.rpc('guardar_etapas', {
-    p_proyecto: proyectoId,
-    p_etapas: etapas,
-  })
-  if (error) return { ok: false, error: traducir(error.message) }
-
-  revalidatePath('/pipeline')
-  revalidatePath('/proyecto', 'layout')
-  revalidatePath('/cuentas', 'layout')
-  return { ok: true }
-}
-
-
-/* Activar una etapa que quedó cotizada. Es el up-sell: el cliente
-   vuelve y pide lo que ya se le había presupuestado. */
-export async function activarEtapa(hitoId: string, vence: string): Promise<Resultado> {
-  const supabase = await createClient()
-  const { error, count } = await supabase
-    .from('hitos')
-    .update({ activo: true, vence_at: vence || null }, { count: 'exact' })
-    .eq('id', hitoId)
-    .select('id')
-  if (error) return { ok: false, error: traducir(error.message) }
-  if (!count) return { ok: false, error: 'No tenés permiso para activar esta etapa.' }
-
-  revalidatePath('/cuentas', 'layout')
-  revalidatePath('/proyecto', 'layout')
-  revalidatePath('/tablero')
-  return { ok: true }
-}
-
-/* Las etapas cotizadas de una oportunidad. Se piden al abrir el panel y
-   no viajan con cada tarjeta del tablero: son varias filas por
-   oportunidad y casi nunca se miran. */
-export async function leerEtapas(
-  proyectoId: string,
-): Promise<{ ok: true; etapas: EtapaCotizada[] } | { ok: false; error: string }> {
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('hitos')
-    .select('id, orden, titulo, entregable, monto_neto, moneda, casa_cotizacion, cotizacion_pactada, vence_at, activo')
-    .eq('proyecto_id', proyectoId)
-    .order('orden')
-
-  if (error) return { ok: false, error: traducir(error.message) }
-
-  return {
-    ok: true,
-    etapas: (data ?? []).map((h) => ({
-      id: h.id as string,
-      orden: h.orden as number,
-      titulo: (h.titulo as string) ?? '',
-      entregable: (h.entregable as string) ?? '',
-      monto: Number(h.monto_neto ?? 0),
-      moneda: (h.moneda as string) ?? 'ARS',
-      casa: (h.casa_cotizacion as string) ?? undefined,
-      cotizacion: (h.cotizacion_pactada as number) ?? null,
-      vence: (h.vence_at as string) ?? null,
-      activa: !!h.activo,
-    })) as EtapaCotizada[],
-  }
-}

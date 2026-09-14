@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { editarProyecto, guardarCotizacion, leerEtapas } from '@/app/acciones'
-import Cotizador, { type Etapa } from '@/components/Cotizador'
+import { editarProyecto, guardarPropuesta, leerPropuesta } from '@/app/acciones'
+import type { EtapaPropuesta } from '@/app/acciones'
+import Cotizador from '@/components/Cotizador'
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
 import ElegirPersona from '@/components/ElegirPersona'
 import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
@@ -43,7 +44,6 @@ export type Oportunidad = {
 
 export default function EditarOportunidad({
   op,
-  etapasCotizadas = [],
   clientes,
   personas,
   etapasPipeline,
@@ -51,7 +51,6 @@ export default function EditarOportunidad({
   alCerrar,
 }: {
   op: Oportunidad
-  etapasCotizadas?: Etapa[]
   clientes: Cliente[]
   personas: { id: string; nombre: string }[]
   etapasPipeline: { valor: string; etiqueta: string }[]
@@ -75,7 +74,7 @@ export default function EditarOportunidad({
     etapa: op.etapa ?? '',
     descripcion: op.descripcion ?? '',
   })
-  const [etapas, setEtapas] = useState<Etapa[]>(etapasCotizadas)
+  const [etapas, setEtapas] = useState<EtapaPropuesta[]>([])
   /* Hasta que llegan las etapas no se puede guardar. Guardar con la
      lista vacía borraría la cotización entera: el guardado reemplaza lo
      que hay por lo que se manda, y lo que se manda todavía no se leyó. */
@@ -88,7 +87,7 @@ export default function EditarOportunidad({
 
   useEffect(() => {
     let vivo = true
-    leerEtapas(op.id).then((r) => {
+    leerPropuesta(op.id).then((r) => {
       if (!vivo) return
       if (r.ok) setEtapas(r.etapas)
       else setError(r.error)
@@ -130,20 +129,22 @@ export default function EditarOportunidad({
         if (!r.ok) return setError(r.error)
       }
 
-      const s = await guardarCotizacion(
+      /* La moneda y el dólar del encabezado bajan a todas las cuotas:
+         cotizar una etapa en dólares y otra en pesos dentro de la misma
+         propuesta no es algo que pase, y dejarlo posible obligaría a
+         elegirlo renglón por renglón. */
+      const s = await guardarPropuesta(
         op.id,
-        etapas
-          .filter((e) => !e.activa)
-          .map((e, i) => ({
-            id: e.id,
-            orden: i + 1,
-            titulo: e.titulo,
-            entregable: e.entregable,
-            monto: Number(e.monto) || 0,
+        etapas.map((e) => ({
+          ...e,
+          componentes: e.componentes.map((c) => ({ ...c, moneda: v.moneda })),
+          cuotas: e.cuotas.map((q) => ({
+            ...q,
             moneda: v.moneda,
             casa: v.casa,
             cotizacion: v.casa === 'pactado' ? Number(v.pactada) || null : null,
           })),
+        })),
       )
       if (!s.ok) return setError(s.error)
 
@@ -296,7 +297,6 @@ export default function EditarOportunidad({
               etapas={etapas}
               alCambiar={setEtapas}
               moneda={v.moneda}
-              casa={v.casa}
               cotizacion={cotizacion}
             />
           </div>

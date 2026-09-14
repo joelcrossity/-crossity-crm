@@ -10,6 +10,7 @@ import {
   perderOportunidad,
 } from '@/app/acciones'
 import { type EtapaViva } from '@/lib/estados'
+import ConvertirAProyecto from '@/components/ConvertirAProyecto'
 
 /* ------------------------------------------------------------------
    El recorrido de una oportunidad, arriba de todo mientras todavía no
@@ -50,6 +51,11 @@ export default function Recorrido({
   proximoSeguimiento,
   vencido,
   etapas,
+  codigo,
+  nombre,
+  cliente,
+  moneda,
+  tienePropuesta = false,
 }: {
   proyectoId: string
   etapa: string
@@ -58,6 +64,13 @@ export default function Recorrido({
   proximoSeguimiento: string | null
   vencido: boolean
   etapas: EtapaViva[]
+  codigo: string
+  nombre: string
+  cliente: string
+  moneda: string
+  /* Con propuesta por etapas, ganar abre el modal de conversión. Sin
+     ella, el camino viejo: se elige un esquema y se generan entregas. */
+  tienePropuesta?: boolean
 }) {
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
@@ -201,7 +214,16 @@ export default function Recorrido({
         </label>
       </div>
 
-      {cerrando === 'ganado' ? (
+      {/* Con propuesta cargada, ganar abre el modal: hay que elegir qué
+          etapas arrancan y ponerles fecha. Sin propuesta, sigue el
+          camino viejo de elegir un esquema y generar las entregas. */}
+      {cerrando === 'ganado' && tienePropuesta ? (
+        <ConvertirAProyecto
+          op={{ id: proyectoId, codigo, nombre, cliente, moneda }}
+          hoy={new Date().toISOString().slice(0, 10)}
+          alCerrar={() => setCerrando(null)}
+        />
+      ) : cerrando === 'ganado' ? (
         <div className="flex flex-col gap-2.5 border-t border-amarillo pt-3.5">
           <div className="flex flex-col gap-0.5">
             <span className={rotulo}>Cómo se cobra</span>
