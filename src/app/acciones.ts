@@ -24,6 +24,7 @@ function traducir(mensaje: string): string {
   /* La base ahora manda el motivo ya escrito y son dos distintos: falta
      el permiso, o sobra el proyecto. Traducirlos a una sola frase los
      volvía a mezclar, que es lo que hacía esta línea. */
+  if (mensaje.includes('Esto está en curso')) return mensaje
   if (mensaje.includes('arman el equipo')) return 'Sólo dirección, administración o coordinación arman el equipo.'
   if (mensaje.includes('Armar el equipo es un permiso aparte')) return mensaje + '.'
   if (mensaje.includes('no el de los demás')) return mensaje + '.'
