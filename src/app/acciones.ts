@@ -1,5 +1,7 @@
 'use server'
 
+import { sitio } from '@/lib/sitio'
+
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
@@ -1772,7 +1774,7 @@ export async function invitarPersona(personaId: string): Promise<Invitacion> {
   if (!persona?.email)
     return { ok: false, error: 'Esa persona no tiene correo cargado. Ponéselo primero.' }
 
-  const sitio = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://crossity-crm-joels-projects-5fc2b32d.vercel.app'
+  const donde = sitio()
 
   let admin
   try {
@@ -1790,7 +1792,7 @@ export async function invitarPersona(personaId: string): Promise<Invitacion> {
   const { data, error } = await admin.auth.admin.generateLink({
     type: existe ? 'recovery' : 'invite',
     email: persona.email,
-    options: { redirectTo: `${sitio}/clave` },
+    options: { redirectTo: `${donde}/clave` },
   })
 
   if (error || !data?.properties?.action_link)
