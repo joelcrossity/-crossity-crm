@@ -36,6 +36,7 @@ export default function Asistente({
   arrancaComo = 'proyecto',
   clienteFijo,
   puedeCargar = true,
+  cotizaciones,
 }: {
   clientes: Cliente[]
   personas: { id: string; nombre: string }[]
@@ -48,6 +49,10 @@ export default function Asistente({
      para no hacerle cargar tres pasos a alguien que va a rebotar al
      final. La base decide igual: esto es cortesía, no la cerradura. */
   puedeCargar?: boolean
+  /* Las del día, para mostrar contra qué número se está cotizando
+     mientras se carga. Es opcional: sin esto el selector sigue
+     funcionando, solo que sin el dato al lado. */
+  cotizaciones?: { casa: string; venta: number }[]
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
@@ -61,6 +66,9 @@ export default function Asistente({
   const [nombre, setNombre] = useState('')
   const [monto, setMonto] = useState('')
   const [moneda, setMoneda] = useState('ARS')
+  const [casa, setCasa] = useState('blue')
+  const [pactada, setPactada] = useState('')
+  const hoyVale = cotizaciones?.find((c) => c.casa === casa)?.venta ?? null
   const [iva, setIva] = useState('21')
   const [programa, setPrograma] = useState('')
   const [responsableId, setResponsableId] = useState('')
@@ -80,6 +88,8 @@ export default function Asistente({
     setNombre('')
     setMonto('')
     setMoneda('ARS')
+    setCasa('blue')
+    setPactada('')
     setIva('21')
     setPrograma('')
     setResponsableId('')
@@ -144,6 +154,8 @@ export default function Asistente({
         nombre,
         monto,
         moneda,
+        casa,
+        pactada,
         iva,
         programa,
         responsableId,
@@ -296,6 +308,47 @@ export default function Asistente({
                 <option>EUR</option>
               </select>
             </label>
+
+            {/* Solo con moneda extranjera: en pesos no hay nada que
+                valuar y un selector que no hace nada confunde.
+
+                Va acá y no después de crear el proyecto porque el dólar
+                al que se acordó es parte de lo que se acordó. Ponerlo
+                más tarde obliga a recordar a cuánto estaba el día de la
+                charla, y nadie se acuerda. */}
+            {moneda !== 'ARS' && (
+              <label className="flex flex-col gap-0.5">
+                <Etiqueta>Se valúa al</Etiqueta>
+                <select
+                  value={casa}
+                  onChange={(e) => setCasa(e.target.value)}
+                  className={`${campo} w-32 cursor-pointer`}
+                >
+                  <option value="oficial">Oficial</option>
+                  <option value="blue">Blue</option>
+                  <option value="pactado">Pactado</option>
+                </select>
+              </label>
+            )}
+
+            {moneda !== 'ARS' && casa === 'pactado' && (
+              <label className="flex flex-col gap-0.5">
+                <Etiqueta>A cuánto</Etiqueta>
+                <input
+                  value={pactada}
+                  inputMode="decimal"
+                  onChange={(e) => setPactada(e.target.value)}
+                  placeholder="1450"
+                  className={`${campo} cifra w-24 text-right`}
+                />
+              </label>
+            )}
+
+            {moneda !== 'ARS' && casa !== 'pactado' && hoyVale != null && (
+              <span className="cifra self-end pb-2 text-2xs text-gris-50">
+                hoy ${hoyVale.toLocaleString('es-AR')}
+              </span>
+            )}
             <label className="flex flex-col gap-0.5">
               <Etiqueta>Programa</Etiqueta>
               <input

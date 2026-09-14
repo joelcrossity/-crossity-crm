@@ -180,6 +180,7 @@ export default async function Pipeline() {
                 personas={personas ?? []}
                 arrancaComo="oportunidad"
                 puedeCargar={puedeCargar === true}
+                cotizaciones={(dolar ?? []) as { casa: string; venta: number }[]}
               />
             </span>
           }

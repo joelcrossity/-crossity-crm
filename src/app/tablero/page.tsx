@@ -36,6 +36,7 @@ export default async function Tablero() {
      pantalla y el permiso lo decide el servidor, y cuando los dos
      opinan por separado terminan diciendo cosas distintas. */
   const { data: puedeCargar } = await supabase.rpc('carga_trabajo')
+  const { data: dolar } = await supabase.from('v_cotizacion_hoy').select('casa, venta')
 
   const { data } = await supabase
     .from('v_tablero')
@@ -76,6 +77,7 @@ export default async function Tablero() {
               personas={personas ?? []}
               arrancaComo="proyecto"
               puedeCargar={puedeCargar === true}
+              cotizaciones={(dolar ?? []) as { casa: string; venta: number }[]}
             />
           }
         />

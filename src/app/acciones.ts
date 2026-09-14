@@ -501,6 +501,11 @@ export type ProyectoNuevo = {
   nombre: string
   monto: string
   moneda: string
+  /* A qué dólar se valúa. Sin esto, un proyecto en dólares no sabe
+     contra qué convertirse: queda un número y una moneda, y cada
+     pantalla que necesite pesos elige por su cuenta. */
+  casa: string
+  pactada: string
   programa: string
   responsableId: string
   responsableTecnicoId: string
@@ -539,6 +544,11 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
       organizacion_id,
       nombre: d.nombre.trim(),
       moneda: d.moneda,
+      /* En pesos no hay nada que valuar, así que no se guarda una casa
+         que después confunda al leerla. */
+      casa_cotizacion: d.moneda === 'ARS' ? null : d.casa,
+      cotizacion_pactada:
+        d.moneda !== 'ARS' && d.casa === 'pactado' ? Number(d.pactada) || null : null,
       alicuota_iva: Number(d.iva ?? 21),
       monto_neto: total || null,
       programa: d.programa.trim() || null,

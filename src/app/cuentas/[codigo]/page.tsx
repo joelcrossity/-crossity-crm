@@ -54,6 +54,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: precotizadas },
     { data: puedeAbrirTrabajo },
     { data: puedeCargar },
+    { data: dolar },
   ] = await Promise.all([
       supabase
         .from('proyectos')
@@ -105,6 +106,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
          alguien en particular y el rol no lo sabría. */
       supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' }),
       supabase.rpc('carga_trabajo'),
+      supabase.from('v_cotizacion_hoy').select('casa, venta'),
     ])
 
   type P = {
@@ -193,6 +195,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
               personas={(personas ?? []) as { id: string; nombre: string }[]}
               arrancaComo="proyecto"
               puedeCargar={puedeCargar === true}
+              cotizaciones={(dolar ?? []) as { casa: string; venta: number }[]}
               clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
             />
             <Asistente
@@ -200,6 +203,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
               personas={(personas ?? []) as { id: string; nombre: string }[]}
               arrancaComo="oportunidad"
               puedeCargar={puedeCargar === true}
+              cotizaciones={(dolar ?? []) as { casa: string; venta: number }[]}
               clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
             />
           </span>
