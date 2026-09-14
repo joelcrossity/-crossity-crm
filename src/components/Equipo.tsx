@@ -4,10 +4,13 @@ import { useState, useTransition } from 'react'
 import { sumarAlEquipo, sacarDelEquipo, fecharHito } from '@/app/acciones'
 import type { Resultado } from '@/app/acciones'
 
+/* El papel que cumple en este proyecto, que no es su puesto en la
+   empresa aunque compartan los nombres. Ya no está vendedor: quien
+   vende un proyecto queda anotado en el reparto, con su concepto y su
+   porcentaje, que es donde de verdad importa. */
 const ROLES = [
   { valor: 'desarrollo', texto: 'desarrollo' },
   { valor: 'project_manager', texto: 'project manager' },
-  { valor: 'vendedor', texto: 'vendedor' },
   { valor: 'coordinacion', texto: 'coordinación' },
   { valor: 'administracion', texto: 'administración' },
 ]

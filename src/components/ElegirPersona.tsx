@@ -21,7 +21,6 @@ import { altaRapidaPersona } from '@/app/acciones'
 const ROLES: [string, string][] = [
   ['desarrollo', 'Desarrollo'],
   ['project_manager', 'Project manager'],
-  ['vendedor', 'Vendedor'],
   ['administracion', 'Administración'],
   ['coordinacion', 'Coordinación'],
 ]

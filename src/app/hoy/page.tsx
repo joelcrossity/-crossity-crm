@@ -52,7 +52,7 @@ export default async function Hoy() {
   const roles = yo?.roles ?? []
   const esDireccion = roles.includes('direccion')
   const esAdmin = roles.includes('administracion')
-  const esComercial = roles.includes('vendedor') || roles.includes('project_manager')
+  const esComercial = roles.includes('project_manager')
 
   const [
     { data: proyectos },

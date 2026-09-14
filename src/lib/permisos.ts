@@ -15,7 +15,6 @@ export type Rol =
   | 'direccion'
   | 'coordinacion'
   | 'project_manager'
-  | 'vendedor'
   | 'administracion'
   | 'desarrollo'
 
@@ -23,7 +22,6 @@ export const NOMBRE_ROL: Record<string, string> = {
   direccion: 'Dirección',
   coordinacion: 'Coordinación',
   project_manager: 'Project manager',
-  vendedor: 'Vendedor',
   administracion: 'Administración',
   desarrollo: 'Desarrollo',
 }
@@ -36,7 +34,6 @@ const JERARQUIA: Rol[] = [
   'administracion',
   'coordinacion',
   'project_manager',
-  'vendedor',
   'desarrollo',
 ]
 
@@ -54,7 +51,7 @@ export const SECCIONES: Record<
   '/hoy': { ve: 'todos', nombre: 'Hoy', detalle: 'lo que necesita atención', grupo: null },
 
   '/pipeline': {
-    ve: ['direccion', 'coordinacion', 'project_manager', 'vendedor'],
+    ve: ['direccion', 'coordinacion', 'project_manager'],
     nombre: 'Pipeline',
     detalle: 'lo enviado y por seguir',
     grupo: 'Trabajo',
@@ -67,7 +64,7 @@ export const SECCIONES: Record<
     grupo: 'Trabajo',
   },
   '/cuentas': {
-    ve: ['direccion', 'coordinacion', 'project_manager', 'vendedor', 'administracion'],
+    ve: ['direccion', 'coordinacion', 'project_manager', 'administracion'],
     nombre: 'Clientes',
     detalle: 'las cuentas y sus marcas',
     grupo: 'Trabajo',

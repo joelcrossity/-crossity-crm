@@ -34,7 +34,7 @@ function traducir(mensaje: string): string {
      es distinto en cada una. */
   if (mensaje.includes('row-level security')) {
     if (mensaje.includes('"proyectos"'))
-      return 'No tenés permiso para crear trabajo. Lo pueden hacer dirección, administración, coordinación, vendedores y project managers.'
+      return 'No tenés permiso para crear trabajo. Lo pueden hacer dirección, administración, coordinación y project managers.'
     if (mensaje.includes('"organizaciones"'))
       return 'No tenés permiso para dar de alta clientes.'
     if (mensaje.includes('"hitos"'))

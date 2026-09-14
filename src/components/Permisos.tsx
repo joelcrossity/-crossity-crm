@@ -47,7 +47,6 @@ const ROLES: [string, string][] = [
   ['direccion', 'Dirección'],
   ['coordinacion', 'Coordinación'],
   ['project_manager', 'Project manager'],
-  ['vendedor', 'Vendedor'],
   ['administracion', 'Administración'],
   ['desarrollo', 'Desarrollo'],
 ]

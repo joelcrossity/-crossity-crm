@@ -176,7 +176,7 @@ export default function Asistente({
             {esOportunidad ? 'Nueva oportunidad' : 'Nuevo proyecto'}
           </button>
           <span className="text-2xs text-gris-50">
-            lo abren dirección, administración, coordinación, vendedores y project managers
+            lo abren dirección, administración, coordinación y project managers
           </span>
         </span>
       )
