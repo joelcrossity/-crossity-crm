@@ -309,48 +309,40 @@ export async function fecharHito(
   return { ok: true }
 }
 
-/* ------------------------------------------------------------------
-   Altas. Sin esto el sistema es un visor de lo que alguien cargó
-   alguna vez.
-   ------------------------------------------------------------------ */
-
 type AltaCuenta = { id: string; codigo: string } | { error: string }
 
+/* ------------------------------------------------------------------
+   Dar de alta un cliente completo.
+
+   Una sola operación en la base, y no tres seguidas desde acá. Un
+   cliente es su nombre, su razón social y su marca: sin razón social no
+   se le puede facturar, así que crearlo a medias es peor que no
+   crearlo, porque parece que está.
+
+   Antes eran tres inserts sueltos y los dos últimos se hacían sin mirar
+   si habían andado. Para dirección funcionaba; para un vendedor, que no
+   podía escribir esas dos tablas, el cliente quedaba sin razón social y
+   sin CUIT, en silencio.
+   ------------------------------------------------------------------ */
 async function altaDeCuenta(
   nombre: string,
   alias: string[],
   cuit?: string,
 ): Promise<AltaCuenta> {
   const supabase = await createClient()
-  const limpio = (cuit ?? '').replace(/\D/g, '')
-
-  /* El índice único sobre el CUIT normalizado es el que de verdad
-     impide el duplicado, pero su error no se entiende. Se pregunta
-     antes para poder decir de quién es. */
-  if (limpio) {
-    const { data: duenio } = await supabase.rpc('cliente_con_cuit', { p_cuit: limpio })
-    const ya = (duenio ?? [])[0] as { nombre: string } | undefined
-    if (ya) return { error: `Ese CUIT ya es de ${ya.nombre}.` }
-  }
-
-  const { data, error } = await supabase
-    .from('organizaciones')
-    .insert({ nombre_canonico: nombre, alias, cuit: cuit?.trim() || null })
-    .select('id, codigo')
-    .single()
-
-  if (error || !data) return { error: error?.message ?? 'No se pudo crear el cliente' }
-
-  // Toda cuenta arranca con una razón social y una marca con su mismo
-  // nombre. Las que facturan por varias se agregan después.
-  await supabase.from('razones_sociales').insert({
-    organizacion_id: data.id, razon_social: nombre, es_principal: true, cuit: cuit?.trim() || null,
-  })
-  await supabase.from('marcas').insert({
-    organizacion_id: data.id, nombre, es_principal: true,
+  const { data, error } = await supabase.rpc('alta_de_cliente', {
+    p_nombre: nombre,
+    p_cuit: cuit?.trim() || null,
+    p_alias: alias,
   })
 
-  return { id: data.id as string, codigo: data.codigo as string }
+  if (error) return { error: traducir(error.message) }
+  if (!data) return { error: 'No se pudo crear el cliente' }
+
+  const { data: fila } = await supabase
+    .from('organizaciones').select('codigo').eq('id', data).maybeSingle()
+
+  return { id: data as string, codigo: (fila?.codigo as string) ?? '' }
 }
 
 export async function crearCliente(datos: FormData): Promise<Resultado> {
