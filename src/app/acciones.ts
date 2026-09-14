@@ -1753,53 +1753,37 @@ export type Invitacion = { ok: true; enlace: string; nueva: boolean } | { ok: fa
 export async function invitarPersona(personaId: string): Promise<Invitacion> {
   const supabase = await createClient()
 
-  // Quién pide, antes de tocar nada con la clave de servicio.
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: yo } = await supabase
-    .from('usuarios')
-    .select('personas(roles)')
-    .eq('id', user?.id ?? '')
-    .maybeSingle()
-
-  const roles = (yo?.personas as unknown as { roles: string[] } | undefined)?.roles ?? []
-  if (!roles.includes('direccion') && !roles.includes('administracion'))
-    return { ok: false, error: 'Solo dirección o administración pueden invitar.' }
-
-  const { data: persona } = await supabase
-    .from('personas')
-    .select('nombre, email')
-    .eq('id', personaId)
-    .maybeSingle()
-
-  if (!persona?.email)
-    return { ok: false, error: 'Esa persona no tiene correo cargado. Ponéselo primero.' }
-
-  const donde = sitio()
-
-  let admin
-  try {
-    admin = (await import('@/lib/supabase/admin')).clienteAdmin()
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Falta la clave de servicio.' }
-  }
-
-  // ¿Ya tiene cuenta? Cambia el tipo de enlace, no el resultado.
-  const { data: cuentas } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const existe = cuentas?.users.find(
-    (u) => u.email?.toLowerCase() === persona.email!.toLowerCase(),
-  )
-
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: existe ? 'recovery' : 'invite',
-    email: persona.email,
-    options: { redirectTo: `${donde}/clave` },
+  /* Quién puede lo decide la base: crear_invitacion exige dirección o
+     administración y escribe una tabla que nadie más puede tocar, así
+     que no hay forma de fabricarse una invitación. */
+  const { data: codigo, error } = await supabase.rpc('crear_invitacion', {
+    p_persona: personaId,
   })
 
-  if (error || !data?.properties?.action_link)
-    return { ok: false, error: traducir(error?.message ?? 'No se pudo generar el enlace') }
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!codigo) return { ok: false, error: 'No se pudo crear la invitación.' }
+
+  /* Si ya tiene cuenta, lo que le va a llegar es un enlace para cambiar
+     la contraseña y no para crearla. Se resuelve al canjear el código,
+     pero el texto que se le manda cambia, así que se averigua acá. */
+  const { data: persona } = await supabase
+    .from('personas').select('email').eq('id', personaId).maybeSingle()
+
+  let nueva = true
+  try {
+    const admin = (await import('@/lib/supabase/admin')).clienteAdmin()
+    const { data: cuentas } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    nueva = !cuentas?.users.some(
+      (u) => u.email?.toLowerCase() === (persona?.email as string | null)?.toLowerCase(),
+    )
+  } catch {
+    /* Sin la clave de servicio no se puede saber si ya tiene cuenta. El
+       enlace anda igual —eso lo resuelve la ruta al canjearlo— así que
+       se asume que es nueva y a lo sumo el texto dice de más. */
+  }
 
   revalidatePath('/equipo')
-  return { ok: true, enlace: data.properties.action_link, nueva: !existe }
+  return { ok: true, enlace: `${sitio()}/entrar/${codigo}`, nueva }
 }
 
 /* ------------------------------------------------------------------
