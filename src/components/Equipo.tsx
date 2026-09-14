@@ -124,6 +124,15 @@ export function Equipo({
             Sumar a alguien
           </button>
         ))}
+
+      {/* Se dice por qué, no se esconde. Un botón que falta hace pensar
+          que el sistema está incompleto; una línea que dice de quién
+          depende le dice a quién pedírselo. */}
+      {!editable && (
+        <p className="text-2xs text-gris-50">
+          Armar el equipo es un permiso aparte. Se habilita en Sistema → Usuarios y roles.
+        </p>
+      )}
     </div>
   )
 }

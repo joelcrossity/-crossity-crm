@@ -21,7 +21,12 @@ function traducir(mensaje: string): string {
   if (mensaje.includes('ya tiene su mantenimiento')) return 'Este proyecto ya tiene su mantenimiento abierto.'
   if (mensaje.includes('ya es un mantenimiento')) return 'Esto ya es un mantenimiento.'
   if (mensaje.includes('participaciones')) return 'El reparto sólo lo copia dirección. Abrilo sin copiarlo y cargalo después.'
+  /* La base ahora manda el motivo ya escrito y son dos distintos: falta
+     el permiso, o sobra el proyecto. Traducirlos a una sola frase los
+     volvía a mezclar, que es lo que hacía esta línea. */
   if (mensaje.includes('arman el equipo')) return 'Sólo dirección, administración o coordinación arman el equipo.'
+  if (mensaje.includes('Armar el equipo es un permiso aparte')) return mensaje + '.'
+  if (mensaje.includes('no el de los demás')) return mensaje + '.'
 
   /* El mensaje crudo de la base cuando una regla por fila rechaza algo.
      Dice el nombre de la tabla y nada más: no sirve ni para saber qué

@@ -91,6 +91,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: hoyRow },
     { data: veLaPlata },
     { data: etapasCotizadas },
+    { data: puedeEquipo },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -155,6 +156,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
       /* Si tiene propuesta por etapas: con ella, ganar abre el modal de
          conversión; sin ella, el camino viejo del esquema de cobro. */
       supabase.from('etapas_cotizacion').select('id').eq('proyecto_id', p.id),
+      /* Armar el equipo es su propio permiso y no se deduce del rol, por
+         lo mismo que el de arriba: puede estar ajustado para alguien en
+         particular. Mostrar los controles a quien no puede usarlos es
+         hacerle elegir una persona, un rol, apretar, y recién ahí
+         enterarse. */
+      supabase.rpc('puede_persona', { p_accion: 'configurar_equipo' }),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -710,7 +717,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                       proyectoId={p.id}
                       miembros={(equipo ?? []) as unknown as Miembro[]}
                       personas={personas ?? []}
-                      editable
+                      editable={puedeEquipo === true}
                     />
                   </section>
 
