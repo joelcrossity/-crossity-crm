@@ -71,8 +71,17 @@ async function explicar(mensaje: string): Promise<string> {
     if (!v.me_reconoce)
       return 'Se cortó tu sesión, así que el sistema no supo quién pedía esto y no guardó nada. Entrá de nuevo desde crm.crossity.ar y repetilo: lo que escribiste sigue acá.'
 
+    /* Si el servidor confirma el permiso, el mensaje no puede decir que
+       falta. Eso fue exactamente lo que pasó: el rechazo hablaba de
+       roles y el permiso estaba bien; lo que falló fue devolver la fila
+       recién escrita. Se avisa de lo otro, que es lo que importa: puede
+       haber quedado creado, y repetirlo lo duplica. */
+    const sobreTrabajo = mensaje.includes('"proyectos"') || mensaje.includes('"organizaciones"')
+    if (sobreTrabajo && v.carga_trabajo === true)
+      return 'Tenés el permiso, así que esto es un problema nuestro y no tuyo. Puede haber quedado guardado igual: buscalo en la lista antes de cargarlo de nuevo, para no duplicarlo. Avisanos si aparece.'
+
     const roles = Array.isArray(v.roles) ? v.roles.join(', ') : 'ninguno'
-    return `${texto} (El servidor te ve como ${v.nombre}, con: ${roles}.)`
+    return `${texto} (El servidor te ve como ${v.nombre}, con: ${roles}. Crear trabajo: ${v.carga_trabajo === true ? 'sí' : 'no'}.)`
   } catch {
     return texto
   }

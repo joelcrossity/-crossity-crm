@@ -53,6 +53,7 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
     { data: personas },
     { data: precotizadas },
     { data: puedeAbrirTrabajo },
+    { data: puedeCargar },
   ] = await Promise.all([
       supabase
         .from('proyectos')
@@ -102,7 +103,8 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
          el mismo permiso que tocar montos. Se le pregunta a la base en
          vez de deducirlo de los roles, porque puede estar ajustado para
          alguien en particular y el rol no lo sabría. */
-      supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' })
+      supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' }),
+      supabase.rpc('carga_trabajo'),
     ])
 
   type P = {
@@ -190,12 +192,14 @@ export default async function Cuenta(props: PageProps<'/cuentas/[codigo]'>) {
               clientes={paraElSelector}
               personas={(personas ?? []) as { id: string; nombre: string }[]}
               arrancaComo="proyecto"
+              puedeCargar={puedeCargar === true}
               clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
             />
             <Asistente
               clientes={paraElSelector}
               personas={(personas ?? []) as { id: string; nombre: string }[]}
               arrancaComo="oportunidad"
+              puedeCargar={puedeCargar === true}
               clienteFijo={{ id: org.id, nombre: org.nombre_canonico }}
             />
           </span>

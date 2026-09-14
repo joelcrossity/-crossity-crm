@@ -37,6 +37,7 @@ export default function Asistente({
   personas,
   arrancaComo = 'proyecto',
   clienteFijo,
+  puedeCargar = true,
 }: {
   clientes: Cliente[]
   personas: { id: string; nombre: string }[]
@@ -45,6 +46,10 @@ export default function Asistente({
      es. Volver a pedirlo es hacer buscar algo que la pantalla ya tiene
      en el título. */
   clienteFijo?: { id: string; nombre: string }
+  /* Quién puede abrir trabajo. Se pregunta en el servidor y llega acá
+     para no hacerle cargar tres pasos a alguien que va a rebotar al
+     final. La base decide igual: esto es cortesía, no la cerradura. */
+  puedeCargar?: boolean
 }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
@@ -154,6 +159,27 @@ export default function Asistente({
   }
 
   if (!abierto) {
+    /* Se muestra apagado y con el motivo, no escondido. Un botón que
+       falta hace buscarlo; uno apagado que dice por qué se entiende de
+       una y le dice a quién pedirle el permiso. */
+    if (!puedeCargar) {
+      return (
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <button
+            type="button"
+            disabled
+            className="w-fit cursor-not-allowed rounded-md bg-gris-25 px-3.5 py-1.5
+                       text-sm font-medium text-gris-50"
+          >
+            {esOportunidad ? 'Nueva oportunidad' : 'Nuevo proyecto'}
+          </button>
+          <span className="text-2xs text-gris-50">
+            lo abren dirección, administración, coordinación, vendedores y project managers
+          </span>
+        </span>
+      )
+    }
+
     return (
       <button
         type="button"

@@ -32,6 +32,11 @@ export default async function Tablero() {
     .select('*')
     .order('orden')
 
+  /* Se le pregunta a la base y no se deduce del rol: el rol lo dice la
+     pantalla y el permiso lo decide el servidor, y cuando los dos
+     opinan por separado terminan diciendo cosas distintas. */
+  const { data: puedeCargar } = await supabase.rpc('carga_trabajo')
+
   const { data } = await supabase
     .from('v_tablero')
     .select('*')
@@ -65,7 +70,14 @@ export default async function Tablero() {
           personas={personas ?? []}
           hoy={new Date().toISOString().slice(0, 10)}
           responsables={[...new Set(filas.map((f) => f.responsable).filter(Boolean))].sort() as string[]}
-          alta={<Asistente clientes={clientes} personas={personas ?? []} arrancaComo="proyecto" />}
+          alta={
+            <Asistente
+              clientes={clientes}
+              personas={personas ?? []}
+              arrancaComo="proyecto"
+              puedeCargar={puedeCargar === true}
+            />
+          }
         />
       )}
     </Shell>

@@ -72,12 +72,15 @@ export default async function Pipeline() {
     cuits: (c.cuits as string[] | null) ?? null,
     razones: (c.razones as string | null) ?? null,
   }))
-  const [{ data }, { data: referidos }, { data: filas }, { data: dolar }] = await Promise.all([
-    supabase.from('v_pipeline').select('*'),
-    supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
-    supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
-    supabase.from('v_cotizacion_hoy').select('casa, venta'),
-  ])
+  const [{ data }, { data: referidos }, { data: filas }, { data: dolar }, { data: puedeCargar }] =
+    await Promise.all([
+      supabase.from('v_pipeline').select('*'),
+      supabase.from('proyectos').select('id, personas!proyectos_referido_por_fkey(nombre)'),
+      supabase.from('etapas').select('clave, etiqueta').eq('activa', true).eq('es_final', false).order('orden'),
+      supabase.from('v_cotizacion_hoy').select('casa, venta'),
+      /* Igual que en el tablero: lo contesta la base, no el rol. */
+      supabase.rpc('carga_trabajo'),
+    ])
   const ops = (data ?? []) as Op[]
 
   /* Las enfriadas siguen en el tablero pero no suman al pipeline: contar
@@ -172,7 +175,12 @@ export default async function Pipeline() {
           alta={
             <span className="flex flex-wrap items-start gap-2">
               <Charla clientes={clientes} />
-              <Asistente clientes={clientes} personas={personas ?? []} arrancaComo="oportunidad" />
+              <Asistente
+                clientes={clientes}
+                personas={personas ?? []}
+                arrancaComo="oportunidad"
+                puedeCargar={puedeCargar === true}
+              />
             </span>
           }
         />
