@@ -15,6 +15,7 @@ import {
 } from '@/app/acciones'
 import { RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
+import EtapasDelProyecto from '@/components/EtapasDelProyecto'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
@@ -92,6 +93,8 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: veLaPlata },
     { data: etapasCotizadas },
     { data: puedeEquipo },
+    { data: puedeMontos },
+    { data: dolarHoy },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -162,6 +165,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
          hacerle elegir una persona, un rol, apretar, y recién ahí
          enterarse. */
       supabase.rpc('puede_persona', { p_accion: 'configurar_equipo' }),
+      /* Las etapas reparten plata, así que editarlas es el permiso de
+         montos y no el de ver el proyecto. */
+      supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' }),
+      supabase.from('v_cotizacion_hoy').select('casa, venta'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -333,6 +340,24 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
               texto: 'El trabajo',
               contenido: (
                 <div className="flex flex-col gap-9">
+                  {/* Un proyecto sigue creciendo después de ganarse: el
+                      cliente pide una etapa más, se corre una entrega,
+                      se ajusta un número. Hasta ahora eso sólo se podía
+                      desde el lápiz del pipeline, o sea volviendo a
+                      donde ya no está. */}
+                  {!esAbono && (
+                    <EtapasDelProyecto
+                      proyectoId={p.id}
+                      moneda={p.moneda ?? 'ARS'}
+                      cotizacion={
+                        (dolarHoy ?? []).find(
+                          (c: { casa: string }) => c.casa === (p.casa_cotizacion ?? 'blue'),
+                        )?.venta ?? null
+                      }
+                      editable={puedeMontos === true}
+                    />
+                  )}
+
                   {/* Aparece cuando el trabajo terminó: está en naranja, o no le
                       queda ninguna entrega pendiente.
 
