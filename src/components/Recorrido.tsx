@@ -11,6 +11,7 @@ import {
 } from '@/app/acciones'
 import { type EtapaViva } from '@/lib/estados'
 import ConvertirAProyecto from '@/components/ConvertirAProyecto'
+import ListoParaGanar, { requisitosParaGanar } from '@/components/ListoParaGanar'
 
 /* ------------------------------------------------------------------
    El recorrido de una oportunidad, arriba de todo mientras todavía no
@@ -55,6 +56,9 @@ export default function Recorrido({
   nombre,
   cliente,
   moneda,
+  casaCotizacion = null,
+  responsable = null,
+  entregas = 0,
   tienePropuesta = false,
 }: {
   proyectoId: string
@@ -68,12 +72,29 @@ export default function Recorrido({
   nombre: string
   cliente: string
   moneda: string
+  /* Lo que hace falta para poder ganarla. Se pregunta acá y no adentro
+     del modal porque el bloqueo tiene que verse antes de apretar, no
+     después. */
+  casaCotizacion?: string | null
+  responsable?: string | null
+  entregas?: number
   /* Con propuesta por etapas, ganar abre el modal de conversión. Sin
      ella, el camino viejo: se elige un esquema y se generan entregas. */
   tienePropuesta?: boolean
 }) {
   const router = useRouter()
   const [pendiente, empezar] = useTransition()
+
+  /* Ganar genera entregas, reparte plata y le pone fechas a gente.
+     Con datos a medias queda un proyecto que hay que corregir después,
+     y para entonces ya hay porciones repartidas encima. */
+  const requisitos = requisitosParaGanar({
+    entregas,
+    moneda,
+    casa: casaCotizacion,
+    responsable,
+  })
+  const listo = requisitos.every((r) => r.cumple)
   const [error, setError] = useState<string | null>(null)
   const [cerrando, setCerrando] = useState<'ganado' | 'perdido' | null>(null)
   const [esquema, setEsquema] = useState('cincuenta_cincuenta')
@@ -217,7 +238,22 @@ export default function Recorrido({
       {/* Con propuesta cargada, ganar abre el modal: hay que elegir qué
           etapas arrancan y ponerles fecha. Sin propuesta, sigue el
           camino viejo de elegir un esquema y generar las entregas. */}
-      {cerrando === 'ganado' && tienePropuesta ? (
+      {cerrando === 'ganado' && !listo ? (
+        <div className="flex flex-col gap-2.5 border-t border-amarillo pt-3.5">
+          <ListoParaGanar requisitos={requisitos} />
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded-md bg-gris-25 px-3.5 py-1.5 text-sm
+                         font-medium text-gris-50"
+            >
+              Convertir en proyecto
+            </button>
+            <Cancelar onClick={() => setCerrando(null)} />
+          </span>
+        </div>
+      ) : cerrando === 'ganado' && tienePropuesta ? (
         <ConvertirAProyecto
           op={{ id: proyectoId, codigo, nombre, cliente, moneda }}
           hoy={new Date().toISOString().slice(0, 10)}

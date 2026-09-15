@@ -7,6 +7,7 @@ import { plata, type EtapaViva } from '@/lib/estados'
 import { Plegable } from '@/components/ui'
 import EditarOportunidad from '@/components/EditarOportunidad'
 import type { Cliente } from '@/components/ElegirCliente'
+import { agrupar, avance, alSoltarEn, columnaDe, type ColumnaAgrupada } from '@/lib/pipeline'
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -94,6 +95,8 @@ function Chip({
 function Tarjeta({
   o,
   etiqueta,
+  paso,
+  pasos,
   arrastrando,
   yendose,
   alEmpezar,
@@ -103,6 +106,12 @@ function Tarjeta({
 }: {
   o: Op
   etiqueta: string
+  /* Cuántos pasos de su columna lleva cumplidos, y de cuántos. Se
+     dibuja como barra y no como lista: con tres columnas hay más
+     tarjetas a la vista, y tres renglones extra por tarjeta es
+     exactamente lo que agrupar vino a evitar. */
+  paso: number
+  pasos: number
   alEditar: (o: Op) => void
   arrastrando: string | null
   yendose: boolean
@@ -215,6 +224,26 @@ function Tarjeta({
               )}
             </span>
           )}
+
+          {/* Dónde está dentro de su columna. Antes lo decía la columna
+              misma —había una por etapa— y al agrupar eso se perdía.
+              Acá vuelve, en un renglón en vez de seis. */}
+          {pasos > 1 && (
+            <span
+              className="flex gap-0.5 pt-0.5"
+              title={`Paso ${paso} de ${pasos}`}
+              aria-label={`Paso ${paso} de ${pasos}`}
+            >
+              {Array.from({ length: pasos }, (_, i) => (
+                <span
+                  key={i}
+                  className={`h-[3px] flex-1 rounded-full transition-colors duration-200 ${
+                    i < paso ? 'bg-verde' : 'bg-linea-fuerte'
+                  }`}
+                />
+              ))}
+            </span>
+          )}
         </Link>
       </div>
     </li>
@@ -273,13 +302,21 @@ export default function Tablero({
       ),
   )
 
-  function soltar(columna: string) {
+  function soltar(columna: string, grupo?: ColumnaAgrupada) {
     const id = arrastrando
     setArrastrando(null)
     setEncima(null)
     if (!id) return
     const op = vista.find((o) => o.id === id)
     if (!op) return
+
+    /* Una columna agrupa varias etapas, así que soltar adentro de la
+       propia no es avanzar: es reordenar. Y quien ya está en
+       negociación no vuelve a "a cotizar" por haber arrastrado la
+       tarjeta dos centímetros. */
+    const destino = grupo ? alSoltarEn(op.etapa, grupo) : columna
+    if (grupo && destino === null && !op.enfriada) return
+    columna = destino ?? columna
 
     setError(null)
     empezar(async () => {
@@ -336,6 +373,11 @@ export default function Tablero({
     alEditar: setEditando,
   }
 
+  /* Tres columnas en vez de seis. La etapa exacta no se toca: cada
+     oportunidad sigue teniendo la suya y todo lo que la lee sigue
+     viendo lo mismo. Acá solo cambia cuántas cajas se dibujan. */
+  const columnas = agrupar(etapas)
+
   const frias = vista.filter((o) => o.enfriada)
   const friasVisibles = frias.filter((o) => !yendose.has(o.id))
   const friaObjetivo = encima === FRIA && arrastrando !== null
@@ -360,25 +402,27 @@ export default function Tablero({
       )}
 
       <div className="riel -mx-5 flex gap-3 overflow-x-auto px-5 pb-3 lg:-mx-10 lg:px-10">
-        {etapas.map((etapa) => {
-          const suyas = vista.filter((o) => o.etapa === etapa.valor && !o.enfriada)
+        {columnas.map((etapa) => {
+          const suyas = vista.filter(
+            (o) => columnaDe(o.etapa, columnas) === etapa.clave && !o.enfriada,
+          )
           const visibles = suyas.filter((o) => !yendose.has(o.id))
           const enPesos = visibles.reduce(
             (s, o) => s + (o.moneda === 'ARS' ? o.monto_neto ?? 0 : 0),
             0,
           )
-          const objetivo = encima === etapa.valor && arrastrando !== null
+          const objetivo = encima === etapa.clave && arrastrando !== null
 
           return (
             <section
-              key={etapa.valor}
+              key={etapa.clave}
               onDragOver={(e) => {
                 e.preventDefault()
-                setEncima(etapa.valor)
+                setEncima(etapa.clave)
               }}
-              onDragLeave={() => setEncima((v) => (v === etapa.valor ? null : v))}
-              onDrop={() => soltar(etapa.valor)}
-              className={`flex w-[16.5rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
+              onDragLeave={() => setEncima((v) => (v === etapa.clave ? null : v))}
+              onDrop={() => soltar(etapa.clave, etapa)}
+              className={`flex w-[19rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
                           border p-2.5 transition-[border-color,background-color] duration-200
                           [scroll-snap-align:start] ${
                             objetivo ? 'border-azul bg-azul-aire' : 'border-linea bg-panel'
@@ -392,6 +436,7 @@ export default function Tablero({
                 <span className="cifra text-2xs text-gris-50">
                   {enPesos > 0 ? plata(enPesos, 'ARS') : '—'}
                 </span>
+                <span className="text-2xs leading-snug text-gris-50">{etapa.ayuda}</span>
               </header>
 
               <ul className="escalona flex flex-col gap-2">
@@ -400,6 +445,8 @@ export default function Tablero({
                     key={o.id}
                     o={o}
                     etiqueta={ETIQUETA.get(o.etapa) ?? o.etapa}
+                    paso={avance(o.etapa, etapa)}
+                    pasos={etapa.pasos.length}
                     yendose={yendose.has(o.id)}
                     {...propiasDeTarjeta}
                   />
@@ -463,6 +510,8 @@ export default function Tablero({
                 key={o.id}
                 o={o}
                 etiqueta={ETIQUETA.get(o.etapa) ?? o.etapa}
+                paso={0}
+                pasos={0}
                 yendose={yendose.has(o.id)}
                 {...propiasDeTarjeta}
               />

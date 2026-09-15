@@ -6,6 +6,7 @@ import type { EtapaPropuesta } from '@/app/acciones'
 import Cotizador from '@/components/Cotizador'
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
 import ElegirPersona from '@/components/ElegirPersona'
+import { GRUPOS } from '@/lib/pipeline'
 
 /* ------------------------------------------------------------------
    Editar una oportunidad sin entrar a la ficha.
@@ -107,6 +108,17 @@ export default function EditarOportunidad({
     window.addEventListener('keydown', alTeclear)
     return () => window.removeEventListener('keydown', alTeclear)
   }, [alCerrar])
+
+  /* Mientras se prospecta no hay nada que cotizar: se está entendiendo
+     qué necesita. Mostrar moneda, dólar y cotización por etapas en ese
+     momento es pedir once decisiones para anotar que alguien llamó, y
+     así es como se termina no anotando nada.
+
+     Aparecen al pasar a propuesta, que es cuando existen de verdad. El
+     selector de etapa está dos renglones arriba, así que si hace falta
+     antes se cambia la etapa y aparecen: no hay nada trabado, solo
+     guardado hasta que sirve. */
+  const enProspeccion = GRUPOS[0].etapas.includes(v.etapa)
 
   const delDia = cotizaciones.find((c) => c.casa === v.casa)?.venta ?? null
   const cotizacion =
@@ -233,7 +245,18 @@ export default function EditarOportunidad({
             />
           </div>
 
-          <div className="flex flex-wrap items-end gap-3 border-t border-linea pt-3.5">
+          {enProspeccion && (
+            <p className="border-t border-linea pt-3.5 text-2xs text-gris-50">
+              La moneda y la cotización aparecen al pasarla a propuesta. Todavía no hay número: se
+              está entendiendo qué necesita.
+            </p>
+          )}
+
+          <div
+            className={`flex-wrap items-end gap-3 border-t border-linea pt-3.5 ${
+              enProspeccion ? 'hidden' : 'flex'
+            }`}
+          >
             <label className="flex flex-col gap-0.5">
               <span className="rotulo">Moneda</span>
               <select
@@ -281,7 +304,7 @@ export default function EditarOportunidad({
             )}
           </div>
 
-          <div className="border-t border-linea pt-3.5">
+          <div className={enProspeccion ? 'hidden' : 'border-t border-linea pt-3.5'}>
             <Cotizador
               etapas={etapas}
               alCambiar={setEtapas}

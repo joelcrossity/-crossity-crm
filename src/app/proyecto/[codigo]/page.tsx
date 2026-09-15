@@ -292,6 +292,9 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
             nombre={p.nombre as string}
             cliente={cliente.nombre_canonico}
             moneda={(p.moneda as string) ?? 'ARS'}
+            casaCotizacion={(p.casa_cotizacion as string) ?? null}
+            responsable={(p.responsable_id as string) ?? null}
+            entregas={(hitos ?? []).length}
             tienePropuesta={(etapasCotizadas ?? []).length > 0}
             etapas={((filasEtapas ?? []) as { clave: string; etiqueta: string }[]).map((e) => ({
               valor: e.clave,
