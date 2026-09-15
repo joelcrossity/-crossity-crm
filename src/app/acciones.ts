@@ -2595,3 +2595,79 @@ export async function altaRapidaPersona(
   return { ok: true, id: data.id as string, nombre: data.nombre as string }
 }
 
+
+/* ------------------------------------------------------------------
+   La bitácora: qué se entregó y cuándo.
+
+   Se anota en dos campos —qué y de qué tipo— porque lo que no se puede
+   cargar en veinte segundos no se carga. La fecha viene puesta en hoy y
+   se corrige sólo si hace falta; la descripción es opcional, porque
+   obligar a explicar cada arreglo chico es cómo se deja de anotar los
+   arreglos chicos.
+   ------------------------------------------------------------------ */
+
+export type EntradaBitacora = {
+  id: string
+  tipo: string
+  titulo: string
+  descripcion: string | null
+  fecha_entrega: string
+  visibilidad_cliente: boolean
+  autor: string | null
+}
+
+export async function anotarEnBitacora(
+  proyectoId: string,
+  d: { tipo: string; titulo: string; descripcion: string; fecha: string; visible: boolean },
+): Promise<Resultado> {
+  if (!d.titulo.trim()) return { ok: false, error: 'Poné qué se hizo.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('bitacora').insert({
+    proyecto_id: proyectoId,
+    tipo: d.tipo,
+    titulo: d.titulo.trim(),
+    descripcion: d.descripcion.trim() || null,
+    fecha_entrega: d.fecha,
+    visibilidad_cliente: d.visible,
+  })
+
+  if (error) return { ok: false, error: await explicar(error.message) }
+
+  revalidatePath(`/proyecto`, 'layout')
+  return { ok: true }
+}
+
+export async function cambiarVisibilidadBitacora(
+  id: string,
+  visible: boolean,
+): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('bitacora')
+    .update({ visibilidad_cliente: visible }, { count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0) return { ok: false, error: 'No podés cambiar esta anotación.' }
+
+  revalidatePath(`/proyecto`, 'layout')
+  return { ok: true }
+}
+
+export async function borrarDeBitacora(id: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('bitacora')
+    .delete({ count: 'exact' })
+    .eq('id', id)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (count === 0)
+    return { ok: false, error: 'Sólo quien la anotó o dirección pueden borrarla.' }
+
+  revalidatePath(`/proyecto`, 'layout')
+  return { ok: true }
+}

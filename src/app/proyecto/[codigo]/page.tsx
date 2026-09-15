@@ -17,6 +17,8 @@ import { RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import EtapasDelProyecto from '@/components/EtapasDelProyecto'
 import type { ColumnaEstado } from '@/components/Estado'
+import Bitacora from '@/components/Bitacora'
+import type { EntradaBitacora } from '@/app/acciones'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
@@ -97,6 +99,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: puedeMontos },
     { data: dolarHoy },
     { data: columnasEstado },
+    { data: filasBitacora },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -175,6 +178,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
          es cómo la ficha dejó de ofrecer "implementando" sin que nadie
          lo notara. */
       supabase.from('columnas_tablero').select('clave, etiqueta, ayuda, color, detalle, zona').order('zona').order('orden'),
+      supabase
+        .from('bitacora')
+        .select('id, tipo, titulo, descripcion, fecha_entrega, visibilidad_cliente, personas(nombre)')
+        .eq('proyecto_id', p.id)
+        .order('fecha_entrega', { ascending: false })
+        .order('created_at', { ascending: false }),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -773,6 +782,31 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     </p>
                   )}
                 </div>
+              ),
+            },
+            {
+              clave: 'bitacora',
+              texto: 'Bitácora',
+              contenido: (
+                <Bitacora
+                  proyectoId={p.id}
+                  proyecto={p.nombre as string}
+                  cliente={cliente.nombre_canonico}
+                  hoy={(hoyRow as string) ?? ''}
+                  /* Quien llegó a esta pantalla ya cumple lo que la base
+                     pide para anotar: ver todo, o estar en el proyecto. */
+                  puedeAnotar
+                  entradas={((filasBitacora ?? []) as Record<string, unknown>[]).map((b) => ({
+                    id: b.id as string,
+                    tipo: b.tipo as string,
+                    titulo: b.titulo as string,
+                    descripcion: (b.descripcion as string) ?? null,
+                    fecha_entrega: b.fecha_entrega as string,
+                    visibilidad_cliente: b.visibilidad_cliente as boolean,
+                    autor:
+                      ((b.personas as { nombre?: string } | null)?.nombre as string) ?? null,
+                  })) as EntradaBitacora[]}
+                />
               ),
             },
             {
