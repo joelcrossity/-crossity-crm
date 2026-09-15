@@ -196,6 +196,7 @@ function Tarjeta({
           }}
           onDragEnd={alTerminar}
           className={`flex cursor-grab flex-col gap-2 rounded-md border border-linea
+                      ${hayPrevia || hayProxima ? 'rounded-b-none border-b-0' : ''}
                       bg-superficie p-3 transition-[border-color,box-shadow,transform,opacity]
                       duration-200 ease-[var(--ease-salida)] hover:border-azul
                       hover:shadow-[var(--sombra-flotante)] active:cursor-grabbing ${
@@ -239,41 +240,6 @@ function Tarjeta({
           {/* Dónde está dentro de su columna. Antes lo decía la columna
               misma —había una por etapa— y al agrupar eso se perdía.
               Acá vuelve, en un renglón en vez de seis. */}
-          {/* Al pie y siempre visibles: en el telefono no hay cursor que
-              revele nada, y son el unico modo comodo de mover algo. */}
-          {(hayPrevia || hayProxima) && (
-            <span className="flex items-center gap-1 pt-1">
-              {hayPrevia && (
-                <button
-                  type="button"
-                  aria-label={`Retroceder ${o.nombre}`}
-                  title="A la columna anterior"
-                  onClick={(e) => { e.preventDefault(); alMover(o, -1) }}
-                  className="grid size-6 place-items-center rounded-md border border-linea text-gris-50 transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
-                >
-                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
-                    <path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8"
-                          strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              )}
-              {hayProxima && (
-                <button
-                  type="button"
-                  aria-label={`Avanzar ${o.nombre}`}
-                  title="A la columna siguiente"
-                  onClick={(e) => { e.preventDefault(); alMover(o, 1) }}
-                  className="grid size-6 place-items-center rounded-md border border-linea text-gris-50 transition-colors duration-150 hover:border-azul hover:text-azul-hondo"
-                >
-                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" aria-hidden>
-                    <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8"
-                          strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              )}
-            </span>
-          )}
-
           {pasos > 1 && (
             <span
               className="flex gap-0.5 pt-0.5"
@@ -291,6 +257,65 @@ function Tarjeta({
             </span>
           )}
         </Link>
+
+        {/* Hermana del enlace, no hija. Adentro estaban rotas por dos
+            razones a la vez: un botón dentro de un <a> es inválido, y el
+            enlace es el elemento arrastrable, así que apretar una flecha
+            y moverse un pixel arrancaba un arrastre en vez de un clic.
+
+            Acá afuera no hay nada que interceptar. Igual se corta la
+            propagación: si mañana alguien envuelve la tarjeta en algo
+            que escuche clics, esto sigue andando. */}
+        {(hayPrevia || hayProxima) && (
+          <div
+            draggable={false}
+            onDragStart={(e) => e.stopPropagation()}
+            className="flex items-center justify-between rounded-b-md border border-t-0
+                       border-linea bg-superficie px-1.5 py-1"
+          >
+            {hayPrevia ? (
+              <button
+                type="button"
+                aria-label={`Retroceder ${o.nombre}`}
+                title="A la columna anterior"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  alMover(o, -1)
+                }}
+                className="grid size-7 place-items-center rounded-md text-gris-50
+                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
+              >
+                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
+                  <path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : (
+              <span aria-hidden />
+            )}
+
+            {hayProxima && (
+              <button
+                type="button"
+                aria-label={`Avanzar ${o.nombre}`}
+                title="A la columna siguiente"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  alMover(o, 1)
+                }}
+                className="grid size-7 place-items-center rounded-md text-gris-50
+                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
+              >
+                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
+                  <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </li>
   )
