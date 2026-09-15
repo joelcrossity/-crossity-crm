@@ -423,7 +423,6 @@ export default function Tablero({
               onDragLeave={() => setEncima((v) => (v === etapa.clave ? null : v))}
               onDrop={() => soltar(etapa.clave, etapa)}
               className={`flex w-[19rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
-                          lg:w-auto lg:min-w-[17rem] lg:flex-1
                           border p-2.5 transition-[border-color,background-color] duration-200
                           [scroll-snap-align:start] ${
                             objetivo ? 'border-azul bg-azul-aire' : 'border-linea bg-panel'

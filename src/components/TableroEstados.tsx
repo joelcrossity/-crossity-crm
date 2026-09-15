@@ -606,7 +606,6 @@ export default function TableroEstados({
               onDragLeave={() => setEncima((v) => (v === c.clave ? null : v))}
               onDrop={() => soltar(c)}
               className={`flex w-[16.5rem] shrink-0 flex-col gap-2.5 rounded-[var(--radius-tarjeta)]
-                          lg:w-auto lg:min-w-[15.5rem] lg:flex-1
                           border p-2.5 transition-[border-color,background-color] duration-200
                           [scroll-snap-align:start] ${
                             objetivo ? 'border-azul bg-azul-aire' : 'border-linea bg-panel'
