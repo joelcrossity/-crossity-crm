@@ -8,12 +8,37 @@ import { createClient } from '@/lib/supabase/server'
 
 export default async function Tablero() {
   const supabase = await createClient()
-  const { data: cuentas } = await supabase
-    .from('v_cuenta')
-    .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits, razones')
-    .order('cuenta')
-  const { data: personas } = await supabase
-    .from('personas').select('id, nombre').eq('activa', true).order('nombre')
+  /* Las seis juntas y no una atrás de otra. Ninguna necesita el
+     resultado de la anterior, así que encadenarlas era pagar seis
+     viajes a la base en fila para tener lo mismo al final. Es medio
+     segundo de espera en cada entrada al tablero, y el tablero es la
+     pantalla donde más se entra. */
+  const [
+    { data: cuentas },
+    { data: personas },
+    { data: columnas },
+    { data: puedeCargar },
+    { data: dolar },
+    { data },
+  ] = await Promise.all([
+    supabase
+      .from('v_cuenta')
+      .select('id, cuenta, proyectos_totales, en_vivo, marcas, alias, cuits, razones')
+      .order('cuenta'),
+    supabase.from('personas').select('id, nombre').eq('activa', true).order('nombre'),
+    supabase.from('columnas_tablero').select('*').order('orden'),
+    /* Se le pregunta a la base y no se deduce del rol: el rol lo dice la
+       pantalla y el permiso lo decide el servidor, y cuando los dos
+       opinan por separado terminan diciendo cosas distintas. */
+    supabase.rpc('carga_trabajo'),
+    supabase.from('v_cotizacion_hoy').select('casa, venta'),
+    supabase
+      .from('v_tablero')
+      .select('*')
+      .order('prioridad', { nullsFirst: false })
+      .order('dias_sin_novedades', { ascending: false }),
+  ])
+
   const clientes = ((cuentas ?? []) as Record<string, unknown>[]).map((c) => ({
     id: c.id as string,
     nombre: c.cuenta as string,
@@ -27,22 +52,6 @@ export default async function Tablero() {
     cuits: (c.cuits as string[] | null) ?? null,
     razones: (c.razones as string | null) ?? null,
   }))
-  const { data: columnas } = await supabase
-    .from('columnas_tablero')
-    .select('*')
-    .order('orden')
-
-  /* Se le pregunta a la base y no se deduce del rol: el rol lo dice la
-     pantalla y el permiso lo decide el servidor, y cuando los dos
-     opinan por separado terminan diciendo cosas distintas. */
-  const { data: puedeCargar } = await supabase.rpc('carga_trabajo')
-  const { data: dolar } = await supabase.from('v_cotizacion_hoy').select('casa, venta')
-
-  const { data } = await supabase
-    .from('v_tablero')
-    .select('*')
-    .order('prioridad', { nullsFirst: false })
-    .order('dias_sin_novedades', { ascending: false })
 
   const filas = (data ?? []) as Fila[]
   const vivos = filas.filter((f) => f.color === 'verde').length
