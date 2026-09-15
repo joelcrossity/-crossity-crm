@@ -6,8 +6,6 @@ import type { EtapaPropuesta } from '@/app/acciones'
 import Cotizador from '@/components/Cotizador'
 import ElegirCliente, { type Cliente } from '@/components/ElegirCliente'
 import ElegirPersona from '@/components/ElegirPersona'
-import { AvisoBorrador, EstadoDelBorrador } from '@/components/ui'
-import { useBorrador } from '@/lib/borrador'
 
 /* ------------------------------------------------------------------
    Editar una oportunidad sin entrar a la ficha.
@@ -80,12 +78,16 @@ export default function EditarOportunidad({
      que hay por lo que se manda, y lo que se manda todavía no se leyó. */
   const [cargando, setCargando] = useState(true)
 
-  /* No guarda borrador mientras carga: el estado de ese momento son los
-     valores iniciales con la cotización vacía, y pisaría el borrador
-     bueno que pudiera haber. */
-  const borrador = useBorrador(`oportunidad:${op.id}`, { v, etapas }, !cargando)
-
   useEffect(() => {
+    /* Y se tira el resguardo que pudiera haber quedado de antes: sacar
+       la función no borra lo que ya está en la máquina de cada uno, y
+       son montos de clientes. */
+    try {
+      window.localStorage.removeItem(`borrador:oportunidad:${op.id}`)
+    } catch {
+      // Sin permiso para tocar el almacenamiento no hay nada guardado.
+    }
+
     let vivo = true
     leerPropuesta(op.id).then((r) => {
       if (!vivo) return
@@ -148,7 +150,6 @@ export default function EditarOportunidad({
       )
       if (!s.ok) return setError(s.error)
 
-      borrador.olvidar()
       alCerrar()
     })
   }
@@ -186,18 +187,6 @@ export default function EditarOportunidad({
         </header>
 
         <div className="riel flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
-          <AvisoBorrador
-            hay={!!borrador.hay}
-            alRestaurar={() => {
-              const previo = borrador.restaurar()
-              if (previo) {
-                setV(previo.v)
-                setEtapas(previo.etapas)
-              }
-            }}
-            alDescartar={borrador.olvidar}
-          />
-
           <label className="flex flex-col gap-0.5">
             <span className="rotulo">Nombre</span>
             <input
@@ -332,7 +321,6 @@ export default function EditarOportunidad({
               Cancelar
             </button>
           </div>
-          <EstadoDelBorrador estado={borrador.estado} />
         </footer>
       </div>
     </div>
