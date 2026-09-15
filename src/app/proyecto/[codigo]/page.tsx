@@ -16,6 +16,7 @@ import {
 import { RegistrarCobro, BorrarCobro } from '@/components/Cobro'
 import AbrirMantenimiento from '@/components/Mantenimiento'
 import EtapasDelProyecto from '@/components/EtapasDelProyecto'
+import type { ColumnaEstado } from '@/components/Estado'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
 import BorrarProyecto from '@/components/BorrarProyecto'
@@ -95,6 +96,7 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
     { data: puedeEquipo },
     { data: puedeMontos },
     { data: dolarHoy },
+    { data: columnasEstado },
   ] = await Promise.all([
       supabase.from('hitos').select('*').eq('proyecto_id', p.id).order('orden'),
       supabase
@@ -169,6 +171,10 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
          montos y no el de ver el proyecto. */
       supabase.rpc('puede_persona', { p_accion: 'cambiar_montos' }),
       supabase.from('v_cotizacion_hoy').select('casa, venta'),
+      /* El mismo vocabulario que el tablero. Tenerlo escrito a mano acá
+         es cómo la ficha dejó de ofrecer "implementando" sin que nadie
+         lo notara. */
+      supabase.from('columnas_tablero').select('clave, etiqueta, ayuda, color, detalle, zona').order('zona').order('orden'),
     ])
 
   type H = Record<string, string | number | boolean | null>
@@ -387,7 +393,12 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                     />
                   )}
                   <section className="flex flex-col gap-5 tarjeta p-4">
-                    <Estado proyectoId={p.id} color={p.color} detalle={detalle} />
+                    <Estado
+                      proyectoId={p.id}
+                      color={p.color}
+                      detalle={detalle}
+                      columnas={(columnasEstado ?? []) as ColumnaEstado[]}
+                    />
 
                     <div className="grid gap-4 sm:grid-cols-3">
                       <Fecha
