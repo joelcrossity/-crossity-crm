@@ -95,9 +95,6 @@ function Tarjeta({
   alTerminar,
   alArchivar,
   alEditar,
-  hayPrevia = false,
-  hayProxima = false,
-  alMover,
 }: {
   f: Fila
   color: string
@@ -108,12 +105,6 @@ function Tarjeta({
   alTerminar: () => void
   alArchivar: (id: string) => void
   alEditar: (f: Fila) => void
-  /* Mover entre las columnas del trabajo activo con botones. Cerrar no:
-     terminar o dar por perdido un proyecto no es avanzar un casillero,
-     y tiene su propio gesto en la ficha. */
-  hayPrevia?: boolean
-  hayProxima?: boolean
-  alMover?: (f: Fila, direccion: -1 | 1) => void
 }) {
   return (
     <li className="sale" data-yendo={yendose ? 'si' : 'no'}>
@@ -172,8 +163,7 @@ function Tarjeta({
             alEmpezar(f.id)
           }}
           onDragEnd={alTerminar}
-          className={`flex cursor-grab flex-col gap-2 rounded-md border border-linea
-                      ${alMover && (hayPrevia || hayProxima) ? 'rounded-b-none border-b-0' : ''} bg-superficie
+          className={`flex cursor-grab flex-col gap-2 rounded-md border border-linea bg-superficie
                       p-3 transition-[border-color,box-shadow,transform,opacity] duration-200
                       ease-[var(--ease-salida)] hover:border-azul
                       hover:shadow-[var(--sombra-flotante)] active:cursor-grabbing ${
@@ -211,60 +201,6 @@ function Tarjeta({
             )}
           </span>
         </Link>
-
-        {/* Afuera del enlace a propósito: el enlace es el elemento
-            arrastrable, así que un botón adentro arranca un arrastre en
-            vez de recibir el clic. Pasó en el pipeline. */}
-        {alMover && (hayPrevia || hayProxima) && (
-          <div
-            draggable={false}
-            onDragStart={(e) => e.stopPropagation()}
-            className="flex items-center justify-between rounded-b-md border border-t-0
-                       border-linea bg-superficie px-1.5 py-1"
-          >
-            {hayPrevia ? (
-              <button
-                type="button"
-                aria-label={`Retroceder ${f.nombre}`}
-                title="Al estado anterior"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  alMover(f, -1)
-                }}
-                className="grid size-7 place-items-center rounded-md text-gris-50
-                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
-              >
-                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
-                  <path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            ) : (
-              <span aria-hidden />
-            )}
-
-            {hayProxima && (
-              <button
-                type="button"
-                aria-label={`Avanzar ${f.nombre}`}
-                title="Al estado siguiente"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  alMover(f, 1)
-                }}
-                className="grid size-7 place-items-center rounded-md text-gris-50
-                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
-              >
-                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
-                  <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </li>
   )
@@ -606,27 +542,6 @@ export default function TableroEstados({
     else guardar(id, columna.color, null)
   }
 
-  /* Avanzar o retroceder entre las columnas del trabajo activo. Hace lo
-     mismo que soltar la tarjeta ahí: si la columna define su detalle se
-     guarda directo, y si no —Frenado— pregunta el motivo, porque sin él
-     dentro de tres meses nadie sabe qué pasó.
-
-     Las plegadas quedan afuera. Terminar o dar por perdido un proyecto
-     no es avanzar un casillero: es sacarlo del tablero, y eso se hace
-     desde la ficha o arrastrando, con la intención puesta. */
-  function moverUno(f: Fila, direccion: -1 | 1) {
-    const enZona = columnas.filter((c) => c.zona === 'arriba')
-    const i = enZona.findIndex(
-      (c) => c.color === f.color && (c.detalle ?? null) === (RECORTE[c.color]?.(f) ?? null),
-    )
-    const destino = enZona[i + direccion]
-    if (!destino) return
-
-    if (destino.detalle_al_soltar) guardar(f.id, destino.color, destino.detalle_al_soltar)
-    else if (MOTIVOS[destino.color]) setPreguntando({ id: f.id, clave: destino.clave })
-    else guardar(f.id, destino.color, null)
-  }
-
   const activas = columnas.filter((c) => c.zona === 'arriba')
   const cerradas = columnas.filter((c) => c.zona === 'abajo')
 
@@ -730,11 +645,6 @@ export default function TableroEstados({
                     f={f}
                     color={c.color}
                     yendose={yendose.has(f.id)}
-                    hayPrevia={activas.findIndex((x) => x.clave === c.clave) > 0}
-                    hayProxima={
-                      activas.findIndex((x) => x.clave === c.clave) < activas.length - 1
-                    }
-                    alMover={moverUno}
                     {...propiasDeTarjeta}
                   />
                 ))}

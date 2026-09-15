@@ -8,7 +8,6 @@ import { Plegable } from '@/components/ui'
 import EditarOportunidad from '@/components/EditarOportunidad'
 import type { Cliente } from '@/components/ElegirCliente'
 import { agrupar, avance, alSoltarEn, columnaDe, type ColumnaAgrupada } from '@/lib/pipeline'
-import { requisitosParaGanar } from '@/components/ListoParaGanar'
 
 /* ------------------------------------------------------------------
    El pipeline como tablero.
@@ -98,9 +97,6 @@ function Tarjeta({
   etiqueta,
   paso,
   pasos,
-  hayPrevia,
-  hayProxima,
-  alMover,
   arrastrando,
   yendose,
   alEmpezar,
@@ -116,13 +112,6 @@ function Tarjeta({
      exactamente lo que agrupar vino a evitar. */
   paso: number
   pasos: number
-  /* Mover con botones y no solo arrastrando. En una pantalla tactil el
-     arrastre entre columnas que se desplazan de costado es casi
-     imposible: hay que sostener la tarjeta y empujar el tablero al
-     mismo tiempo con el mismo dedo. */
-  hayPrevia: boolean
-  hayProxima: boolean
-  alMover: (o: Op, direccion: -1 | 1) => void
   alEditar: (o: Op) => void
   arrastrando: string | null
   yendose: boolean
@@ -196,7 +185,6 @@ function Tarjeta({
           }}
           onDragEnd={alTerminar}
           className={`flex cursor-grab flex-col gap-2 rounded-md border border-linea
-                      ${hayPrevia || hayProxima ? 'rounded-b-none border-b-0' : ''}
                       bg-superficie p-3 transition-[border-color,box-shadow,transform,opacity]
                       duration-200 ease-[var(--ease-salida)] hover:border-azul
                       hover:shadow-[var(--sombra-flotante)] active:cursor-grabbing ${
@@ -257,65 +245,6 @@ function Tarjeta({
             </span>
           )}
         </Link>
-
-        {/* Hermana del enlace, no hija. Adentro estaban rotas por dos
-            razones a la vez: un botón dentro de un <a> es inválido, y el
-            enlace es el elemento arrastrable, así que apretar una flecha
-            y moverse un pixel arrancaba un arrastre en vez de un clic.
-
-            Acá afuera no hay nada que interceptar. Igual se corta la
-            propagación: si mañana alguien envuelve la tarjeta en algo
-            que escuche clics, esto sigue andando. */}
-        {(hayPrevia || hayProxima) && (
-          <div
-            draggable={false}
-            onDragStart={(e) => e.stopPropagation()}
-            className="flex items-center justify-between rounded-b-md border border-t-0
-                       border-linea bg-superficie px-1.5 py-1"
-          >
-            {hayPrevia ? (
-              <button
-                type="button"
-                aria-label={`Retroceder ${o.nombre}`}
-                title="A la columna anterior"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  alMover(o, -1)
-                }}
-                className="grid size-7 place-items-center rounded-md text-gris-50
-                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
-              >
-                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
-                  <path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.8"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            ) : (
-              <span aria-hidden />
-            )}
-
-            {hayProxima && (
-              <button
-                type="button"
-                aria-label={`Avanzar ${o.nombre}`}
-                title="A la columna siguiente"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  alMover(o, 1)
-                }}
-                className="grid size-7 place-items-center rounded-md text-gris-50
-                           transition-colors duration-150 hover:bg-panel hover:text-azul-hondo"
-              >
-                <svg viewBox="0 0 16 16" className="size-4" fill="none" aria-hidden>
-                  <path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" strokeWidth="1.8"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </li>
   )
@@ -414,45 +343,6 @@ export default function Tablero({
         const r = await cambiarEtapa(id, columna)
         if (!r.ok) setError(r.error)
       }
-    })
-  }
-
-  /* Avanzar o retroceder una columna con los botones de la tarjeta.
-
-     Entrar en Resolución es ganar, y ganar genera entregas, reparte
-     plata y le pone fechas a gente. Si falta algo se abre el lápiz en
-     vez de avanzar: es donde se arregla, y avisa qué falta. Bloquear
-     sin abrir dónde resolverlo es dejar a alguien mirando un botón que
-     no anda. */
-  function moverUno(o: Op, direccion: -1 | 1) {
-    const i = columnas.findIndex((c) => c.clave === columnaDe(o.etapa, columnas))
-    const destino = columnas[i + direccion]
-    if (!destino) return
-
-    if (direccion === 1 && destino.clave === 'resolucion') {
-      const faltan = requisitosParaGanar({
-        entregas: o.etapas_cotizadas,
-        moneda: o.moneda,
-        casa: o.casa_cotizacion,
-        responsable: o.responsable_id,
-      }).filter((r) => !r.cumple)
-
-      if (faltan.length > 0) {
-        setError(
-          `Antes de darla por ganada falta: ${faltan.map((f) => f.texto.toLowerCase()).join(', ')}.`,
-        )
-        setEditando(o)
-        return
-      }
-    }
-
-    setError(null)
-    empezar(async () => {
-      const etapa = destino.pasos[direccion === 1 ? 0 : destino.pasos.length - 1]?.valor
-      if (!etapa) return
-      mover({ id: o.id, etapa })
-      const r = await cambiarEtapa(o.id, etapa)
-      if (!r.ok) setError(r.error)
     })
   }
 
@@ -558,11 +448,6 @@ export default function Tablero({
                     etiqueta={ETIQUETA.get(o.etapa) ?? o.etapa}
                     paso={avance(o.etapa, etapa)}
                     pasos={etapa.pasos.length}
-                    hayPrevia={columnas.findIndex((c) => c.clave === etapa.clave) > 0}
-                    hayProxima={
-                      columnas.findIndex((c) => c.clave === etapa.clave) < columnas.length - 1
-                    }
-                    alMover={moverUno}
                     yendose={yendose.has(o.id)}
                     {...propiasDeTarjeta}
                   />
@@ -628,9 +513,6 @@ export default function Tablero({
                 etiqueta={ETIQUETA.get(o.etapa) ?? o.etapa}
                 paso={0}
                 pasos={0}
-                hayPrevia={false}
-                hayProxima={false}
-                alMover={moverUno}
                 yendose={yendose.has(o.id)}
                 {...propiasDeTarjeta}
               />
