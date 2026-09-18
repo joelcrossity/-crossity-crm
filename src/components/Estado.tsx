@@ -31,6 +31,23 @@ export type ColumnaEstado = {
   zona: string
 }
 
+/* Gris y rojo llevan motivo obligatorio: sin él la base rechaza el
+   cambio. Las columnas que declaran su detalle ya lo traen; las que no
+   —Frenado y Perdido, que son el comodín de su color— hay que
+   preguntarlo. Sin el motivo, dentro de tres meses nadie sabe por qué
+   se frenó ni por qué se perdió. */
+const MOTIVOS: Record<string, [string, string][]> = {
+  gris: [
+    ['pausado_cliente', 'Pausado por el cliente'],
+    ['esperando_anticipo', 'Pendiente de anticipo'],
+    ['dormido', 'Sin actividad ni respuesta'],
+  ],
+  rojo: [
+    ['perdido', 'Perdido'],
+    ['descartado', 'Descartado'],
+  ],
+}
+
 const PUNTO: Record<string, string> = {
   verde: 'bg-verde',
   amarillo: 'bg-amarillo',
@@ -54,6 +71,8 @@ export default function Estado({
   const [sub, setSub] = useState(detalle)
   const [error, setError] = useState<string | null>(null)
   const [pendiente, empezar] = useTransition()
+  /* Qué columna se eligió y todavía espera su motivo. */
+  const [preguntando, setPreguntando] = useState<ColumnaEstado | null>(null)
 
   /* Una columna es un color y a veces un detalle, así que la columna
      en la que está el proyecto es la que coincide en las dos cosas. La
@@ -68,6 +87,20 @@ export default function Estado({
 
   const arriba = columnas.filter((c) => c.zona === 'arriba')
   const abajo = columnas.filter((c) => c.zona !== 'arriba')
+
+  /* Si la columna no declara detalle y su color exige motivo, se
+     pregunta. Mandar null ahí hacía que la base rechazara el cambio, y
+     el rechazo salía como un error de restricción que no le dice nada a
+     nadie: en la práctica, un proyecto que no se podía cerrar. */
+  function elegir(c: ColumnaEstado) {
+    if (!c.detalle && MOTIVOS[c.color]) {
+      setError(null)
+      setPreguntando(c)
+      return
+    }
+    setPreguntando(null)
+    aplicar(c.color, c.detalle)
+  }
 
   function aplicar(nuevoColor: string, nuevoDetalle: string | null) {
     const anteriorColor = actual
@@ -107,7 +140,7 @@ export default function Estado({
             c={c}
             elegida={c.color === actual && aqui(c)}
             pendiente={pendiente}
-            alElegir={() => aplicar(c.color, c.detalle)}
+            alElegir={() => elegir(c)}
           />
         ))}
       </div>
@@ -115,6 +148,42 @@ export default function Estado({
       {/* Y las de cerrar, separadas. Terminar o dar por perdido un
           proyecto no es avanzar un casillero: es sacarlo del tablero,
           y conviene que cueste un gesto distinto. */}
+      {preguntando && (
+        <div className="surge flex flex-col gap-1.5 rounded-md border border-linea
+                        bg-panel px-3 py-2.5">
+          <span className="text-2xs text-gris">
+            {preguntando.color === 'rojo' ? '¿Qué pasó?' : '¿Por qué se frena?'}
+          </span>
+          <span className="flex flex-wrap gap-1">
+            {(MOTIVOS[preguntando.color] ?? []).map(([valor, texto]) => (
+              <button
+                key={valor}
+                type="button"
+                disabled={pendiente}
+                onClick={() => {
+                  const c = preguntando
+                  setPreguntando(null)
+                  aplicar(c.color, valor)
+                }}
+                className="rounded-md border border-linea px-2.5 py-1 text-xs text-tinta
+                           transition-colors duration-150 hover:border-azul
+                           hover:text-azul-hondo disabled:opacity-50"
+              >
+                {texto}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPreguntando(null)}
+              className="px-2 py-1 text-2xs text-gris-50 transition-colors duration-150
+                         hover:text-tinta"
+            >
+              Cancelar
+            </button>
+          </span>
+        </div>
+      )}
+
       {abajo.length > 0 && (
         <div className="flex flex-wrap items-center gap-1">
           <span className="pr-1 text-2xs text-gris-50">cerrar:</span>
@@ -124,7 +193,7 @@ export default function Estado({
               c={c}
               elegida={c.color === actual && aqui(c)}
               pendiente={pendiente}
-              alElegir={() => aplicar(c.color, c.detalle)}
+              alElegir={() => elegir(c)}
               sutil
             />
           ))}

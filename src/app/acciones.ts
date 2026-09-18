@@ -545,11 +545,17 @@ export async function crearProyectoCompleto(d: ProyectoNuevo): Promise<Resultado
       organizacion_id,
       nombre: d.nombre.trim(),
       moneda: d.moneda,
-      /* En pesos no hay nada que valuar, así que no se guarda una casa
-         que después confunda al leerla. */
-      casa_cotizacion: d.moneda === 'ARS' ? null : d.casa,
-      cotizacion_pactada:
-        d.moneda !== 'ARS' && d.casa === 'pactado' ? Number(d.pactada) || null : null,
+      /* En pesos no se manda nada y queda el valor por defecto de la
+         columna. Antes se mandaba null para decir "acá no aplica", y la
+         columna no lo acepta: el alta entera reventaba justo al
+         confirmar las entregas, que es el último paso. Un proyecto en
+         pesos es el caso normal, así que rompía el camino más usado. */
+      ...(d.moneda !== 'ARS'
+        ? {
+            casa_cotizacion: d.casa,
+            cotizacion_pactada: d.casa === 'pactado' ? Number(d.pactada) || null : null,
+          }
+        : {}),
       alicuota_iva: Number(d.iva ?? 21),
       monto_neto: total || null,
       programa: d.programa.trim() || null,
