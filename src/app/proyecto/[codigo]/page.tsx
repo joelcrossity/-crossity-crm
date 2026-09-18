@@ -18,6 +18,7 @@ import AbrirMantenimiento from '@/components/Mantenimiento'
 import EtapasDelProyecto from '@/components/EtapasDelProyecto'
 import type { ColumnaEstado } from '@/components/Estado'
 import Bitacora from '@/components/Bitacora'
+import Bonificar from '@/components/Bonificar'
 import type { EntradaBitacora } from '@/app/acciones'
 import { Equipo, FechaHito, type Miembro } from '@/components/Equipo'
 import PanelProyecto from '@/components/PanelProyecto'
@@ -579,7 +580,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                             </span>
 
                             <span className="cifra shrink-0 text-sm text-gris">
-                              {plata(h.monto_neto as number, h.moneda as string)}
+                              {/* Un cero en una entrega regalada se lee como
+                                  "falta ponerle precio". Se dice lo que es. */}
+                              {h.condicion === 'bonificado'
+                                ? '—'
+                                : plata(h.monto_neto as number, h.moneda as string)}
                               {h.fecha_comprometida ? (
                                 <span className="block text-2xs text-gris-50">
                                   {fechaCorta(h.fecha_comprometida as string)}
@@ -588,6 +593,11 @@ export default async function Proyecto(props: PageProps<'/proyecto/[codigo]'>) {
                             </span>
 
                             <span className="flex shrink-0 flex-wrap items-end gap-3">
+                              <Bonificar
+                                hitoId={h.id as string}
+                                bonificada={h.condicion === 'bonificado'}
+                                motivo={(h.motivo_condicion as string | null) ?? null}
+                              />
                               <FechaHito
                                 hitoId={h.id as string}
                                 campo="vence_at"

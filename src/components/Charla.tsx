@@ -52,6 +52,14 @@ export default function Charla({
   const [cuando, setCuando] = useState('')
   const [referidoPor, setReferidoPor] = useState('')
   const [referidoNota, setReferidoNota] = useState('')
+  /* Con quién se habló. Plegado porque no siempre se tiene, y un
+     formulario que pide seis datos para anotar una charla es un
+     formulario que se llena a medias o no se llena. */
+  const [conQuien, setConQuien] = useState(false)
+  const [cNombre, setCNombre] = useState('')
+  const [cRol, setCRol] = useState('')
+  const [cEmail, setCEmail] = useState('')
+  const [cTel, setCTel] = useState('')
 
   /* Se abre en blanco. El resguardo automático que había acá ofrecía
      recuperar charlas que nadie había escrito: bastaba abrir y cerrar
@@ -64,6 +72,11 @@ export default function Charla({
     setLoHablado('')
     setReferidoPor('')
     setReferidoNota('')
+    setConQuien(false)
+    setCNombre('')
+    setCRol('')
+    setCEmail('')
+    setCTel('')
 
     /* Y se tira el resguardo que pudo quedar guardado de antes. Sacar
        la función del código no borra lo que ya está en la máquina de
@@ -176,6 +189,79 @@ export default function Charla({
           </>
         )}
 
+        {/* El contacto va al cliente, no a la charla: la próxima vez que
+            aparezca ese cliente, el mail ya está donde se lo busca. Por
+            eso son los campos del contacto de verdad y no dos casillas
+            sueltas acá. */}
+        {conQuien ? (
+          <div className="flex flex-col gap-3 rounded-md border border-linea px-3 py-3">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className={rotulo}>Con quién hablaste</span>
+              <button
+                type="button"
+                onClick={() => setConQuien(false)}
+                className="text-2xs text-gris-50 transition-colors duration-150 hover:text-tinta"
+              >
+                No hace falta
+              </button>
+            </span>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-0.5">
+                <span className={rotulo}>Nombre</span>
+                <input
+                  value={cNombre}
+                  onChange={(e) => setCNombre(e.target.value)}
+                  placeholder="Carolina Méndez"
+                  className={campo}
+                />
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className={rotulo}>Qué hace ahí</span>
+                <input
+                  value={cRol}
+                  onChange={(e) => setCRol(e.target.value)}
+                  placeholder="Gerenta de operaciones"
+                  className={campo}
+                />
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className={rotulo}>Email</span>
+                <input
+                  value={cEmail}
+                  type="email"
+                  onChange={(e) => setCEmail(e.target.value)}
+                  placeholder="carolina@empresa.com"
+                  className={campo}
+                />
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className={rotulo}>Teléfono</span>
+                <input
+                  value={cTel}
+                  onChange={(e) => setCTel(e.target.value)}
+                  placeholder="343 4123456"
+                  className={campo}
+                />
+              </label>
+            </div>
+
+            <span className="text-2xs text-gris-50">
+              Queda como contacto del cliente, así que la próxima vez ya está cargado. Con el
+              nombre alcanza; el resto se puede completar después.
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConQuien(true)}
+            className="w-fit text-2xs text-gris-50 underline underline-offset-2
+                       transition-colors duration-150 hover:text-azul-hondo"
+          >
+            + Anotar con quién hablaste
+          </button>
+        )}
+
         <label className="flex flex-col gap-0.5">
           <span className={rotulo}>Tema, si ya hay uno</span>
           <input
@@ -227,6 +313,10 @@ export default function Charla({
             empezar(async () => {
               const r = await anotarCharla({
                 clienteId, clienteNuevo, cuitNuevo, tema, loHablado, origen, cuando, referidoPor, referidoNota,
+                contactoNombre: cNombre,
+                contactoRol: cRol,
+                contactoEmail: cEmail,
+                contactoTelefono: cTel,
               })
               if (r.ok) {
                 vaciar()

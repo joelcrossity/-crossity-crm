@@ -786,6 +786,13 @@ export type Charla = {
   cuando: string
   referidoPor: string
   referidoNota: string
+  /* Con quién se habló, de carne y hueso. Va al cliente como contacto
+     de verdad y no como un campo suelto de la charla: la próxima vez
+     que aparezca ese cliente, el mail ya está donde se lo busca. */
+  contactoNombre?: string
+  contactoRol?: string
+  contactoEmail?: string
+  contactoTelefono?: string
 }
 
 export async function anotarCharla(c: Charla): Promise<Resultado> {
@@ -845,6 +852,21 @@ export async function anotarCharla(c: Charla): Promise<Resultado> {
 
   // La charla misma queda como primera novedad: es el día uno del hilo.
   await cargarNovedad(data.id as string, 'comercial', c.loHablado.trim())
+
+  /* Y la persona con la que se habló queda como contacto del cliente.
+     Se hace después y sin cortar: si el contacto falla —un mail
+     repetido, lo que sea— la charla ya está guardada, que es lo que
+     importaba. Perder la charla por no poder guardar un teléfono sería
+     exactamente al revés. */
+  if (c.contactoNombre?.trim()) {
+    await agregarContacto(
+      organizacion_id,
+      c.contactoNombre,
+      c.contactoRol ?? '',
+      c.contactoEmail ?? '',
+      c.contactoTelefono ?? '',
+    )
+  }
 
   revalidatePath('/', 'layout')
   return { ok: true, ir: `/proyecto/${data.codigo}` }
@@ -2675,5 +2697,54 @@ export async function borrarDeBitacora(id: string): Promise<Resultado> {
     return { ok: false, error: 'Sólo quien la anotó o dirección pueden borrarla.' }
 
   revalidatePath(`/proyecto`, 'layout')
+  return { ok: true }
+}
+
+/* ------------------------------------------------------------------
+   Regalar una entrega sin regalar el proyecto.
+
+   El proyecto se cobra y una parte se bonifica: se hace el ERP y se
+   regala el sitio. Hasta ahora eso se cargaba como una entrega en cero,
+   y cero no es lo mismo que regalado: una entrega en cero se lee como
+   "todavía no le pusimos precio" y desaparece del resumen del cliente,
+   que es justo donde uno quiere que se vea.
+
+   El motivo es obligatorio. Regalar trabajo es una decisión comercial y
+   dentro de seis meses alguien va a preguntar por qué se tomó.
+   ------------------------------------------------------------------ */
+
+export async function bonificarEntrega(hitoId: string, motivo: string): Promise<Resultado> {
+  if (!motivo.trim())
+    return { ok: false, error: 'Poné por qué se bonifica. En seis meses alguien va a preguntar.' }
+
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('hitos')
+    .update(
+      { condicion: 'bonificado', motivo_condicion: motivo.trim(), monto_neto: 0 },
+      { count: 'exact' },
+    )
+    .eq('id', hitoId)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para cambiar esta entrega.' }
+
+  revalidatePath('/proyecto', 'layout')
+  return { ok: true }
+}
+
+export async function cobrarEntrega(hitoId: string): Promise<Resultado> {
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('hitos')
+    .update({ condicion: 'normal', motivo_condicion: null }, { count: 'exact' })
+    .eq('id', hitoId)
+    .select('id')
+
+  if (error) return { ok: false, error: traducir(error.message) }
+  if (!count) return { ok: false, error: 'No tenés permiso para cambiar esta entrega.' }
+
+  revalidatePath('/proyecto', 'layout')
   return { ok: true }
 }
